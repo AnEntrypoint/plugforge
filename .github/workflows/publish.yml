@@ -75,8 +75,8 @@ jobs:
           git fetch origin main 2>/dev/null || true
           git checkout main 2>/dev/null || git checkout -b main
 
-          find . -name '.git' -prune -o -type f -print0 | xargs -0 rm -f
-          find . -name '.git' -prune -o -type d -print0 | xargs -0 rm -rf
+          git reset --hard HEAD 2>/dev/null || true
+          git clean -fdx
           cp -r "$BUILD_DIR"/. .
 
           git add -A
