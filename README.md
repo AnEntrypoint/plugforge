@@ -57,7 +57,7 @@ The builder always generates output for all 8 platforms - select desired platfor
 ```bash
 npm install -g glootie-builder
 # or
-npx glootie-builder build all
+npx glootie-builder ./my-plugin ./output
 ```
 
 ## How It Works
@@ -116,4 +116,4 @@ MIT
 
 ## Repository
 
-https://github.com/AnEntrypoint/glootie-builder
+https://github.com/AnEntrypoint/plugforge
