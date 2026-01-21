@@ -1,6 +1,6 @@
 # Platforms: Complete Reference
 
-Detailed information about all 8 supported platforms.
+Detailed information about all 9 supported platforms.
 
 ## Platform Overview
 
@@ -9,6 +9,7 @@ Detailed information about all 8 supported platforms.
 | Claude Code | CLI | plugin.json | No | Stable |
 | Gemini CLI | CLI | gemini-extension.json | No | Stable |
 | OpenCode | CLI | opencode.json | No | Stable |
+| Codex | CLI | plugin.json | No | Stable |
 | GitHub Copilot CLI | CLI | copilot-profile.md | No | Stable |
 | VS Code | Extension | package.json | Yes | Stable |
 | Cursor | Extension | package.json | No | Stable |
@@ -34,6 +35,13 @@ Detailed information about all 8 supported platforms.
 - Hook format: Class-based
 - Installation: Copy to ~/.opencode/plugins/
 - Distribution: Direct copy
+
+### Codex (codex)
+- Config: plugin.json
+- Hook format: module.exports wrapper (identical to Claude Code)
+- Installation: Copy to Codex plugin directory
+- Distribution: Direct copy
+- Note: Full parity with Claude Code, uses CODEX_PLUGIN_ROOT environment variable
 
 ### GitHub Copilot CLI (copilot-cli)
 - Config: copilot-profile.md
@@ -80,13 +88,13 @@ For deployment instructions, see GETTING_STARTED.md § "Step 5: Build and Deploy
 
 ## Platform Feature Matrix
 
-| Feature | CC | GC | OC | VSCode | Cursor | Zed | JetBrains | Copilot |
-|---------|-----|-----|-----|---------|---------|-----|-----------|---------|
-| Agents | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| Hooks | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| MCP | ✓ | ✓ | ✓ | ✓ | ✓ | ✗ | ✗ | ✓ |
-| Hot Reload | ✓ | ✓ | ✓ | ✗ | ✗ | ✗ | ✗ | ✓ |
-| Marketplace | Direct | Direct | Direct | Yes | Settings | Yes | Yes | Direct |
+| Feature | CC | GC | OC | Codex | VSCode | Cursor | Zed | JetBrains | Copilot |
+|---------|-----|-----|-----|-------|---------|---------|-----|-----------|---------|
+| Agents | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Hooks | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| MCP | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✗ | ✗ | ✓ |
+| Hot Reload | ✓ | ✓ | ✓ | ✓ | ✗ | ✗ | ✗ | ✗ | ✓ |
+| Marketplace | Direct | Direct | Direct | Direct | Yes | Settings | Yes | Yes | Direct |
 
 ## Platform-Specific Notes
 
@@ -104,6 +112,12 @@ For deployment instructions, see GETTING_STARTED.md § "Step 5: Build and Deploy
 - Class-based hook design
 - Platform-specific conventions
 - OpenCode CLI required
+
+### Codex
+- Identical hook structure to Claude Code
+- Uses CODEX_PLUGIN_ROOT environment variable
+- 100% feature parity with Claude Code
+- All 5 hook types supported: session-start, pre-tool-use, prompt-submit, stop, stop-git
 
 ### VS Code
 - VSCode API types required: `npm install --save-dev @types/vscode`
