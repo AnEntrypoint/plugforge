@@ -22,11 +22,13 @@ Each hook type (session-start, pre-tool, prompt-submit, stop, stop-git) translat
 - **Zed/JetBrains**: JavaScript (not language-specific despite initial design)
 - **Copilot CLI**: YAML profile + markdown
 
-### Agent Copying Caveat
-Agents/ directory from source is NOT automatically copied to generated output. This is by design - agents are referenced but not duplicated. If you need agent files in output:
-- Add explicit agent file copying in platform adapter's createFileStructure()
-- Reference gloutie-cc/agents/ for reference implementation
-- Or use template system for pre-built agent content
+### Agent File Path Resolution (CRITICAL)
+CLIAdapter.getAgentSourcePaths() must include `agents/${agent}.md` as FIRST path in lookup:
+- Template: `agents/` contains gm.md, codesearch.md, websearch.md
+- readSourceFile() returns on first path match, so direct `agents/` path must come first
+- Fallback paths: glootie-cc/agents for reference implementations
+- Without direct `agents/` path, agent files fail to resolve and output is missing agents/ directory
+- Fixed in Jan 21: Added `agents/${agent}.md` to head of getAgentSourcePaths() return array
 
 ### File System Paths
 getHookSourcePaths() in CLIAdapter maps hook names to files:
@@ -61,7 +63,6 @@ End-to-end testing confirmed:
 - Hook files are valid JavaScript with proper module.exports
 
 ### Known Limitations
-- Agents/ directory not auto-copied (design decision - agents are referenced, not duplicated)
 - Continue.dev adapter was planned but removed from final implementation
 - Jules/other REST API platforms not implemented (extensible architecture ready)
 - No built-in build step validation (npm/gradle validation happens during platform publish)
