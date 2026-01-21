@@ -210,6 +210,35 @@ Examples of agent behavior.
 }
 ```
 
+## Configuration Guide
+
+Quick reference for configuring glootie.json:
+
+### Required Fields
+- **name**: Lowercase, no spaces, unique identifier (e.g., "my-awesome-plugin")
+- **version**: MAJOR.MINOR.PATCH semver format (e.g., "1.0.0")
+- **author**: Your name or "Name <email@example.com>"
+- **license**: SPDX identifier (MIT, Apache-2.0, GPL-3.0, etc.)
+
+### Optional Fields
+- **description**: Short description, displayed in marketplaces
+- **repository**: Git clone URL for source code
+- **homepage**: Project homepage URL
+- **agents**: Array of agent markdown files to include (e.g., ["gm", "codesearch"])
+- **hooks**: Array of hook JavaScript files to include (e.g., ["session-start", "pre-tool"])
+- **mcp**: MCP server configuration (tools and resources)
+- **platforms**: Platform enable/disable flags (default: all enabled)
+
+### Minimal Configuration Example
+```json
+{
+  "name": "my-plugin",
+  "version": "1.0.0",
+  "author": "Your Name",
+  "license": "MIT"
+}
+```
+
 ## Validation Rules
 
 Builder validates before generation:

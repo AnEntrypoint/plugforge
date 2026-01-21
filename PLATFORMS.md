@@ -76,7 +76,7 @@ Detailed information about all 8 supported platforms.
 
 ## Installation Quick Reference
 
-See GETTING_STARTED.md § "Step 5: Build and Deploy" for complete deployment instructions per platform.
+For deployment instructions, see GETTING_STARTED.md § "Step 5: Build and Deploy".
 
 ## Platform Feature Matrix
 
