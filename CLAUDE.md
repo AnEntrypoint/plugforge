@@ -119,6 +119,13 @@ Critical fixes for CI/CD publishing to work correctly:
 - Must wrap commit/push in `if ! git diff-index --quiet HEAD --; then` to skip when nothing changed
 - Otherwise pushes empty commits unnecessarily
 
+**Template File Truncation Bug (FIXED Jan 21):**
+- Early workflow version created minimal stub agent files before build: `echo "# gm" > plugforge-starter/agents/gm.md`
+- This overwrote the committed agents with single-line headers, causing published repos to have truncated agents
+- Solution: Remove the "Create minimal starter template" step - rely on committed plugforge-starter/ files
+- Published repos built before fix have truncated agents (1 line); rebuild with fixed workflow restores full agents
+- Fixed in commit 85781a7: Remove template creation that was truncating agent files
+
 ### Known Limitations
 - Continue.dev adapter was planned but removed from final implementation
 - Jules/other REST API platforms not implemented (extensible architecture ready)
