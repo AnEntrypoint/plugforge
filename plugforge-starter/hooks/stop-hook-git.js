@@ -4,7 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
 
-const projectDir = process.env.CLAUDE_PROJECT_DIR || process.cwd();
+const projectDir = process.env.CLAUDE_PROJECT_DIR || process.env.GEMINI_PROJECT_DIR || process.env.OC_PROJECT_DIR || process.cwd();
 
 let aborted = false;
 process.on('SIGTERM', () => { aborted = true; });
