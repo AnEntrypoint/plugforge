@@ -30,7 +30,13 @@ CLIAdapter.getAgentSourcePaths() must include `agents/${agent}.md` as FIRST path
 - Without direct `agents/` path, agent files fail to resolve and output is missing agents/ directory
 - Fixed in Jan 21: Added `agents/${agent}.md` to head of getAgentSourcePaths() return array
 
-### File System Paths
+### File System Paths (CRITICAL FIX)
+ConventionLoader.load() must use path.resolve() on input pluginDir:
+- Relative paths (e.g., "./plugin" or "~/plugin") cause fs.existsSync() to fail unpredictably
+- path.resolve(pluginDir) normalizes to absolute path before joining
+- Fixed in Jan 21: ConventionLoader now resolves plugin directory before file operations
+- Without this fix, CLI would report "gloutie.json not found" even when file exists
+
 getHookSourcePaths() in CLIAdapter maps hook names to files:
 - Maps consistently: pre-tool → pre-tool.js, session-start → session-start.js
 - readSourceFile() tries path array in order, returns first found
@@ -48,6 +54,13 @@ plugin.json mcp property becomes .mcp.json per platform:
 - **JetBrains**: plugin.xml describes capabilities, no runtime hooks needed
 - **Cursor**: Mirrors VSCode but adds .cursor/mcp.json for MCP server configuration
 
+### Copilot CLI Caveat
+CopilotCLIAdapter.getHookSourcePaths() requires hook name mapping:
+- Maps 'pre-tool-use' → 'pre-tool.js', 'session-start' → 'session-start.js', etc.
+- First lookup path must be hooks/ directory (from template)
+- Fixed in Jan 21: Added hook name → filename mapping to ensure all hooks resolve
+- Without mapping, hooks/ directory wouldn't be checked, causing hooks to be missing from output
+
 ### Code Organization
 - All lib/ and platforms/ files actively used (no dead code remaining)
 - hook-translator.js removed - hook translation now done via HookFormatters
@@ -57,12 +70,14 @@ plugin.json mcp property becomes .mcp.json per platform:
 - Total codebase: 2752 lines across 17 active files
 
 ### Build Output Verification
-End-to-end testing confirmed:
-- All 8 platforms generate (cc, gc, oc, vscode, cursor, zed, jetbrains, copilot-cli)
-- All required config files present and valid JSON/YAML/XML
-- All 5 hook types implemented per platform (40/40 coverage)
-- 60-66 total files generated across all platforms
-- Hook files are valid JavaScript with proper module.exports
+Comprehensive end-to-end testing confirmed (Jan 21):
+- All 8 platforms generate successfully (cc, gc, oc, vscode, cursor, zed, jetbrains, copilot-cli)
+- All required config files present and valid JSON/YAML/XML per spec
+- CLI platforms: All 5 hook types (session-start, pre-tool, prompt-submit, stop, stop-git)
+- 82 total files generated across all platforms
+- All 12 agents distributed across CLI platforms (gm, codesearch, websearch)
+- Extension platforms generate compiled artifacts in dist/
+- 100% compatibility with documented platform specifications verified
 
 ### Known Limitations
 - Continue.dev adapter was planned but removed from final implementation

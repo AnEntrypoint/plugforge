@@ -1,8 +1,10 @@
-# Glootie Builder
+# Plugforge
 
-Production-ready AI plugin builder for 8 platforms. Convention-driven, zero-config, black magic automation.
+Production-ready multi-platform AI plugin builder. Convention-driven, zero-config, black magic automation.
 
 **Build once. Deploy everywhere.**
+
+Generate production-ready plugins for Claude Code, Gemini CLI, OpenCode, Copilot CLI, VS Code, Cursor, Zed, and JetBrains from a single source.
 
 ## Key Features
 
@@ -62,17 +64,17 @@ npx plugforge ./my-plugin ./output
 
 ## How It Works
 
-**Hooks** (your JavaScript code) → **Adapters** (translate to platform syntax) → **8 distributions**
+**Unified Source** (plugin.json + hooks/ + agents/) → **Platform Adapters** → **8 production-ready outputs**
 
-Single `session-start.js` hook becomes:
-- Claude Code hook (subprocess)
-- Gemini CLI middleware (subprocess)
-- OpenCode SDK handler (subprocess)
-- GitHub Copilot CLI wrapper (subprocess)
-- VS Code TypeScript handler (in-process)
-- Cursor TypeScript handler (in-process)
-- Zed JavaScript handler (in-process)
-- JetBrains plugin event listener (in-process)
+For CLI platforms (Claude Code, Gemini CLI, OpenCode, Copilot CLI):
+- Hook files copied with platform-specific configuration
+- Each hook executed as subprocess with proper environment variables
+- Agents distributed as markdown files for AI system prompts
+
+For extension platforms (VS Code, Cursor, Zed, JetBrains):
+- Hooks translated to platform-native handlers
+- Extensions compiled to deployable artifacts
+- Configuration files generated per platform requirements
 
 ## Structure
 
@@ -104,11 +106,11 @@ See documentation in the builder repository:
 ## Creating a Plugin
 
 1. `cp -r plugforge-starter my-plugin`
-2. Edit `plugin.json` with your plugin details (required)
-3. Customize hook implementations in `hooks/` directory (optional - defaults provided)
-4. Add/update agents in `agents/` directory (optional - used as reference, not copied to output)
+2. Edit `plugin.json` with your plugin details
+3. Customize hook implementations in `hooks/` directory
+4. Add/update AI agents in `agents/` directory (gm.md, codesearch.md, websearch.md)
 5. Run `plugforge . ../build` to generate all 8 platform outputs
-6. Select desired platforms from output directory and deploy
+6. Find platform-specific outputs in `../build/glootie-{platform}/` directories
 
 ## License
 
