@@ -101,41 +101,61 @@ Output in `dist/`:
 
 ### Deploy
 
-**Claude Code:**
+**Claude Code (cc):**
 ```bash
 cp -r dist/cc/* ~/.claude-code/plugins/my-plugin/
 # Restart Claude Code
 ```
 
-**VS Code:**
+**Gemini CLI (gc):**
+```bash
+cp -r dist/gc/* ~/.gemini/extensions/my-plugin/
+# Restart Gemini CLI
+```
+
+**OpenCode (oc):**
+```bash
+./dist/oc/setup.sh  # Local setup
+# or ./dist/oc/install-global.sh  # Global installation
+```
+
+**GitHub Copilot CLI (copilot-cli):**
+```bash
+cp -r dist/copilot-cli/* ~/.copilot/profiles/my-plugin/
+# Restart Copilot CLI
+```
+
+**VS Code (vscode):**
 ```bash
 cd dist/vscode
 npm install && npm run compile
-npm run package  # Creates VSIX
-# Upload to VS Code Marketplace
+npm run package  # Creates VSIX for distribution
+# Upload to VS Code Marketplace via vsce CLI
 ```
 
-**Cursor:**
+**Cursor (cursor):**
 ```bash
 cp -r dist/cursor/* ~/.cursor/extensions/my-plugin/
 # Restart Cursor
 ```
 
-**Zed:**
+**Zed (zed):**
 ```bash
 cd dist/zed
 cargo build --release
-# Binary in target/release/
+# Compiled binary in target/release/
+# Place in Zed extensions directory
 ```
 
-**JetBrains:**
+**JetBrains (jetbrains):**
 ```bash
 cd dist/jetbrains
 ./gradlew build
 # JAR in build/distributions/
+# Install via plugin manager or distribute
 ```
 
-See PLATFORMS.md for complete deployment details for each platform.
+See PLATFORMS.md for platform-specific requirements and notes.
 
 ## Example: Code Quality Plugin
 

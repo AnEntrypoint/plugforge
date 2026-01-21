@@ -60,8 +60,16 @@ CopilotCLIAdapter.getHookSourcePaths() requires hook name mapping:
 
 ### Code Organization
 - All lib/ and platforms/ files actively used (no dead code)
-- Deleted template-defaults.js (unused exports), lib/README.md, scripts/publish.sh, templates/
-- Most files under 200 lines; vscode.js (267) and copilot-cli-gen.js (308) exceed due to complex config generation
+- generators/ directory is dead code (cc/gc/oc never called by AutoGenerator, use platforms/ adapters)
+- Most files under 200 lines; vscode.js (266) and copilot-cli-gen.js (308) exceed due to complex config generation
+
+### Documentation Consolidation (Jan 21)
+- 6 files exist: README.md (entry point), API.md, ARCHITECTURE.md, PLATFORMS.md, GETTING_STARTED.md, CLAUDE.md
+- README.md is redundant: duplicates GETTING_STARTED.md quick start section
+- PLATFORMS.md deployment examples overlap with GETTING_STARTED.md examples
+- Consolidation: README → DELETE, merge PLATFORMS deployment into GETTING_STARTED.md
+- Result: 5 focused docs (GETTING_STARTED.md now comprehensive tutorial + deployment)
+- API.md, ARCHITECTURE.md, CLAUDE.md, PLATFORMS.md (feature matrix only) remain unchanged
 
 
 ### GitHub Actions CI/CD Pipeline

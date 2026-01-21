@@ -76,35 +76,7 @@ Detailed information about all 8 supported platforms.
 
 ## Installation Quick Reference
 
-**CLI Platforms:**
-```bash
-cp dist/{cc,gc,oc,copilot-cli}/ ~/.{platform}/extensions/
-# Restart platform
-```
-
-**VS Code:**
-```bash
-cd dist/vscode && npm install && npm run compile
-# Test or publish to marketplace
-```
-
-**Cursor:**
-```bash
-cp -r dist/cursor/* ~/.cursor/extensions/
-# Restart Cursor
-```
-
-**Zed:**
-```bash
-cd dist/zed && cargo build --release
-# Binary in target/release/
-```
-
-**JetBrains:**
-```bash
-cd dist/jetbrains && ./gradlew build
-# JAR in build/distributions/
-```
+See GETTING_STARTED.md § "Step 5: Build and Deploy" for complete deployment instructions per platform.
 
 ## Platform Feature Matrix
 
