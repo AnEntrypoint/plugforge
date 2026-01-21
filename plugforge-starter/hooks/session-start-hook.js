@@ -4,8 +4,8 @@ const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
 
-const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT;
-const projectDir = process.env.CLAUDE_PROJECT_DIR;
+const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT || process.env.GEMINI_PROJECT_DIR || process.env.OC_PLUGIN_ROOT;
+const projectDir = process.env.CLAUDE_PROJECT_DIR || process.env.GEMINI_PROJECT_DIR || process.env.OC_PROJECT_DIR;
 
 // Ensure .glootie-stop-verified is in .gitignore
 const ensureGitignore = () => {
@@ -57,21 +57,54 @@ try {
   outputs.push('Use gm as a philosophy to coordinate all plans and the gm subagent to create and execute all plans');
   const additionalContext = outputs.join('\n\n');
 
-  const result = {
-    hookSpecificOutput: {
-      hookEventName: 'SessionStart',
-      additionalContext
-    }
-  };
+  const isGemini = process.env.GEMINI_PROJECT_DIR !== undefined;
+  const isOpenCode = process.env.OC_PLUGIN_ROOT !== undefined;
 
-  console.log(JSON.stringify(result, null, 2));
+  if (isGemini) {
+    const result = {
+      systemMessage: additionalContext
+    };
+    console.log(JSON.stringify(result, null, 2));
+  } else if (isOpenCode) {
+    const result = {
+      hookSpecificOutput: {
+        hookEventName: 'session.created',
+        additionalContext
+      }
+    };
+    console.log(JSON.stringify(result, null, 2));
+  } else {
+    const result = {
+      hookSpecificOutput: {
+        hookEventName: 'SessionStart',
+        additionalContext
+      }
+    };
+    console.log(JSON.stringify(result, null, 2));
+  }
 } catch (error) {
-  console.error(JSON.stringify({
-    hookSpecificOutput: {
-      hookEventName: 'SessionStart',
-      additionalContext: `Error executing hook: ${error.message}`
-    }
-  }, null, 2));
+  const isGemini = process.env.GEMINI_PROJECT_DIR !== undefined;
+  const isOpenCode = process.env.OC_PLUGIN_ROOT !== undefined;
+
+  if (isGemini) {
+    console.error(JSON.stringify({
+      systemMessage: `Error executing hook: ${error.message}`
+    }, null, 2));
+  } else if (isOpenCode) {
+    console.error(JSON.stringify({
+      hookSpecificOutput: {
+        hookEventName: 'session.created',
+        additionalContext: `Error executing hook: ${error.message}`
+      }
+    }, null, 2));
+  } else {
+    console.error(JSON.stringify({
+      hookSpecificOutput: {
+        hookEventName: 'SessionStart',
+        additionalContext: `Error executing hook: ${error.message}`
+      }
+    }, null, 2));
+  }
   process.exit(1);
 }
 

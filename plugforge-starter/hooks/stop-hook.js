@@ -4,8 +4,8 @@ const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
 
-const projectDir = process.env.CLAUDE_PROJECT_DIR || process.cwd();
-const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT;
+const projectDir = process.env.CLAUDE_PROJECT_DIR || process.env.GEMINI_PROJECT_DIR || process.env.OC_PROJECT_DIR || process.cwd();
+const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT || process.env.GEMINI_PROJECT_DIR || process.env.OC_PLUGIN_ROOT;
 const verificationFile = path.join(projectDir, '.glootie-stop-verified');
 
 let aborted = false;

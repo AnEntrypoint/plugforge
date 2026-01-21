@@ -57,20 +57,50 @@ const run = () => {
 
 try {
   const result = run();
-  const output = {
-    hookSpecificOutput: {
-      hookEventName: 'PreToolUse',
-      ...result
-    }
-  };
-  console.log(JSON.stringify(output, null, 2));
+
+  const isGemini = process.env.GEMINI_PROJECT_DIR !== undefined;
+  const isOpenCode = process.env.OC_PLUGIN_ROOT !== undefined;
+
+  if (isGemini) {
+    const output = {
+      decision: result.permissionDecision,
+      systemMessage: result.permissionDecisionReason || ''
+    };
+    console.log(JSON.stringify(output, null, 2));
+  } else if (isOpenCode) {
+    const output = {
+      hookSpecificOutput: {
+        hookEventName: 'tool.execute.before',
+        decision: result.permissionDecision,
+        systemMessage: result.permissionDecisionReason || ''
+      }
+    };
+    console.log(JSON.stringify(output, null, 2));
+  } else {
+    const output = {
+      hookSpecificOutput: {
+        hookEventName: 'PreToolUse',
+        ...result
+      }
+    };
+    console.log(JSON.stringify(output, null, 2));
+  }
 } catch (error) {
-  console.log(JSON.stringify({
-    hookSpecificOutput: {
-      hookEventName: 'PreToolUse',
-      permissionDecision: 'allow'
-    }
-  }, null, 2));
+  const isGemini = process.env.GEMINI_PROJECT_DIR !== undefined;
+
+  if (isGemini) {
+    console.log(JSON.stringify({
+      decision: 'allow',
+      systemMessage: ''
+    }, null, 2));
+  } else {
+    console.log(JSON.stringify({
+      hookSpecificOutput: {
+        hookEventName: 'PreToolUse',
+        permissionDecision: 'allow'
+      }
+    }, null, 2));
+  }
 }
 
 

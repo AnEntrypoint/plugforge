@@ -3,7 +3,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const projectDir = process.env.CLAUDE_PROJECT_DIR || process.cwd();
+const projectDir = process.env.CLAUDE_PROJECT_DIR || process.env.GEMINI_PROJECT_DIR || process.env.OC_PROJECT_DIR || process.cwd();
 const verificationFile = path.join(projectDir, '.glootie-stop-verified');
 
 try {
@@ -18,18 +18,50 @@ try {
     }
   }
 
-  console.log(JSON.stringify({
-    hookSpecificOutput: {
-      hookEventName: 'UserPromptSubmit',
-      additionalContext
-    }
-  }, null, 2));
+  const isGemini = process.env.GEMINI_PROJECT_DIR !== undefined;
+  const isOpenCode = process.env.OC_PLUGIN_ROOT !== undefined;
+
+  if (isGemini) {
+    console.log(JSON.stringify({
+      systemMessage: additionalContext
+    }, null, 2));
+  } else if (isOpenCode) {
+    console.log(JSON.stringify({
+      hookSpecificOutput: {
+        hookEventName: 'message.updated',
+        additionalContext
+      }
+    }, null, 2));
+  } else {
+    console.log(JSON.stringify({
+      hookSpecificOutput: {
+        hookEventName: 'UserPromptSubmit',
+        additionalContext
+      }
+    }, null, 2));
+  }
 } catch (error) {
-  console.log(JSON.stringify({
-    hookSpecificOutput: {
-      hookEventName: 'UserPromptSubmit',
-      additionalContext: `Hook error: ${error.message}`
-    }
-  }, null, 2));
+  const isGemini = process.env.GEMINI_PROJECT_DIR !== undefined;
+  const isOpenCode = process.env.OC_PLUGIN_ROOT !== undefined;
+
+  if (isGemini) {
+    console.log(JSON.stringify({
+      systemMessage: `Hook error: ${error.message}`
+    }, null, 2));
+  } else if (isOpenCode) {
+    console.log(JSON.stringify({
+      hookSpecificOutput: {
+        hookEventName: 'message.updated',
+        additionalContext: `Hook error: ${error.message}`
+      }
+    }, null, 2));
+  } else {
+    console.log(JSON.stringify({
+      hookSpecificOutput: {
+        hookEventName: 'UserPromptSubmit',
+        additionalContext: `Hook error: ${error.message}`
+      }
+    }, null, 2));
+  }
   process.exit(1);
 }
