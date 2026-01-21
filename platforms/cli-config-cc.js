@@ -68,5 +68,33 @@ module.exports = {
         description: arguments[0].description
       }, null, 2)
     };
+  },
+  generateReadme(spec) {
+    return `# ${spec.name} for Claude Code
+
+## Installation
+
+\`\`\`bash
+claude plugin marketplace add AnEntrypoint/${spec.name}
+claude plugin install -s user ${spec.name}@${spec.name}
+\`\`\`
+
+## Update
+
+\`\`\`bash
+claude plugin marketplace update ${spec.name}
+claude plugin update ${spec.name}@${spec.name}
+\`\`\`
+
+## Features
+
+- MCP tools for code execution and search
+- State machine agent policy (gm)
+- Stop hook verification loop
+- Git enforcement on session end
+- AST analysis via thorns at session start
+
+The plugin activates automatically on session start.
+`;
   }
 };

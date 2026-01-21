@@ -27,6 +27,10 @@ function createAdapterClass(cfg) {
     getAdditionalFiles(pluginSpec, readFile) {
       return cfg.getAdditionalFiles ? cfg.getAdditionalFiles(pluginSpec, readFile) : {};
     }
+
+    generateReadme(pluginSpec) {
+      return cfg.generateReadme ? cfg.generateReadme(pluginSpec) : super.generateReadme(pluginSpec);
+    }
   }
 
   return DynamicCLIAdapter;
