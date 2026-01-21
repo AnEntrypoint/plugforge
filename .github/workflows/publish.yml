@@ -76,6 +76,7 @@ jobs:
           git checkout main 2>/dev/null || git checkout -b main
 
           echo "=== Removing old files ==="
+          shopt -s dotglob
           rm -rf ./*
           echo "=== Copying new build ==="
           cp -r "$BUILD_DIR"/* .
