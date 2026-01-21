@@ -79,6 +79,18 @@ Comprehensive end-to-end testing confirmed (Jan 21):
 - Extension platforms generate compiled artifacts in dist/
 - 100% compatibility with documented platform specifications verified
 
+### GitHub Actions CI/CD Pipeline
+`.github/workflows/publish.yml` automates multi-repo publishing:
+- Triggers on changes to plugforge-starter/, platforms/, lib/, or workflow itself
+- Runs build for all 8 platforms in parallel (matrix strategy)
+- For each platform: checks if AnEntrypoint/glootie-{platform} exists
+- Creates repo if missing via `gh repo create` (requires GITHUB_TOKEN)
+- Clones existing repo, clears files, copies build artifacts, commits and pushes
+- Force pushes to main branch (`git push -u origin main -f`)
+- Matrix parallel execution means all 8 repos publish simultaneously
+- `GITHUB_TOKEN` from Actions has default permissions - may need adjustment for org repos
+- Initial repo creation may fail if org billing/permissions restrict it - manual creation fallback
+
 ### Known Limitations
 - Continue.dev adapter was planned but removed from final implementation
 - Jules/other REST API platforms not implemented (extensible architecture ready)
