@@ -112,6 +112,24 @@ See documentation in the builder repository:
 5. Run `plugforge . ../build` to generate all 8 platform outputs
 6. Find platform-specific outputs in `../build/glootie-{platform}/` directories
 
+## Automated Publishing
+
+The repository includes a GitHub Actions workflow (`.github/workflows/publish.yml`) that automatically:
+- Builds all 8 platforms when you push changes to `plugforge-starter/`, `platforms/`, or `lib/`
+- Creates or updates individual repositories under `AnEntrypoint/glootie-{platform}/`
+- Publishes compiled artifacts ready for deployment
+
+**Manual Trigger**:
+```bash
+gh workflow run publish.yml -R AnEntrypoint/plugforge
+```
+
+**Watch Progress**:
+```bash
+gh run list -R AnEntrypoint/plugforge --workflow=publish.yml --limit=1
+gh run view <run-id> -R AnEntrypoint/plugforge --log
+```
+
 ## License
 
 MIT
