@@ -91,7 +91,36 @@ Comprehensive end-to-end testing confirmed (Jan 21):
 - `GITHUB_TOKEN` from Actions has default permissions - may need adjustment for org repos
 - Initial repo creation may fail if org billing/permissions restrict it - manual creation fallback
 
+### GitHub Actions Implementation (Jan 21)
+Critical fixes for CI/CD publishing to work correctly:
+
+**Dotfile Copying Issue:**
+- Standard file removal (`rm -rf ./*`) does NOT remove dotfiles (`.claude-plugin/`, `.mcp.json`)
+- Solution: Use `git clean -fdx` to remove all untracked files while preserving `.git/`
+- File copying: Use `cp -r "$BUILD_DIR"/. .` (note the `/.`) to copy ALL files including dotfiles
+- Without these, `.claude-plugin/marketplace.json` and `.mcp.json` never sync to published repos
+- Fixed in commit: Use git clean to safely remove and replace files
+
+**Git Context in Subprocess Scripts:**
+- Shell scripts called from GitHub Actions workflow must ensure `cd "$WORK_DIR"` before git operations
+- Operations like `git add -A` fail silently if not in correct directory
+- `git diff-index --quiet HEAD --` must run AFTER the `cd` to check correct repo state
+- Pre-git operations should not assume context (test `git init` first if needed)
+
+**Token Authentication:**
+- GITHUB_TOKEN from Actions has limited permissions (only current repo access)
+- For publishing to org repos, need personal access token with `repo` scope
+- Solution: Create PUBLISHER_TOKEN secret with full token from `gh auth token`
+- Configure git with: `git config --global url."https://${GH_TOKEN}:x-oauth-basic@github.com/".insteadOf "https://github.com/"`
+- This maps all github.com URLs to use the token in subsequent git operations
+
+**Empty Commit Prevention:**
+- `git diff-index --quiet HEAD --` returns 0 (success) if no changes
+- Must wrap commit/push in `if ! git diff-index --quiet HEAD --; then` to skip when nothing changed
+- Otherwise pushes empty commits unnecessarily
+
 ### Known Limitations
 - Continue.dev adapter was planned but removed from final implementation
 - Jules/other REST API platforms not implemented (extensible architecture ready)
 - No built-in build step validation (npm/gradle validation happens during platform publish)
+- Copilot CLI and GitHub Actions: Some repos have older implementations (gc, oc) - full rebuild will sync to latest
