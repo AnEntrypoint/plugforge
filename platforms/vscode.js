@@ -151,7 +151,6 @@ class GlootieExtension {
   }
 
   registerViews() {
-    // Views registered via contributes.views in package.json
   }
 
   setupConfiguration() {

@@ -60,8 +60,7 @@ CopilotCLIAdapter.getHookSourcePaths() requires hook name mapping:
 
 ### Code Organization
 - All lib/ and platforms/ files actively used (no dead code)
-- hook-translator.js removed - hook translation now done via HookFormatters
-- continue-gen.js removed - dead code not referenced by any platform
+- Deleted template-defaults.js (unused exports), lib/README.md, scripts/publish.sh, templates/
 - Most files under 200 lines; vscode.js (267) and copilot-cli-gen.js (308) exceed due to complex config generation
 
 
