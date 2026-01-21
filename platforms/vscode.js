@@ -257,10 +257,6 @@ vsce publish
 MIT
 `;
   }
-
-  getAgentSourcePaths(agent) {
-    return [`glootie-vscode/agents/${agent}.md`, `glootie-cc/agents/${agent}.md`];
-  }
 }
 
 module.exports = VSCodeAdapter;
