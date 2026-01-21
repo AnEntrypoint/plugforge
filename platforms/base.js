@@ -104,6 +104,10 @@ class PlatformAdapter {
     };
     return map[hookName] || hookName;
   }
+
+  getAgentSourcePaths(agent) {
+    return [`agents/${agent}.md`, `glootie-${this.name}/agents/${agent}.md`, `glootie-cc/agents/${agent}.md`];
+  }
 }
 
 module.exports = PlatformAdapter;

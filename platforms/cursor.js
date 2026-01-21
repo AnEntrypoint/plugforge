@@ -101,10 +101,6 @@ Custom AI plugin for Cursor IDE with multi-platform support.
 Edit \`.cursor/mcp.json\` to configure MCP servers.
 `;
   }
-
-  getAgentSourcePaths(agent) {
-    return [`glootie-cursor/agents/${agent}.md`, `glootie-cc/agents/${agent}.md`];
-  }
 }
 
 module.exports = CursorAdapter;
