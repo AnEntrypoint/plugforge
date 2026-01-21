@@ -16,70 +16,38 @@ You'll see:
 - `agents/` - AI system prompts (gm.md, codesearch.md, websearch.md)
 - `hooks/` - Implementation code (session-start.js, pre-tool.js, etc.)
 
-## Step 2: Edit glootie.json
+## Step 2: Configure glootie.json
 
+See API.md § "Configuration Guide" for complete field reference and examples.
+
+Minimal configuration:
 ```json
 {
   "name": "my-awesome-plugin",
   "version": "1.0.0",
-  "description": "My first AI plugin",
   "author": "Your Name",
-  "license": "MIT",
-  "agents": ["gm", "codesearch", "websearch"],
-  "hooks": ["session-start", "pre-tool", "prompt-submit", "stop", "stop-git"],
-  "platforms": {
-    "cc": { "enabled": true },
-    "gc": { "enabled": true },
-    "oc": { "enabled": true },
-    "vscode": { "enabled": true },
-    "cursor": { "enabled": true },
-    "zed": { "enabled": true },
-    "jetbrains": { "enabled": true },
-    "copilot-cli": { "enabled": true }
-  }
+  "license": "MIT"
 }
 ```
 
-Required fields: name, version, author, license
-Optional: description, repository, homepage, agents, hooks, mcp, platforms
+To add agents, hooks, and configure platforms, refer to API.md Configuration Guide.
 
 ## Step 3: Customize Agents (Optional)
 
-Edit `agents/gm.md` to customize the main agent system prompt:
+Edit `agents/gm.md` to customize the main agent system prompt.
 
-```markdown
-# Main Agent
-
-You are an AI assistant specialized in [YOUR DOMAIN].
-
-You have access to:
-- Code search for finding implementations
-- Web search for learning documentation
-- Tool execution for testing
-
-Your role is to [DESCRIBE YOUR PLUGIN'S PURPOSE].
-```
+See API.md § "Agent Format" for the markdown specification and examples. Agents support markdown format with role and capabilities sections.
 
 ## Step 4: Customize Hooks (Optional)
 
 Hooks are in `hooks/` directory. Each is optional. Starter provides complete implementations.
 
-**session-start.js** - Called when plugin loads
-**pre-tool.js** - Called before any tool execution
-**prompt-submit.js** - Called when user submits prompt
-**stop.js** - Called when plugin stops
-**stop-git.js** - Called during git cleanup
-
-Each hook exports:
-```javascript
-module.exports = {
-  name: 'hook-name',
-  handler: async (context) => {
-    // Your code
-    return { success: true };
-  }
-};
-```
+See API.md § "Hook Function Signatures" for complete hook reference, context parameters, and examples:
+- **session-start.js** - Called when plugin loads
+- **pre-tool.js** - Called before any tool execution
+- **prompt-submit.js** - Called when user submits prompt
+- **stop.js** - Called when plugin stops
+- **stop-git.js** - Called during git cleanup
 
 ## Step 5: Build and Deploy
 
