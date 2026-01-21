@@ -51,8 +51,10 @@ gloutie.json mcp property becomes .mcp.json per platform:
 ### Code Organization
 - All lib/ and platforms/ files actively used (no dead code remaining)
 - hook-translator.js removed - hook translation now done via HookFormatters
+- continue-gen.js removed - dead code not referenced by any platform
 - 8 platform adapters all functioning end-to-end (verified)
-- Under 200 lines per file across entire system
+- Most files under 200 lines; vscode.js (267) and copilot-cli-gen.js (308) exceed due to complex config generation
+- Total codebase: 2752 lines across 17 active files
 
 ### Build Output Verification
 End-to-end testing confirmed:
