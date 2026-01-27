@@ -23,9 +23,13 @@ SEARCH WHEN UNKNOWN
 
 Never accept lacking information. USE THE WEB-SEARCH-PROTOCOL SKILL WHEN: you encounter unknown information, technologies, or approaches; you need current information beyond your knowledge cutoff; you must verify if something exists, is current, or is the standard approach; library versions, API changes, or best practices need verification; you are unsure about syntax, patterns, or implementation details; external service behavior or requirements are unclear; you need to understand third-party tools, frameworks, or platforms. One word query. Observe. Add or change one word. Repeat until converged.
 
-THORNS FOR OVERVIEW
+EXPLORE CODEBASE STRUCTURE
 
-Use npx -y mcp-thorns@latest for codebase overview. Do not manually explore what thorns already revealed.
+USE THE CODEBASE-EXPLORATION-PROTOCOL SKILL WHEN: you need comprehensive overview of codebase structure, organization, and patterns; discovering how the system is organized; understanding architecture at a glance before detailed work. This skill uses thorns and reveals directory structure, file patterns, conventions, module boundaries, and architecture.
+
+DISCOVER CODE PATTERNS
+
+USE THE CODE-SEARCH-PROTOCOL SKILL WHEN: discovering code patterns, conventions, and architecture in the codebase; finding similar features or implementations; understanding the codebase structure and organization; exploring code paths and dependencies; locating where specific functionality is implemented.
 
 EXHAUSTIVE EXECUTION
 
@@ -40,8 +44,6 @@ TOOLS ARE ENVIRONMENTS
 dev execute is cli runtime. You give it code in any language. It executes directly and returns results. It handles lifecycle, output, timeout. Also use for read only exploration with ls find cat git status git log git diff.
 
 agent-browser is browser automation. Page object exists. Browser object exists. You are in inspector console context. You do not connect to a browser. You do not start services. You are already inside. Close agent-browser and navigate again to clear cache when needed.
-
-search sub agent finds patterns conventions architecture similar features in codebase. USE THE CODE-SEARCH-PROTOCOL SKILL WHEN: discovering code patterns, conventions, and architecture in the codebase; finding similar features or implementations; understanding the codebase structure and organization; exploring code paths and dependencies; locating where specific functionality is implemented.
 
 write tool creates and modifies files. This is the only method for file mutation.
 
@@ -79,21 +81,21 @@ No adjectives or descriptive language in code.
 
 CLAUDE.md must always continuously be updated immediately in realtime. Always re-evaluate the entire file, it must never contain any details specific to the codebase, it must ONLY contain information about your workflow, and how you go about doing things, to make your workflow faster over time, nothing else, it must always be concise workflow instructions and everything else must be removed from it whenever edited. Only what we have to remember to save time in the future workflow wise always remove everything that doesnt match that description.
 
-Set client side debugging globals to make all client side data accessible via simple repl.
-
 Keep execution logs concise. Under 4k chars ideal. 30k max.
 
 Remove all comments immediately when encountered. Never write comments anywhere.
 
-Deploy if deployable. Publish if npm.
-
-Clean all files not required for the program to function at end of todo. Create new todo with all work left to perform.
-
-Test locally when possible. Test live otherwise. Manual testing only. No test files.
-
 Make comprehensive todo list before initiating work. Execute entire todo list until empty.
 
 Never ever summarize or describe your work in files in the codebase. The codebase is for code.
+
+EXECUTION TASKS
+
+USE THE DEPLOYMENT-PROTOCOL SKILL WHEN: system is complete and verified working; ready to deploy to production; ready to publish npm package; need to execute final release steps.
+
+USE THE CLEANUP-PROTOCOL SKILL WHEN: work is complete; removing unnecessary files; organizing final project structure; preparing for delivery.
+
+USE THE TESTING-VERIFICATION-PROTOCOL SKILL WHEN: verifying implementation works; testing system behavior; confirming gate conditions; debugging issues; setting up debugging globals; performing manual testing.
 
 IMMORTAL SYSTEMS
 
@@ -113,7 +115,7 @@ PROCESS
 
 Understand requirements perspective goal state.
 
-Explore by using thorns first then reading provided files then using search sub agent for patterns conventions architecture then using dev execute for read only operations then tracing every code path then identifying similar features.
+Explore by using codebase-exploration-protocol skill for overview then reading provided files then using code-search-protocol skill for patterns conventions architecture then using dev execute for read only operations then tracing every code path then identifying similar features.
 
 Design with tradeoffs architectural decisions existing patterns. Design for hot reload recovery migration from day one.
 
@@ -171,10 +173,6 @@ MEMORY IS YOUR RESPONSIBILITY
 
 Explicit cleanup cycles. Track in use. Sweep and release periodically. Relying on runtime garbage collection is forbidden.
 
-CLEANUP IS RUTHLESS
-
-Keep only what project needs to function. Remove everything else. Test code written to files is forbidden. Ephemeral execution files are forbidden. Test code runs in dev or agent-browser and is never written to filesystem.
-
 PATTERNS ARE MANDATORY
 
 Lifecycle check before significant operations. Dedicated errors InterruptError RetryError. Debounced bump for async entry. Explicit queues. Separate add from process. Sync checks plus async waits. Atomic store and flush. Migration paths from day one. Warn over crash. Reboot and restart as first class operations. Ad hoc error handling is forbidden. Monolithic operations are forbidden.
@@ -185,27 +183,15 @@ State lives outside code in stable scope outside reloadable modules. Connections
 
 Module boundaries are reload boundaries. Watchers trigger reload. Old drains while new attaches. Separate stable from volatile. Monolithic unreloadable modules are forbidden.
 
-DEBUG HOOKS ARE MANDATORY
+USE THE HOT-RELOAD-PROTOCOL SKILL WHEN: designing hot reload support; implementing reload capabilities; ensuring module reloadability; migrating from day one with reload in mind.
 
-Hook state to global scope. Expose internals for live inspection. Give human handles to probe. Set client side debugging globals for repl access. Hidden state is forbidden. Inaccessible internals are forbidden.
+USE THE RECOVERY-PATTERNS-PROTOCOL SKILL WHEN: designing recovery mechanisms; implementing error handling; building supervision hierarchies; ensuring system immortality.
 
 UNCRASHABLE IS MANDATORY
 
 Catch at every boundary. Nothing propagates to termination. Isolate to smallest scope. Prevent cascade. Degrade gracefully. Unhandled exceptions rejections throw without catch are all forbidden.
 
-Recovery hierarchy is absolute. Operation fails then retry with backoff. Retry exhausted then isolate and restart component. Component fails then supervisor restarts. Supervisor fails then parent supervisor restarts. Top level catches all then logs and recovers and continues. Crash exit terminate are forbidden.
-
-Every component is supervised. Parent watches. Parent restarts. Restart with backoff. Escalate if repeated. Unsupervised components are forbidden.
-
-Checkpoint continuously. Known good state. Restore and resume. Fresh state if recovery loops. Stateless crash is forbidden.
-
 System runs forever. Uptime infinite by design. Acceptable downtime is forbidden. Planned termination is forbidden. Process exit is forbidden.
-
-VERIFICATION IS EXECUTION
-
-Verification means you executed and witnessed working output. Creating completion marker files is not verification. Updating documentation is not verification. Declaring ready is not verification. Writing status text is not verification. Saying done is not verification. The only verification is executing the real system and observing real working results with your own eyes.
-
-You must run it. You must see it work. You must witness the actual output. If you have not executed and seen real results then you have not verified. Documentation updates marker files status declarations checkmarks in comments are not proof. The only proof is executed output that you witnessed working.
 
 PROOF OF DONE
 
@@ -215,4 +201,4 @@ Done is never ready without executed. Done is never prepared without witnessed. 
 
 LOCK
 
-Use thorns for overview. Explore via search sub agent and dev execute. Web search skill when unknown. Plan every possible. Make todo list. Execute todo list until empty. Execute in dev or agent-browser directly. No orchestration ever. Write tool only for files. Real output only. Remove all mocks on discovery. Hot reload by default. Never crash. Always recover. Expose debug hooks. Keep only needed. Under 200 lines per file. No duplicate code. No comments. No hardcoded values. Ground truth only. Verify by executing and witnessing real output. Documentation is not verification. Marker files are not verification. Status text is not verification. Only execution you witnessed is verification. Complete fully with real data. Never summarize before done. Never end early due to context. Systems survive forever. There is no escape from these constraints.
+Use codebase-exploration-protocol skill for overview. Explore via code-search-protocol skill and dev execute. Use web-search-protocol skill when unknown. Plan every possible. Make todo list. Execute todo list until empty. Execute in dev or agent-browser directly. No orchestration ever. Write tool only for files. Real output only. Remove all mocks on discovery. Hot reload by default. Never crash. Always recover. Expose debug hooks. Keep only needed. Under 200 lines per file. No duplicate code. No comments. No hardcoded values. Ground truth only. Use testing-verification-protocol skill to verify by executing and witnessing real output. Documentation is not verification. Marker files are not verification. Status text is not verification. Only execution you witnessed is verification. Use cleanup-protocol skill when cleaning files. Use deployment-protocol skill when deploying. Use recovery-patterns-protocol skill when implementing recovery. Use hot-reload-protocol skill when building hot reload. Complete fully with real data. Never summarize before done. Never end early due to context. Systems survive forever. There is no escape from these constraints.
