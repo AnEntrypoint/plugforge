@@ -23,6 +23,7 @@ module.exports = {
     projectDir: 'CLAUDE_PROJECT_DIR'
   },
   formatConfigJson(config) {
+    
     return JSON.stringify({
       ...config,
       author: {
@@ -69,8 +70,16 @@ module.exports = {
           "email": "almagestfraternite@gmail.com"
         },
         version: arguments[0].version,
-        description: arguments[0].description
+        description: arguments[0].description,
+        "plugins": [ 
+          {
+            "name": "gm",
+            "source": "./"
+          }
+        ]
+
       }, null, 2)
+      
     };
   },
   generateReadme(spec) {
@@ -102,6 +111,7 @@ The plugin activates automatically on session start.
 `;
   }
 };
+
 
 
 
