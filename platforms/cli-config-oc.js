@@ -25,6 +25,7 @@ module.exports = {
   getPackageJsonFields() {
     return {
       main: 'index.js',
+      bin: { 'glootie-oc': './index.js' },
       files: [
         'agents/',
         'hooks/',
@@ -35,9 +36,38 @@ module.exports = {
         'setup.bat',
         'setup-global.js',
         'install-global.sh',
-        'install-global.bat'
+        'install-global.bat',
+        'README.md'
+      ],
+      keywords: [
+        'opencode',
+        'opencode-plugin',
+        'mcp',
+        'automation',
+        'glootie'
       ]
     };
+  },
+  generatePackageJson(pluginSpec, extraFields = {}) {
+    return JSON.stringify({
+      name: `${pluginSpec.name}-oc`,
+      version: pluginSpec.version,
+      description: pluginSpec.description,
+      author: pluginSpec.author,
+      license: pluginSpec.license,
+      keywords: pluginSpec.keywords,
+      repository: {
+        type: 'git',
+        url: `https://github.com/AnEntrypoint/${pluginSpec.name}-oc.git`
+      },
+      homepage: `https://github.com/AnEntrypoint/${pluginSpec.name}-oc#readme`,
+      bugs: {
+        url: `https://github.com/AnEntrypoint/${pluginSpec.name}-oc/issues`
+      },
+      engines: pluginSpec.engines,
+      publishConfig: pluginSpec.publishConfig,
+      ...extraFields
+    }, null, 2);
   },
   formatConfigJson(config, pluginSpec) {
     return JSON.stringify({
@@ -65,7 +95,18 @@ module.exports = {
   },
   getAdditionalFiles(pluginSpec, readFile) {
     return {
-      'index.js': readFile(['glootie-oc/index.js']),
+      'index.js': `export const glootie = async ({ project, client, $, directory, worktree }) => {
+  return {
+    hooks: {
+      sessionStart: require('./hooks/session-start-hook.js'),
+      preTool: require('./hooks/pre-tool-use-hook.js'),
+      promptSubmit: require('./hooks/prompt-submit-hook.js'),
+      stop: require('./hooks/stop-hook.js'),
+      stopGit: require('./hooks/stop-hook-git.js')
+    }
+  };
+};
+`,
       'setup.sh': `#!/bin/bash
 set -e
 SCRIPT_DIR="$( cd "$( dirname "\${BASH_SOURCE[0]}" )" && pwd )"
@@ -84,7 +125,61 @@ copy "%SCRIPT_DIR%agents\\gm.md" "%SCRIPT_DIR%.opencode\\agents\\" >nul 2>&1 || 
 call npm install --save-dev >nul 2>&1 || true
 echo Setup complete!
 `,
-      'setup-global.js': readFile(['glootie-oc/setup-global.js']),
+      'setup-global.js': `#!/usr/bin/env node
+const fs = require('fs');
+const path = require('path');
+const os = require('os');
+
+const configDir = process.env.XDG_CONFIG_HOME
+  ? path.join(process.env.XDG_CONFIG_HOME, 'opencode')
+  : path.join(os.homedir(), '.config', 'opencode');
+
+const pluginDir = path.join(configDir, 'plugins', 'glootie');
+const scriptDir = __dirname;
+
+console.log('Installing glootie plugin globally...');
+console.log('Target directory:', pluginDir);
+
+try {
+  if (!fs.existsSync(configDir)) {
+    fs.mkdirSync(configDir, { recursive: true });
+  }
+
+  const parentDir = path.dirname(pluginDir);
+  if (!fs.existsSync(parentDir)) {
+    fs.mkdirSync(parentDir, { recursive: true });
+  }
+
+  const files = fs.readdirSync(scriptDir);
+  files.forEach(file => {
+    const src = path.join(scriptDir, file);
+    const dest = path.join(pluginDir, file);
+
+    if (file !== 'node_modules' && file !== '.git') {
+      copyRecursive(src, dest);
+    }
+  });
+
+  console.log('Installation complete!');
+} catch (err) {
+  console.error('Installation failed:', err.message);
+  process.exit(1);
+}
+
+function copyRecursive(src, dest) {
+  const stat = fs.statSync(src);
+  if (stat.isDirectory()) {
+    if (!fs.existsSync(dest)) {
+      fs.mkdirSync(dest, { recursive: true });
+    }
+    fs.readdirSync(src).forEach(file => {
+      copyRecursive(path.join(src, file), path.join(dest, file));
+    });
+  } else {
+    fs.copyFileSync(src, dest);
+  }
+}
+`,
       'install-global.sh': `#!/bin/bash
 set -e
 SCRIPT_DIR="$( cd "$( dirname "\${BASH_SOURCE[0]}" )" && pwd )"
