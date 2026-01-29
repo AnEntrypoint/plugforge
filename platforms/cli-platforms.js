@@ -10,6 +10,7 @@ function createAdapterClass(cfg) {
   class DynamicCLIAdapter extends CLIAdapter {
     constructor() {
       super(cfg);
+      this.shouldAlwaysGeneratePackageJson = !!cfg.generatePackageJson;
     }
 
     formatConfigJson(config, pluginSpec) {
@@ -30,6 +31,10 @@ function createAdapterClass(cfg) {
 
     generateReadme(pluginSpec) {
       return cfg.generateReadme ? cfg.generateReadme(pluginSpec) : super.generateReadme(pluginSpec);
+    }
+
+    generatePackageJson(pluginSpec, extraFields = {}) {
+      return cfg.generatePackageJson ? cfg.generatePackageJson(pluginSpec, extraFields) : super.generatePackageJson(pluginSpec, extraFields);
     }
   }
 
