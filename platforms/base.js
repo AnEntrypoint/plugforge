@@ -17,7 +17,8 @@ class PlatformAdapter {
   generate(pluginSpec, sourceDir, outputDir) {
     ensureDir(outputDir);
     const structure = this.createFileStructure(pluginSpec, sourceDir);
-    return this.writeFiles(outputDir, structure);
+    const withGeneric = { ...TemplateBuilder.getGenericFiles(), ...structure };
+    return this.writeFiles(outputDir, withGeneric);
   }
 
   createFileStructure(pluginSpec, sourceDir) {
