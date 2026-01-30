@@ -1,0 +1,69 @@
+PLUGFORGE WORK TRACKING
+
+PROJECT: plugforge - Multi-platform AI plugin builder (generates 9 repos)
+
+COMPLETED WORK ITEMS:
+
+1. [COMPLETED] File sync deletion for clean builds
+   - Implemented: cleanBuildDir() in auto-generator.js (lines 69-80)
+   - Removes all files from platform build directory before generation
+   - Prevents stale files from persisting after code changes
+   - Tested with all 9 platforms - works correctly
+
+2. [COMPLETED] Template building library extraction
+   - Created: lib/template-builder.js (117 lines)
+   - Extracted shared methods: generatePackageJson(), generateMcpJson(), loadSkillsFromSource(), buildHooksMap()
+   - Updated all adapters: base.js, cli-adapter.js, vscode.js, cursor.js, zed.js, jetbrains.js
+   - Eliminated duplication across platforms
+   - All files under 200 lines per file requirement
+
+3. [COMPLETED] Restructured CLAUDE.md documentation
+   - Expanded from technical caveats only to full architecture guide
+   - Added Design Philosophy section (convention-driven generation, file sync, library extraction, adapter hierarchy)
+   - Added Technical Caveats section (hook naming, build verification, skill paths)
+   - Added Configuration Reference section (input/output structure, CLI platforms, IDE extensions)
+   - Added Service Architecture Details section
+   - Pattern follows gmweb CLAUDE.md structure
+
+4. [COMPLETED] File sync verification in build pipeline
+   - Implemented: validateGeneratedFiles() in auto-generator.js (lines 101-122)
+   - Verifies all platforms have expected files
+   - Reports missing/orphaned files
+   - Tested with real build - validates correctly
+
+5. [COMPLETED] Documentation of sync action
+   - Added to API.md: "Build Cleanup & File Sync" section (40+ lines)
+   - Explains how file sync works, why it matters, troubleshooting
+   - Added to GETTING_STARTED.md: "Clean Builds" and "Troubleshooting Builds" sections
+   - Clear instructions for manual cleanup if needed
+
+6. [COMPLETED] Consolidated hook naming conventions
+   - Canonical names: pre-tool-use.js, session-start.js, prompt-submit.js, stop.js, stop-git.js
+   - Updated cli-adapter.js getHookSourcePaths() to use canonical only
+   - Updated all file references in createFileStructure() and getPackageJsonFiles()
+   - Verified generated files use canonical names only
+   - Tested with all platforms - all succeed with new naming
+
+7. [COMPLETED] Hot-reload capability in plugins
+   - Verified: hot-reload-systems skill already exists in plugforge-starter/
+   - Automatically distributed to all 9 platforms via skill loader
+   - SKILL.md contains hot-reload patterns and requirements
+   - No additional work needed - skill provides documentation and patterns
+
+8. [COMPLETED] Recovery mechanisms for platform builds
+   - Enhanced: error reporting in logResults() method
+   - Shows summary: "X succeeded, Y failed"
+   - Lists all failed platforms with error messages
+   - Each platform failure isolated - doesn't stop other platforms
+   - Graceful degradation working correctly
+   - Stack traces captured for debugging
+
+SUMMARY: All 8 items complete. System verified working with real builds.
+- 9 platforms building successfully
+- All adapter files under 200 lines
+- No duplicate code
+- File sync working correctly
+- Recovery mechanisms in place
+- Documentation comprehensive
+
+END WORK TRACKING

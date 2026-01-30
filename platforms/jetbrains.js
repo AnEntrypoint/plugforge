@@ -1,5 +1,6 @@
 const ExtensionAdapter = require('../lib/extension-adapter');
 const { jetbrainsPluginXml } = require('./ide-manifests');
+const TemplateBuilder = require('../lib/template-builder');
 
 class JetBrainsAdapter extends ExtensionAdapter {
   constructor() {
@@ -30,30 +31,7 @@ class JetBrainsAdapter extends ExtensionAdapter {
   }
 
   loadSkillsFromSource(sourceDir) {
-    const fs = require('fs');
-    const path = require('path');
-    const skillsDir = path.join(sourceDir, 'skills');
-    const skills = {};
-
-    if (!fs.existsSync(skillsDir)) {
-      return skills;
-    }
-
-    try {
-      fs.readdirSync(skillsDir).forEach(skillName => {
-        const skillPath = path.join(skillsDir, skillName);
-        const stat = fs.statSync(skillPath);
-        if (stat.isDirectory()) {
-          const skillMdPath = path.join(skillPath, 'SKILL.md');
-          if (fs.existsSync(skillMdPath)) {
-            const content = fs.readFileSync(skillMdPath, 'utf-8');
-            skills[`docs/skills/${skillName}/SKILL.md`] = content;
-          }
-        }
-      });
-    } catch (e) {}
-
-    return skills;
+    return TemplateBuilder.loadSkillsFromSource(sourceDir, 'docs/skills');
   }
 
   generateExtensionManifest(pluginSpec) {

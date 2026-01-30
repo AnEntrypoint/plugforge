@@ -177,10 +177,50 @@ cd dist/vscode && npm install && npm run compile
 
 Done! Your plugin works on 8 platforms.
 
+## Clean Builds
+
+If you see old files in output after modifying your plugin:
+
+```bash
+rm -rf ./dist
+glootie-builder ./my-plugin ./dist
+```
+
+The builder automatically cleans output directories before generation, removing stale files from previous builds. See API.md § "Build Cleanup & File Sync" for details.
+
+## Troubleshooting Builds
+
+### Old Files Persist
+
+When you remove hooks or agents, old files may linger in output. Solution:
+```bash
+rm -rf ./dist/glootie-*
+glootie-builder ./my-plugin ./dist
+```
+
+Each platform is cleaned before generation. Manual deletion isn't usually needed.
+
+### Missing Files in Output
+
+If expected files don't appear:
+1. Verify `agents/` directory has correct .md files
+2. Check `hooks/` has .js files for configured hooks
+3. Confirm `skills/` directory exists (if using skills)
+4. Run rebuild with debug output
+
+### Build Fails for Single Platform
+
+The builder gracefully continues if one platform fails. Check the error message and fix:
+- Hook naming (use canonical names in hooks/)
+- File encoding (must be UTF-8)
+- Invalid JSON in glootie.json
+
+Other platforms still build successfully.
+
 ## Next Steps
 
 - Explore `plugforge-starter/` template
 - Read builder source in `lib/` and `platforms/` directories
 - Check `CLAUDE.md` for technical caveats
 - Review `PLATFORMS.md` for platform-specific details
-- Examine `templates/` for default implementations
+- See API.md for complete configuration reference

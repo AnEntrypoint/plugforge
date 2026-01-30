@@ -1,5 +1,6 @@
 const path = require('path');
 const { writeFile, ensureDir } = require('../lib/file-generator');
+const TemplateBuilder = require('../lib/template-builder');
 
 class PlatformAdapter {
   constructor(config = {}) {
@@ -35,32 +36,11 @@ class PlatformAdapter {
   }
 
   generatePackageJson(pluginSpec, extraFields = {}) {
-    return JSON.stringify({
-      name: `${pluginSpec.name}-${this.name}`,
-      version: pluginSpec.version,
-      description: pluginSpec.description,
-      author: pluginSpec.author,
-      license: pluginSpec.license,
-      keywords: pluginSpec.keywords,
-      repository: {
-        type: 'git',
-        url: `https://github.com/AnEntrypoint/${pluginSpec.name}-${this.name}.git`
-      },
-      homepage: `https://github.com/AnEntrypoint/${pluginSpec.name}-${this.name}#readme`,
-      bugs: {
-        url: `https://github.com/AnEntrypoint/${pluginSpec.name}-${this.name}/issues`
-      },
-      engines: pluginSpec.engines,
-      publishConfig: pluginSpec.publishConfig,
-      ...extraFields
-    }, null, 2);
+    return TemplateBuilder.generatePackageJson(pluginSpec, this.name, extraFields);
   }
 
   generateMcpJson(pluginSpec) {
-    return JSON.stringify({
-      $schema: 'https://schemas.modelcontextprotocol.io/0.1.0/mcp.json',
-      mcpServers: pluginSpec.mcp
-    }, null, 2);
+    return TemplateBuilder.generateMcpJson(pluginSpec);
   }
 
   generateHooksJson(hookEventNames) {
