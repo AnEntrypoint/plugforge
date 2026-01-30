@@ -1,5 +1,6 @@
 const ExtensionAdapter = require('../lib/extension-adapter');
 const { vscodeManifest } = require('./ide-manifests');
+const TemplateBuilder = require('../lib/template-builder');
 
 class VSCodeAdapter extends ExtensionAdapter {
   constructor() {
@@ -28,30 +29,7 @@ class VSCodeAdapter extends ExtensionAdapter {
   }
 
   loadSkillsFromSource(sourceDir) {
-    const fs = require('fs');
-    const path = require('path');
-    const skillsDir = path.join(sourceDir, 'skills');
-    const skills = {};
-
-    if (!fs.existsSync(skillsDir)) {
-      return skills;
-    }
-
-    try {
-      fs.readdirSync(skillsDir).forEach(skillName => {
-        const skillPath = path.join(skillsDir, skillName);
-        const stat = fs.statSync(skillPath);
-        if (stat.isDirectory()) {
-          const skillMdPath = path.join(skillPath, 'SKILL.md');
-          if (fs.existsSync(skillMdPath)) {
-            const content = fs.readFileSync(skillMdPath, 'utf-8');
-            skills[`skills/${skillName}/SKILL.md`] = content;
-          }
-        }
-      });
-    } catch (e) {}
-
-    return skills;
+    return TemplateBuilder.loadSkillsFromSource(sourceDir, 'skills');
   }
 
   generatePackageJson(pluginSpec) {
