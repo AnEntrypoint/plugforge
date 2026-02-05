@@ -9,17 +9,20 @@ const cc = factory('cc', 'Claude Code', 'CLAUDE.md', 'CLAUDE.md', {
   },
   getPackageJsonFields() {
     return {
-      files: ['agents/', 'hooks/', 'scripts/', 'skills/', '.mcp.json', 'README.md', 'LICENSE', '.gitignore', '.editorconfig', 'CONTRIBUTING.md', 'CLAUDE.md'],
+      files: ['agents/', 'hooks/', 'scripts/', 'skills/', '.mcp.json', '.claude-plugin/', 'README.md', 'LICENSE', '.gitignore', '.editorconfig', 'CONTRIBUTING.md', 'CLAUDE.md'],
       keywords: ['claude-code', 'agent', 'state-machine', 'mcp', 'automation', 'glootie'],
       peerDependencies: { '@anthropic-ai/claude-code': '*' }
     };
   },
   getAdditionalFiles(spec) {
-    return {};
+    const TemplateBuilder = require('../lib/template-builder');
+    return {
+      '.claude-plugin/plugin.json': TemplateBuilder.generatePluginJson(spec)
+    };
   },
   generateReadme(spec) {
     const repoName = `${spec.name}-cc`;
-    return `# ${repoName} for Claude Code\n\n## Installation (Standalone Mode)\n\nInstall ${repoName} into your project to add the gm state machine and hooks:\n\n\`\`\`bash\ncd /path/to/your/project\nnpm install ${repoName}\n\`\`\`\n\nThe postinstall script automatically copies files to your project's \`.claude/\` directory:\n\n\`\`\`\nproject/\n├── node_modules/glootie-cc/\n└── .claude/\n    ├── agents/\n    │   └── gm.md\n    ├── hooks/\n    │   ├── pre-tool-use-hook.js\n    │   ├── session-start-hook.js\n    │   ├── prompt-submit-hook.js\n    │   ├── stop-hook.js\n    │   └── stop-hook-git.js\n    └── .mcp.json\n\`\`\`\n\nClaude Code automatically discovers and reads from the \`.claude/\` directory without any configuration needed.\n\n## Update\n\n\`\`\`bash\nnpm update ${repoName}\n\`\`\`\n\nThe postinstall script runs again and updates all files in \`.claude/\`.\n\n## Features\n\n- State machine agent with exhaustive behavioral rules\n- Five enforcement hooks (validation, prompts, startup, completion, git)\n- MCP integration for code execution and search\n- Automatic thorns AST analysis at session start\n- .prd completion enforcement at session end\n- Automatic .claude/ directory setup via postinstall\n`;
+    return `# ${repoName} for Claude Code\n\n## Installation\n\nThis package supports three installation modes:\n\n### Mode 1: Standalone (npm install in project)\n\nInstall ${repoName} into your project to add the gm state machine and hooks:\n\n\`\`\`bash\ncd /path/to/your/project\nnpm install ${repoName}\n\`\`\`\n\nThe postinstall script automatically copies files to your project's \`.claude/\` directory:\n\n\`\`\`\nproject/\n├── node_modules/${repoName}/\n└── .claude/\n    ├── agents/\n    │   └── gm.md\n    ├── hooks/\n    │   ├── pre-tool-use-hook.js\n    │   ├── session-start-hook.js\n    │   ├── prompt-submit-hook.js\n    │   ├── stop-hook.js\n    │   └── stop-hook-git.js\n    └── .mcp.json\n\`\`\`\n\nClaude Code automatically discovers and reads from the \`.claude/\` directory without any configuration needed.\n\n### Mode 2: Plugin System (global or distributed)\n\nFor Claude Code plugin system recognition, the package includes \`.claude-plugin/plugin.json\`:\n\n\`\`\`\nnode_modules/${repoName}/\n└── .claude-plugin/\n    └── plugin.json\n\`\`\`\n\nWhen installed globally or via the Claude Code plugin system, the plugin.json enables:\n- Automatic agent discovery via Claude Code plugin system\n- Direct plugin installation without manual file copying\n- Marketplace distribution and updates\n\n### Mode 3: Both Modes\n\nThe package includes both mechanisms:\n- \`.claude-plugin/plugin.json\` for plugin system recognition\n- \`scripts/postinstall.js\` for standalone npm installation\n- Both coexist without conflict\n\nStandalone mode takes precedence when installed locally. Plugin mode available when used with the plugin system.\n\n## Update\n\n\`\`\`bash\nnpm update ${repoName}\n\`\`\`\n\nThe postinstall script runs again and updates all files in \`.claude/\`.\n\n## Features\n\n- State machine agent with exhaustive behavioral rules\n- Five enforcement hooks (validation, prompts, startup, completion, git)\n- MCP integration for code execution and search\n- Automatic thorns AST analysis at session start\n- .prd completion enforcement at session end\n- Dual-mode installation: standalone npm or Claude Code plugin system\n- Automatic .claude/ directory setup via postinstall in standalone mode\n- Plugin system discovery via .claude-plugin/plugin.json in plugin mode\n`;
   }
 });
 
