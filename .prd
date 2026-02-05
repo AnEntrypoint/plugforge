@@ -1,0 +1,34 @@
+## Stop Hook .prd-rename Bug Fix
+
+### Investigation Phase
+- [ ] Locate stop hook code (stop-hook.js, stop-hook-git.js)
+- [ ] Search for `.prd-rename` references across codebase
+- [ ] Understand why .prd-rename is being written instead of .prd
+- [ ] Check git history for recent changes to stop hook
+- [ ] Identify root cause: accidental rename, wrong variable, file path logic
+
+### Root Cause Analysis
+- [ ] Why does .prd-rename exist in code?
+- [ ] Is it a typo or intentional transformation?
+- [ ] Where does the rename logic come from?
+- [ ] Does it affect git staging or file operations?
+- [ ] What files reference this behavior?
+
+### Fix Implementation
+- [ ] Correct the file path from .prd-rename to .prd in stop-hook.js
+- [ ] Correct any related paths in stop-hook-git.js
+- [ ] Remove .prd-rename references from codebase
+- [ ] Verify no other files use .prd-rename
+- [ ] Test that hook writes correct .prd file
+
+### Verification
+- [ ] Execute stop hook in plugin:gm:dev
+- [ ] Confirm .prd file is created with correct name
+- [ ] Confirm .prd-rename is NOT created
+- [ ] Verify hook can read the .prd file correctly
+- [ ] Test end-to-end: create items in .prd, run stop hook, verify output
+
+### Cleanup
+- [ ] Remove any .prd-rename files that were created
+- [ ] Ensure no test artifacts remain
+- [ ] Verify git status is clean
