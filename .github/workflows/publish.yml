@@ -95,13 +95,15 @@ jobs:
           git checkout main 2>/dev/null || git checkout -b main
 
           # Sync build output with complete replacement
-          rsync -av --delete --exclude='.git' "${SOURCE_ROOT}/${BUILD_DIR}"/ .
+          # Use --no-times to prevent timestamp preservation issues with git change detection
+          rsync -av --delete --exclude='.git' --no-times "${SOURCE_ROOT}/${BUILD_DIR}"/ .
 
           # Only commit if there are actual changes
-          if ! git diff-index --quiet HEAD --; then
-            git add -A
+          git add -A
+          if ! git diff --cached --quiet; then
             git commit -m "Auto-build: ${NAME} plugin from plugforge"
             git push origin main
           else
             echo "✅ No changes to commit for $NAME"
+            git reset HEAD
           fi
