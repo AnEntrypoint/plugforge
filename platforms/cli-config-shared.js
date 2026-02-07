@@ -22,8 +22,269 @@ const cc = factory('cc', 'Claude Code', 'CLAUDE.md', 'CLAUDE.md', {
     };
   },
   generateReadme(spec) {
-    const repoName = `${spec.name}-cc`;
-    return `# ${repoName} for Claude Code\n\n## Installation\n\nThis package supports three installation modes:\n\n### Mode 1: Standalone (npm install in project)\n\nInstall ${repoName} into your project to add the gm state machine and hooks:\n\n\`\`\`bash\ncd /path/to/your/project\nnpm install ${repoName}\n\`\`\`\n\nThe postinstall script automatically copies files to your project's \`.claude/\` directory:\n\n\`\`\`\nproject/\n├── node_modules/${repoName}/\n└── .claude/\n    ├── agents/\n    │   └── gm.md\n    ├── hooks/\n    │   ├── pre-tool-use-hook.js\n    │   ├── session-start-hook.js\n    │   ├── prompt-submit-hook.js\n    │   ├── stop-hook.js\n    │   └── stop-hook-git.js\n    └── .mcp.json\n\`\`\`\n\nClaude Code automatically discovers and reads from the \`.claude/\` directory without any configuration needed.\n\n### Mode 2: Plugin System (global or distributed)\n\nFor Claude Code plugin system recognition, the package includes \`.claude-plugin/plugin.json\`:\n\n\`\`\`\nnode_modules/${repoName}/\n└── .claude-plugin/\n    └── plugin.json\n\`\`\`\n\nWhen installed globally or via the Claude Code plugin system, the plugin.json enables:\n- Automatic agent discovery via Claude Code plugin system\n- Direct plugin installation without manual file copying\n- Marketplace distribution and updates\n\n### Mode 3: Both Modes\n\nThe package includes both mechanisms:\n- \`.claude-plugin/plugin.json\` for plugin system recognition\n- \`scripts/postinstall.js\` for standalone npm installation\n- Both coexist without conflict\n\nStandalone mode takes precedence when installed locally. Plugin mode available when used with the plugin system.\n\n## Update\n\n\`\`\`bash\nnpm update ${repoName}\n\`\`\`\n\nThe postinstall script runs again and updates all files in \`.claude/\`.\n\n## Features\n\n- State machine agent with exhaustive behavioral rules\n- Five enforcement hooks (validation, prompts, startup, completion, git)\n- MCP integration for code execution and search\n- Automatic thorns AST analysis at session start\n- .prd completion enforcement at session end\n- Dual-mode installation: standalone npm or Claude Code plugin system\n- Automatic .claude/ directory setup via postinstall in standalone mode\n- Plugin system discovery via .claude-plugin/plugin.json in plugin mode\n`;
+    const repoName = 'gm-cc';
+    return `# ${repoName} for Claude Code
+
+## Installation
+
+### Plugin Marketplace Installation (Recommended)
+
+The easiest way to install ${repoName} is through Claude Code's plugin marketplace:
+
+\`\`\`bash
+claude plugin marketplace add AnEntrypoint/${repoName}
+claude plugin install -s user gm@${repoName}
+\`\`\`
+
+This installation method is best for:
+- One-time plugin installation across all projects
+- Always having the latest version
+- Minimal setup and configuration
+- Access to marketplace updates
+
+### Repository Installation (Project-Specific)
+
+For development or project-specific customization, install ${repoName} directly into your project:
+
+\`\`\`bash
+cd /path/to/your/project
+npm install ${repoName} && npx glootie install
+\`\`\`
+
+This installation method is ideal when you need to:
+- Customize hooks or agents for your workflow
+- Integrate with existing Claude Code projects
+- Use the latest development version
+- Configure platform-specific behavior per project
+
+#### Installation Command Breakdown
+
+The \`npm install ${repoName} && npx glootie install\` command performs two steps:
+
+1. **\`npm install ${repoName}\`** - Downloads the ${repoName} package and stores it in your project's \`node_modules/\` directory
+2. **\`npx glootie install\`** - Runs the glootie installer that copies configuration files into your Claude Code plugin directory
+
+**Expected output:**
+\`\`\`
+$ npm install ${repoName}
+added 1 package in 1.2s
+
+$ npx glootie install
+Installing ${repoName}...
+✓ Created .claude/ directory
+✓ Copied agents/gm.md
+✓ Copied hooks to .claude/hooks/
+✓ Created .mcp.json for MCP integration
+\`\`\`
+
+#### Installed File Structure (Project-Specific)
+
+After running \`npx glootie install\`, your project will have:
+
+\`\`\`
+.claude/
+├── agents/
+│   └── gm.md                 # State machine agent rules
+├── hooks/
+│   ├── pre-tool-use-hook.js  # Tool validation and filtering
+│   ├── session-start-hook.js # Session initialization
+│   ├── prompt-submit-hook.js # Prompt validation
+│   ├── stop-hook.js          # Session completion enforcement
+│   └── stop-hook-git.js      # Git state verification
+└── .mcp.json                 # MCP server configuration
+\`\`\`
+
+Each hook runs automatically at the appropriate session event. No manual trigger needed.
+
+## File Installation (Manual Setup)
+
+If you prefer manual file management, clone the repository and copy files directly:
+
+\`\`\`bash
+# Clone the repository
+git clone https://github.com/AnEntrypoint/${repoName}.git
+
+# Copy to your Claude Code plugin directory
+cp -r ./agents ~/.claude/agents
+cp -r ./hooks ~/.claude/hooks
+cp .mcp.json ~/.claude/.mcp.json
+\`\`\`
+
+## Environment Setup
+
+\`\`\`bash
+# Ensure you have Node.js and bunx installed
+# bunx is required for hook execution
+# It's bundled with Node.js 18+
+which bunx
+bunx --version
+\`\`\`
+
+## MCP Server Configuration
+
+The \`.mcp.json\` file automatically configures:
+- **dev**: Local code execution environment (uses \`bunx\`)
+- **code-search**: Semantic code search via mcp-codebasesearch
+
+No additional configuration needed.
+
+## Configuration
+
+### Option 1: Marketplace Installation (Default)
+
+Marketplace installations use the default configuration. All settings work out-of-box:
+- Hooks auto-detect file locations in .claude/hooks/
+- MCP servers configured via included .mcp.json
+- Agents loaded from .claude/agents/gm.md
+
+### Option 2: Project-Specific Installation
+
+For project customization:
+
+1. **Edit agents/gm.md** to adjust behavioral rules
+2. **Modify hooks** in .claude/hooks/ for custom behavior
+3. **Update .mcp.json** to add or change MCP servers
+
+Customizations are isolated to your project and won't affect other installations.
+
+## Hook Enablement
+
+Hooks run automatically once installed. To verify hooks are active:
+
+1. Restart Claude Code
+2. Start a new session
+3. You should see hook output in the Claude Code terminal
+
+If hooks don't activate:
+- Check that .claude/hooks/ directory exists
+- Verify hook files have executable permissions
+- Ensure .mcp.json references the correct hook paths
+
+## Update Procedures
+
+### Plugin Marketplace Installation
+
+\`\`\`bash
+# Method 1: Via Claude Code commands
+claude plugin marketplace update gm-cc
+claude plugin update gm@gm-cc
+
+# Method 2: Manual update
+npm install -g ${repoName}@latest
+\`\`\`
+
+### Project-Specific Installation
+
+\`\`\`bash
+# Update the package
+npm update ${repoName}
+
+# Re-run the installer to update .claude/ directory
+npx glootie install
+
+# Or manually copy updated files
+cp -r node_modules/${repoName}/agents/* .claude/agents/
+cp -r node_modules/${repoName}/hooks/* .claude/hooks/
+cp node_modules/${repoName}/.mcp.json .claude/.mcp.json
+\`\`\`
+
+## Features
+
+- **State machine agent** - Complete behavioral rule system for development
+- **Five enforcement hooks** - Validation, prompts, startup, completion, git enforcement
+- **MCP integration** - Code execution and semantic code search
+- **Automatic thorns analysis** - AST analysis on session start
+- **.prd enforcement** - Completion blocking at session end
+- **Dual-mode installation** - Both user-wide (marketplace) and project-specific (npm)
+- **Automatic setup** - No manual configuration needed
+- **Convention-driven** - Works with existing code structure
+
+## Troubleshooting
+
+### Hooks not running
+
+**Symptom:** Hooks don't execute when expected
+
+**Solutions:**
+1. Verify .claude/hooks/ directory exists: \`ls -la ~/.claude/hooks/\`
+2. Check hook files are executable: \`chmod +x ~/.claude/hooks/*.js\`
+3. Restart Claude Code completely
+4. Check if hooks are loaded: Look for hook output in Claude Code terminal
+
+### MCP servers not available
+
+**Symptom:** Code execution or search tools don't work
+
+**Solutions:**
+1. Verify .mcp.json exists: \`cat ~/.claude/.mcp.json\`
+2. Check MCP configuration references correct paths
+3. Ensure bunx is installed: \`which bunx\`
+4. Restart Claude Code and retry
+
+### Plugin not appearing in marketplace
+
+**Symptom:** Plugin doesn't show in \`claude plugin marketplace list\`
+
+**Solutions:**
+1. Check plugin is published: \`npm view ${repoName}\`
+2. Verify package.json has correct plugin metadata
+3. Check .claude-plugin/marketplace.json is valid JSON
+4. Wait 5-10 minutes for marketplace index to refresh
+
+### Permission denied errors
+
+**Symptom:** "Permission denied" when running hooks
+
+**Solutions:**
+1. Make hook files executable: \`chmod +x ~/.claude/hooks/*.js\`
+2. Check parent directories are readable: \`chmod 755 ~/.claude ~/.claude/hooks\`
+3. Verify Claude Code process has file access
+
+### Installation failed with npm
+
+**Symptom:** \`npm install\` fails with network or permission errors
+
+**Solutions:**
+1. Check internet connection
+2. Clear npm cache: \`npm cache clean --force\`
+3. Use \`npm install\` with \`--legacy-peer-deps\` if needed
+4. Check disk space: \`df -h\`
+5. Run \`npm audit fix\` to resolve dependency issues
+
+## Uninstall
+
+### Plugin Marketplace
+
+\`\`\`bash
+claude plugin remove gm@gm-cc
+\`\`\`
+
+### Project-Specific
+
+\`\`\`bash
+# Remove from project
+npm uninstall ${repoName}
+
+# Remove configuration
+rm -rf .claude/
+\`\`\`
+
+## Installation Comparison
+
+| Method | Setup Time | Scope | Updates | Best For |
+|--------|-----------|-------|---------|----------|
+| **Marketplace** | 2 minutes | User-wide | One-click | Most users, all projects |
+| **Project Installation** | 5 minutes | Per-project | \`npm update\` | Custom configurations |
+| **File Installation** | 10 minutes | Per-project | Manual | Advanced users, offline setup |
+
+## Contributing
+
+Issues and pull requests welcome: [GitHub Issues](https://github.com/AnEntrypoint/${repoName}/issues)
+
+## License
+
+MIT - See LICENSE file for details
+`;
   }
 });
 
