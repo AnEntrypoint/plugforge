@@ -19,7 +19,7 @@ This installation method is best for:
 
 ### Repository Installation (Project-Specific)
 
-For development or project-specific customization, install glootie-cc directly into your project:
+For development or project-specific customization, install gm-cc directly into your project:
 
 ```bash
 cd /path/to/your/project
@@ -48,111 +48,120 @@ $ npx glootie install
 Installing gm-cc...
 ✓ Created .claude/ directory
 ✓ Copied agents/gm.md
-✓ Copied hooks/* (5 files)
-✓ Created .mcp.json
-✓ Updated .gitignore
-Installation complete. Point Claude Code at: ~/.claude/gm-cc
+✓ Copied hooks to .claude/hooks/
+✓ Created .mcp.json for MCP integration
 ```
 
-#### File Installation Locations
+#### Installed File Structure (Project-Specific)
 
-After running `npm install gm-cc`, the following files are installed in your project:
+After running `npx glootie install`, your project will have:
 
 ```
-project/
-├── node_modules/gm-cc/
-│   ├── agents/
-│   │   └── gm.md                  # State machine agent with behavioral rules
-│   ├── hooks/
-│   │   ├── pre-tool-use-hook.js     # Validates tools before execution
-│   │   ├── prompt-submit-hook.js    # Processes user prompts
-│   │   ├── session-start-hook.js    # Initializes session, runs thorns analysis
-│   │   ├── stop-hook.js             # Verifies session completion (.prd enforcement)
-│   │   └── stop-hook-git.js         # Enforces git on session end
-│   ├── .mcp.json                   # MCP server configuration
-│   ├── .claude-plugin/
-│   │   └── plugin.json             # Plugin manifest
-│   └── scripts/
-│       └── postinstall.js          # Installation helper
-├── .claude/
-│   ├── agents/gm.md
-│   ├── hooks/* (5 files)
-│   ├── .mcp.json
-│   └── .gitignore (updated)
-└── package.json
+.claude/
+├── agents/
+│   └── gm.md                 # State machine agent rules
+├── hooks/
+│   ├── pre-tool-use-hook.js  # Tool validation and filtering
+│   ├── session-start-hook.js # Session initialization
+│   ├── prompt-submit-hook.js # Prompt validation
+│   ├── stop-hook.js          # Session completion enforcement
+│   └── stop-hook-git.js      # Git state verification
+└── .mcp.json                 # MCP server configuration
 ```
 
-**Key files explained:**
+Each hook runs automatically at the appropriate session event. No manual trigger needed.
 
-- **agents/gm.md** - The unified agent that contains all behavioral rules and state machine logic
-- **hooks/** - Event handlers for pre-tool validation, session startup, prompts, and completion
-- **.mcp.json** - Configures MCP servers (dev and code-search) for code execution and search
-- **.claude-plugin/plugin.json** - Plugin metadata for Claude Code plugin system
+## File Installation (Manual Setup)
 
-#### Environment Setup
-
-gm-cc requires `bunx` to run MCP servers. Verify it's installed:
+If you prefer manual file management, clone the repository and copy files directly:
 
 ```bash
+# Clone the repository
+git clone https://github.com/AnEntrypoint/gm-cc.git
+
+# Copy to your Claude Code plugin directory
+cp -r ./agents ~/.claude/agents
+cp -r ./hooks ~/.claude/hooks
+cp .mcp.json ~/.claude/.mcp.json
+```
+
+## Environment Setup
+
+```bash
+# Ensure you have Node.js and bunx installed
+# bunx is required for hook execution
+# It's bundled with Node.js 18+
+which bunx
 bunx --version
 ```
 
-If not installed, install Bun:
+## MCP Server Configuration
+
+The `.mcp.json` file automatically configures:
+- **dev**: Local code execution environment (uses `bunx`)
+- **code-search**: Semantic code search via mcp-codebasesearch
+
+No additional configuration needed.
+
+## Configuration
+
+### Option 1: Marketplace Installation (Default)
+
+Marketplace installations use the default configuration. All settings work out-of-box:
+- Hooks auto-detect file locations in .claude/hooks/
+- MCP servers configured via included .mcp.json
+- Agents loaded from .claude/agents/gm.md
+
+### Option 2: Project-Specific Installation
+
+For project customization:
+
+1. **Edit agents/gm.md** to adjust behavioral rules
+2. **Modify hooks** in .claude/hooks/ for custom behavior
+3. **Update .mcp.json** to add or change MCP servers
+
+Customizations are isolated to your project and won't affect other installations.
+
+## Hook Enablement
+
+Hooks run automatically once installed. To verify hooks are active:
+
+1. Restart Claude Code
+2. Start a new session
+3. You should see hook output in the Claude Code terminal
+
+If hooks don't activate:
+- Check that .claude/hooks/ directory exists
+- Verify hook files have executable permissions
+- Ensure .mcp.json references the correct hook paths
+
+## Update Procedures
+
+### Plugin Marketplace Installation
 
 ```bash
-curl -fsSL https://bun.sh/install | bash
+# Method 1: Via Claude Code commands
+claude plugin marketplace update gm-cc
+claude plugin update gm@gm-cc
+
+# Method 2: Manual update
+npm install -g gm-cc@latest
 ```
 
-#### MCP Server Configuration
-
-The `.mcp.json` file is automatically created/updated during installation. It configures:
-
-```json
-{
-  "mcpServers": {
-    "dev": {
-      "command": "bunx",
-      "args": ["mcp", "dev"],
-      "env": {}
-    },
-    "code-search": {
-      "command": "bunx",
-      "args": ["mcp", "code-search"],
-      "env": {}
-    }
-  }
-}
-```
-
-These MCP servers provide:
-- **dev** - Code execution and interactive development
-- **code-search** - Semantic code search across your repository
-
-#### Hook Enablement
-
-Hooks are automatically enabled when installed. The hooks system enforces:
-
-- **pre-tool-use-hook.js** - Validates tool requests before execution
-- **prompt-submit-hook.js** - Processes user prompts and applies rules
-- **session-start-hook.js** - Runs on session start (thorns analysis)
-- **stop-hook.js** - Verifies .prd completion before session end
-- **stop-hook-git.js** - Enforces git operations on session completion
-
-## Update
-
-### Marketplace Installation
+### Project-Specific Installation
 
 ```bash
-claude plugin update gm-cc
-```
-
-### Project Installation
-
-```bash
+# Update the package
 npm update gm-cc
-```
 
-The installation will re-run postinstall and update all files.
+# Re-run the installer to update .claude/ directory
+npx glootie install
+
+# Or manually copy updated files
+cp -r node_modules/gm-cc/agents/* .claude/agents/
+cp -r node_modules/gm-cc/hooks/* .claude/hooks/
+cp node_modules/gm-cc/.mcp.json .claude/.mcp.json
+```
 
 ## Features
 
@@ -164,3 +173,89 @@ The installation will re-run postinstall and update all files.
 - **Dual-mode installation** - Both user-wide (marketplace) and project-specific (npm)
 - **Automatic setup** - No manual configuration needed
 - **Convention-driven** - Works with existing code structure
+
+## Troubleshooting
+
+### Hooks not running
+
+**Symptom:** Hooks don't execute when expected
+
+**Solutions:**
+1. Verify .claude/hooks/ directory exists: `ls -la ~/.claude/hooks/`
+2. Check hook files are executable: `chmod +x ~/.claude/hooks/*.js`
+3. Restart Claude Code completely
+4. Check if hooks are loaded: Look for hook output in Claude Code terminal
+
+### MCP servers not available
+
+**Symptom:** Code execution or search tools don't work
+
+**Solutions:**
+1. Verify .mcp.json exists: `cat ~/.claude/.mcp.json`
+2. Check MCP configuration references correct paths
+3. Ensure bunx is installed: `which bunx`
+4. Restart Claude Code and retry
+
+### Plugin not appearing in marketplace
+
+**Symptom:** Plugin doesn't show in `claude plugin marketplace list`
+
+**Solutions:**
+1. Check plugin is published: `npm view gm-cc`
+2. Verify package.json has correct plugin metadata
+3. Check .claude-plugin/marketplace.json is valid JSON
+4. Wait 5-10 minutes for marketplace index to refresh
+
+### Permission denied errors
+
+**Symptom:** "Permission denied" when running hooks
+
+**Solutions:**
+1. Make hook files executable: `chmod +x ~/.claude/hooks/*.js`
+2. Check parent directories are readable: `chmod 755 ~/.claude ~/.claude/hooks`
+3. Verify Claude Code process has file access
+
+### Installation failed with npm
+
+**Symptom:** `npm install` fails with network or permission errors
+
+**Solutions:**
+1. Check internet connection
+2. Clear npm cache: `npm cache clean --force`
+3. Use `npm install` with `--legacy-peer-deps` if needed
+4. Check disk space: `df -h`
+5. Run `npm audit fix` to resolve dependency issues
+
+## Uninstall
+
+### Plugin Marketplace
+
+```bash
+claude plugin remove gm@gm-cc
+```
+
+### Project-Specific
+
+```bash
+# Remove from project
+npm uninstall gm-cc
+
+# Remove configuration
+rm -rf .claude/
+```
+
+## Installation Comparison
+
+| Method | Setup Time | Scope | Updates | Best For |
+|--------|-----------|-------|---------|----------|
+| **Marketplace** | 2 minutes | User-wide | One-click | Most users, all projects |
+| **Project Installation** | 5 minutes | Per-project | `npm update` | Custom configurations |
+| **File Installation** | 10 minutes | Per-project | Manual | Advanced users, offline setup |
+
+## Contributing
+
+Issues and pull requests welcome: [GitHub Issues](https://github.com/AnEntrypoint/gm-cc/issues)
+
+## License
+
+MIT - See LICENSE file for details
