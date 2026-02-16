@@ -20,6 +20,7 @@ jobs:
           - {platform: vscode, name: "VS Code"}
           - {platform: cursor, name: "Cursor"}
           - {platform: codex, name: "Codex"}
+          - {platform: kilo, name: "Kilo CLI"}
           - {platform: zed, name: "Zed"}
           - {platform: jetbrains, name: "JetBrains"}
           - {platform: copilot-cli, name: "GitHub Copilot CLI"}
