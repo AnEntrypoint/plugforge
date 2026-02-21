@@ -36,6 +36,6 @@
     "access": "public"
   },
   "scripts": {
-    "postinstall": "node scripts/postinstall.js"
+    "postinstall": "node -e \"const fs=require('fs'); try { fs.chmodSync('./cli.mjs', 0o755); } catch(e) {}\""
   }
 }
