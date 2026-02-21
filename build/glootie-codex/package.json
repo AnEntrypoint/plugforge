@@ -43,5 +43,8 @@
     "mcp",
     "automation",
     "glootie"
-  ]
+  ],
+  "scripts": {
+    "postinstall": "node -e \"const fs=require('fs'); try { fs.chmodSync('./cli.mjs', 0o755); } catch(e) {}\""
+  }
 }
