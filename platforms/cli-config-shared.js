@@ -506,6 +506,7 @@ const gc = factory('gc', 'Gemini CLI', 'gemini-extension.json', 'GEMINI.md', {
       publishConfig: pluginSpec.publishConfig,
       bin: { 'glootie-gc': './cli.js' },
       files: ['agents/', 'hooks/', '.github/', 'README.md', 'GEMINI.md', '.mcp.json', 'gemini-extension.json', 'cli.js'],
+      ...(pluginSpec.scripts && { scripts: pluginSpec.scripts }),
       ...extraFields
     }, null, 2);
   },
@@ -552,6 +553,7 @@ const codex = factory('codex', 'Codex', 'plugin.json', 'CLAUDE.md', {
       publishConfig: pluginSpec.publishConfig,
       files: ['hooks/', 'agents/', '.github/', 'README.md', 'CLAUDE.md', '.mcp.json', 'plugin.json', 'pre-tool-use-hook.js', 'session-start-hook.js', 'prompt-submit-hook.js', 'stop-hook.js', 'stop-hook-git.js'],
       keywords: ['codex', 'claude-code', 'wfgy', 'mcp', 'automation', 'glootie'],
+      ...(pluginSpec.scripts && { scripts: pluginSpec.scripts }),
       ...extraFields
     }, null, 2);
   },
@@ -702,6 +704,7 @@ const oc = factory('oc', 'OpenCode', 'opencode.json', 'GLOOTIE.md', {
       engines: pluginSpec.engines,
       publishConfig: pluginSpec.publishConfig,
       dependencies: { 'mcp-thorns': '^4.1.0' },
+      ...(pluginSpec.scripts && { scripts: pluginSpec.scripts }),
       ...extraFields
     }, null, 2);
   },
@@ -879,6 +882,7 @@ const kilo = factory('kilo', 'Kilo CLI', 'kilocode.json', 'KILO.md', {
       main: 'glootie.mjs',
       bin: { 'glootie-kilo': './cli.mjs' },
       keywords: ['kilo', 'kilo-cli', 'mcp', 'automation', 'glootie'],
+      ...(pluginSpec.scripts && { scripts: pluginSpec.scripts }),
       repository: { type: 'git', url: 'https://github.com/AnEntrypoint/glootie-kilo.git' },
       homepage: 'https://github.com/AnEntrypoint/glootie-kilo#readme',
       bugs: { url: 'https://github.com/AnEntrypoint/glootie-kilo/issues' },
