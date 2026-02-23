@@ -1201,6 +1201,7 @@ const oc = factory('oc', 'OpenCode', 'opencode.json', 'GM.md', {
 });
 
 function kiloPluginSource() {
+  const BT = '`';
   const lines = [
     "const fs = require('fs');",
     "const path = require('path');",
