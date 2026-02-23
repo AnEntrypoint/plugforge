@@ -378,6 +378,7 @@ try {
     ['index.js', 'index.js'],
     ['gm.js', 'gm.js'],
     ['opencode.json', 'opencode.json'],
+    ['package.json', 'package.json'],
     ['.mcp.json', '.mcp.json'],
     ['README.md', 'README.md']
   ];
@@ -438,6 +439,7 @@ try {
     ['index.js', 'index.js'],
     ['gm.js', 'gm.js'],
     ['kilocode.json', 'kilocode.json'],
+    ['package.json', 'package.json'],
     ['.mcp.json', '.mcp.json'],
     ['README.md', 'README.md']
   ];
