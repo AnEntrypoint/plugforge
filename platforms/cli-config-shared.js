@@ -456,8 +456,8 @@ try {
     ['agents', 'agents'],
     ['hooks', 'hooks'],
     ['skills', 'skills'],
-    ['index.js', 'index.js'],
-    ['gm.js', 'gm.js'],
+    ['index.mjs', 'index.mjs'],
+    ['gm.mjs', 'gm.mjs'],
     ['opencode.json', 'opencode.json'],
     ['.mcp.json', '.mcp.json'],
     ['README.md', 'README.md'],
@@ -516,8 +516,8 @@ try {
     ['agents', 'agents'],
     ['hooks', 'hooks'],
     ['skills', 'skills'],
-    ['index.js', 'index.js'],
-    ['gm.js', 'gm.js'],
+    ['index.mjs', 'index.mjs'],
+    ['gm.mjs', 'gm.mjs'],
     ['kilocode.json', 'kilocode.json'],
     ['.mcp.json', '.mcp.json'],
     ['README.md', 'README.md'],
@@ -1194,10 +1194,12 @@ const codex = factory('codex', 'Codex', 'plugin.json', 'CLAUDE.md', {
 
 function ocPluginSource() {
   const lines = [
-    "const fs = require('fs');",
-    "const path = require('path');",
+    "import fs from 'fs';",
+    "import path from 'path';",
+    "import { fileURLToPath } from 'url';",
+    "const __dirname = path.dirname(fileURLToPath(import.meta.url));",
     "",
-    "const GmPlugin = async ({ project, client, $, directory, worktree }) => {",
+    "export default async ({ project, client, $, directory, worktree }) => {",
     "  const pluginDir = __dirname;",
     "  let agentRules = '';",
     "",
@@ -1211,26 +1213,15 @@ function ocPluginSource() {
     "  const prdFile = path.join(directory, '.prd');",
     "",
     "  return {",
-    "    onLoad: async () => {",
-    "      console.log('✓ gm plugin loaded');",
-    "    },",
-    "",
-    "    getSystemPrompt: async () => {",
+    "    'experimental.chat.system.transform': async (input, output) => {",
     "      const rules = loadAgentRules();",
     "      const prd = fs.existsSync(prdFile) ? fs.readFileSync(prdFile, 'utf-8').trim() : '';",
-    "      let prompt = rules || '';",
-    "      if (prd) prompt += '\\n\\nPENDING WORK (.prd):\\n' + prd;",
-    "      return prompt;",
-    "    },",
-    "",
-    "    onSessionEnd: async () => {",
-    "      const prd = fs.existsSync(prdFile) ? fs.readFileSync(prdFile, 'utf-8').trim() : '';",
-    "      if (prd) throw new Error('Work items remain in .prd - commit changes before exiting');",
+    "      let content = rules || '';",
+    "      if (prd) content += '\\n\\nPENDING WORK (.prd):\\n' + prd;",
+    "      if (content) output.system.push(content);",
     "    }",
     "  };",
     "};",
-    "",
-    "module.exports = { GmPlugin };",
   ];
   return lines.join('\n') + '\n';
 }
@@ -1238,9 +1229,9 @@ function ocPluginSource() {
 const oc = factory('oc', 'OpenCode', 'opencode.json', 'GM.md', {
   getPackageJsonFields() {
     return {
-      main: 'gm.js',
+      main: 'gm.mjs',
       bin: { 'gm-oc': './cli.js', 'gm-oc-install': './install.js' },
-      files: ['agents/', 'hooks/', 'skills/', 'scripts/', 'gm.js', 'index.js', 'opencode.json', '.github/', '.mcp.json', 'README.md', 'cli.js', 'install.js', 'LICENSE', 'CONTRIBUTING.md', '.gitignore', '.editorconfig'],
+      files: ['agents/', 'hooks/', 'skills/', 'scripts/', 'gm.mjs', 'index.mjs', 'opencode.json', '.github/', '.mcp.json', 'README.md', 'cli.js', 'install.js', 'LICENSE', 'CONTRIBUTING.md', '.gitignore', '.editorconfig'],
       keywords: ['opencode', 'opencode-plugin', 'mcp', 'automation', 'gm'],
       dependencies: { 'mcp-thorns': '^4.1.0' }
     };
@@ -1255,7 +1246,7 @@ const oc = factory('oc', 'OpenCode', 'opencode.json', 'GM.md', {
       description: pluginSpec.description,
       author: pluginSpec.author,
       license: pluginSpec.license,
-      main: 'gm.js',
+      main: 'gm.mjs',
       bin: { 'gm-oc': './cli.js', 'gm-oc-install': './install.js' },
       keywords: ['opencode', 'opencode-plugin', 'mcp', 'automation', 'gm'],
       repository: { type: 'git', url: 'https://github.com/AnEntrypoint/gm-oc.git' },
@@ -1265,7 +1256,7 @@ const oc = factory('oc', 'OpenCode', 'opencode.json', 'GM.md', {
       publishConfig: pluginSpec.publishConfig,
       dependencies: { 'mcp-thorns': '^4.1.0' },
       scripts: { postinstall: 'node scripts/postinstall.js' },
-      files: ['agents/', 'hooks/', 'skills/', 'scripts/', 'gm.js', 'index.js', 'opencode.json', '.github/', '.mcp.json', 'README.md', 'cli.js', 'install.js', 'LICENSE', 'CONTRIBUTING.md', '.gitignore', '.editorconfig'],
+      files: ['agents/', 'hooks/', 'skills/', 'scripts/', 'gm.mjs', 'index.mjs', 'opencode.json', '.github/', '.mcp.json', 'README.md', 'cli.js', 'install.js', 'LICENSE', 'CONTRIBUTING.md', '.gitignore', '.editorconfig'],
       ...(pluginSpec.scripts && { scripts: pluginSpec.scripts }),
       ...extraFields
     }, null, 2);
@@ -1303,8 +1294,8 @@ const oc = factory('oc', 'OpenCode', 'opencode.json', 'GM.md', {
   },
   getAdditionalFiles(pluginSpec) {
     return {
-      'index.js': `module.exports = { GmPlugin: require('./gm.js').GmPlugin };\n`,
-      'gm.js': ocPluginSource(),
+      'index.mjs': `export { default } from './gm.mjs';\n`,
+      'gm.mjs': ocPluginSource(),
       'cli.js': createOpenCodeInstallerScript(),
       'install.js': createOpenCodeInstallScript(),
     };
@@ -1317,10 +1308,12 @@ const oc = factory('oc', 'OpenCode', 'opencode.json', 'GM.md', {
 function kiloPluginSource() {
   const BT = '`';
   const lines = [
-    "const fs = require('fs');",
-    "const path = require('path');",
+    "import fs from 'fs';",
+    "import path from 'path';",
+    "import { fileURLToPath } from 'url';",
+    "const __dirname = path.dirname(fileURLToPath(import.meta.url));",
     "",
-    "const GmPlugin = async ({ project, client, $, directory, worktree }) => {",
+    "export default async ({ project, client, $, directory, worktree }) => {",
     "  const pluginDir = __dirname;",
     "  let agentRules = '';",
     "",
@@ -1386,22 +1379,15 @@ function kiloPluginSource() {
     "      console.log('✓ gm plugin loaded');",
     "    },",
     "",
-    "    getSystemPrompt: async () => {",
+    "    'experimental.chat.system.transform': async (input, output) => {",
     "      const rules = loadAgentRules();",
     "      const prd = fs.existsSync(prdFile) ? fs.readFileSync(prdFile, 'utf-8').trim() : '';",
-    "      let prompt = rules || '';",
-    "      if (prd) prompt += '\\n\\nPENDING WORK (.prd):\\n' + prd;",
-    "      return prompt;",
-    "    },",
-    "",
-    "    onSessionEnd: async () => {",
-    "      const prd = fs.existsSync(prdFile) ? fs.readFileSync(prdFile, 'utf-8').trim() : '';",
-    "      if (prd) throw new Error('Work items remain in .prd - commit changes before exiting');",
+    "      let content = rules || '';",
+    "      if (prd) content += '\\n\\nPENDING WORK (.prd):\\n' + prd;",
+    "      if (content) output.system.push(content);",
     "    }",
     "  };",
     "};",
-    "",
-    "module.exports = { GmPlugin };",
   ];
   return lines.join('\n') + '\n';
 }
@@ -1409,9 +1395,9 @@ function kiloPluginSource() {
 const kilo = factory('kilo', 'Kilo CLI', 'kilocode.json', 'KILO.md', {
   getPackageJsonFields() {
     return {
-      main: 'gm.js',
+      main: 'gm.mjs',
       bin: { 'gm-kilo': './cli.js', 'gm-kilo-install': './install.js' },
-      files: ['agents/', 'hooks/', 'skills/', 'scripts/', 'gm.js', 'index.js', 'kilocode.json', '.github/', '.mcp.json', 'README.md', 'cli.js', 'install.js', 'LICENSE', 'CONTRIBUTING.md', '.gitignore', '.editorconfig'],
+      files: ['agents/', 'hooks/', 'skills/', 'scripts/', 'gm.mjs', 'index.mjs', 'kilocode.json', '.github/', '.mcp.json', 'README.md', 'cli.js', 'install.js', 'LICENSE', 'CONTRIBUTING.md', '.gitignore', '.editorconfig'],
       keywords: ['kilo', 'kilo-cli', 'mcp', 'automation', 'gm'],
       dependencies: { 'mcp-thorns': '^4.1.0' }
     };
@@ -1426,7 +1412,7 @@ const kilo = factory('kilo', 'Kilo CLI', 'kilocode.json', 'KILO.md', {
       description: pluginSpec.description,
       author: pluginSpec.author,
       license: pluginSpec.license,
-      main: 'gm.js',
+      main: 'gm.mjs',
       bin: { 'gm-kilo': './cli.js', 'gm-kilo-install': './install.js' },
       keywords: ['kilo', 'kilo-cli', 'mcp', 'automation', 'gm'],
       repository: { type: 'git', url: 'https://github.com/AnEntrypoint/gm-kilo.git' },
@@ -1436,7 +1422,7 @@ const kilo = factory('kilo', 'Kilo CLI', 'kilocode.json', 'KILO.md', {
       publishConfig: pluginSpec.publishConfig,
       dependencies: { 'mcp-thorns': '^4.1.0' },
       scripts: { postinstall: 'node scripts/postinstall.js' },
-      files: ['agents/', 'hooks/', 'skills/', 'scripts/', 'gm.js', 'index.js', 'kilocode.json', '.github/', '.mcp.json', 'README.md', 'cli.js', 'install.js', 'LICENSE', 'CONTRIBUTING.md', '.gitignore', '.editorconfig'],
+      files: ['agents/', 'hooks/', 'skills/', 'scripts/', 'gm.mjs', 'index.mjs', 'kilocode.json', '.github/', '.mcp.json', 'README.md', 'cli.js', 'install.js', 'LICENSE', 'CONTRIBUTING.md', '.gitignore', '.editorconfig'],
       ...extraFields
     }, null, 2);
   },
@@ -1472,8 +1458,8 @@ const kilo = factory('kilo', 'Kilo CLI', 'kilocode.json', 'KILO.md', {
   },
   getAdditionalFiles(pluginSpec) {
     return {
-      'index.js': `module.exports = { GmPlugin: require('./gm.js').GmPlugin };\n`,
-      'gm.js': kiloPluginSource(),
+      'index.mjs': `export { default } from './gm.mjs';\n`,
+      'gm.mjs': kiloPluginSource(),
       'cli.js': createKiloInstallerScript(),
       'install.js': createKiloInstallScript(),
     };
