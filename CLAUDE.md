@@ -178,7 +178,7 @@ Everything is predictable and turnkey. All corner cases handled before they occu
 
 ### Verification Checklist (Execute Before Release)
 
-Executed in plugin:gm:dev only:
+Executed via Bash tool only:
 
 ```
 - [ ] cleanBuildDir() produces empty output dirs
