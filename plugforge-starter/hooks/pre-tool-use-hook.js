@@ -63,6 +63,12 @@ const run = () => {
       }
     }
 
+    // Allow agent-browser, skills, and other essential tools
+    const allowedTools = ['agent-browser', 'Skill', 'code-search', 'dev', 'agent-browser', 'electron', 'slack', 'dogfood', 'vercel-sandbox', 'TaskOutput', 'ReadMcpResourceTool', 'ListMcpResourcesTool'];
+    if (allowedTools.includes(tool_name)) {
+      return { allow: true };
+    }
+
     return { allow: true };
   } catch (error) {
     return { allow: true };
