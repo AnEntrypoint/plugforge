@@ -1,5 +1,20 @@
 const fs = require('fs')
 const path = require('path')
+const { spawn } = require('child_process')
+
+try {
+  const bootstrapPath = path.join(__dirname, '..', 'bin', 'bootstrap.js')
+  if (fs.existsSync(bootstrapPath)) {
+    const child = spawn(process.execPath, [bootstrapPath], {
+      stdio: ['ignore', 'ignore', 'inherit'],
+      detached: true,
+      windowsHide: true,
+    })
+    child.unref()
+  }
+} catch (err) {
+  console.error(`[gm] plugkit-prewarm spawn error: ${err.message}`)
+}
 
 const cwd = process.cwd()
 const claudeMd = path.join(cwd, 'CLAUDE.md')

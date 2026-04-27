@@ -90,23 +90,21 @@ rs-exec / rs-codeinsight / rs-search
   → .github/workflows/cascade.yml triggers rs-plugkit workflow_dispatch
   → rs-plugkit release.yml runs: cargo update (picks up latest git deps), builds all 6 binaries
   → auto-bumps rs-plugkit patch version in Cargo.toml + commits [skip ci]
-  → publish-binaries job:
-      - copies binaries into BOTH gm-build-latest/gm-cc/bin/ AND gm-starter/bin/
-      - copies plugkit-win32-x64.exe → plugkit.exe (Windows default)
-      - updates plugkitVersion in plugforge/gm-starter/gm.json
-      - soft-resets one commit if prior commit was another binary update
-        (message starts with "chore: update plugkit binaries")
-      - git add -f (forces past gm's .gitignore for gm-build-latest/)
-      - force-push-with-lease → keeps gm history from ballooning
+  → publish-binaries job (NEW: uploads to AnEntrypoint/plugkit-bin Releases — see docs/plugkit-bin-migration.md):
+      - computes sha256 manifest across all 6 binaries
+      - creates/updates release tag v{plugkitVersion} on AnEntrypoint/plugkit-bin
+      - uploads 6 binaries + plugkit.sha256 + plugkit.version as Release assets
+      - bumps gm-starter/gm.json::plugkitVersion AND gm-starter/bin/plugkit.version in AnEntrypoint/gm
+      - NEVER pushes binaries into gm history; gm-build-latest/ is no longer the binary sink
   → that commit triggers gm publish.yml
   → publish.yml 12-platform matrix:
       - node cli.js gm-starter ./build (regenerates configs, NOT binaries)
-      - copies gm-build-latest/gm-<platform>/bin/ into build/gm-<platform>/bin/
+      - copies ONLY plugkit.version + plugkit.sha256 into build/gm-<platform>/bin/ (no native binaries)
       - git init fresh empty dir (NO clone of downstream — orphan history)
       - rsync build output in
-      - git add -A + git add -f bin/ (forces past generated .gitignore)
+      - git add -A + git add -f bin/ (forces past generated .gitignore — captures plugkit.js, bootstrap.js, plugkit.version, plugkit.sha256)
       - diff --depth 1 clone of downstream to detect no-op
-      - git push --force origin main → downstream at 1-commit orphan history
+      - git push --force origin main → downstream at 1-commit orphan history (~<1MB; native binaries fetched at runtime)
   → /plugin detects new gm-cc HEAD → updates cache → bootstrap.js downloads new binary
 ```
 
@@ -205,6 +203,8 @@ Infrastructure: `docs/api/` holds 4 JSON endpoints (stars.json, metrics.json, in
 **.gitignore re-include past parent-dir ignore is impossible**: Per the gitignore manual: "It is not possible to re-include a file if a parent directory of that file is excluded." If `.gm/` is ignored and you write `!.gm/rs-learn.db` after it, the negation has no effect and the file remains untracked. Workaround: enumerate the `.gm/*` files and subdirs to ignore individually instead of ignoring the whole directory. Applied in gm and rs-learn `.gitignore` so `.gm/rs-learn.db` (cross-session memory) can be tracked. Symptom of the bug: `git check-ignore -v .gm/rs-learn.db` returns `.gitignore:N:.gm/` (the parent rule wins).
 
 **rs-learn DB path resolution unified**: `src/db_path.rs::resolve_db_path()` is the single source — checks `RS_LEARN_DB_PATH` env, otherwise prefers `<cwd>/.gm/rs-learn.db`, migrates legacy `<cwd>/rs-learn.db` via rename when `.gm/` is creatable, falls back to root path on read-only checkouts. Both `src/main.rs::open_graph()` (used by add/search/query) and `src/orchestrator/mod.rs::Orchestrator::new_default()` (used by query ACP path) now call it. Previously only orchestrator had the migration; main.rs hardcoded `./rs-learn.db`, so add/search wrote to project root while query wrote to `.gm/`.
+
+**plugkit native binaries are runtime-fetched from AnEntrypoint/plugkit-bin Releases**: Downstream gm-cc / gm-oc / gm-kilo / etc. clones contain ONLY `bin/plugkit.js` (wrapper), `bin/bootstrap.js` (FSM downloader), `bin/plugkit.version` (single-line desired version), and `bin/plugkit.sha256` (manifest). No native binaries are tracked in git anywhere — `gm-starter/bin/` and downstream `bin/` directories. On first session per host per version, `bin/bootstrap.js` (also pre-warmed by `hooks/session-start-hook.js` in the background) fetches `plugkit-{platform}-{arch}{.exe?}` from `https://github.com/AnEntrypoint/plugkit-bin/releases/download/v{version}/...`, verifies sha256, atomic-renames into `%LOCALAPPDATA%\plugkit\bin\v{ver}\` (Windows) / `~/Library/Caches/plugkit/bin/v{ver}/` (macOS) / `${XDG_CACHE_HOME:-~/.cache}/plugkit/bin/v{ver}/` (Linux), drops `.ok` sentinel, prunes other `v*/` dirs that aren't locked. Override cache root via `PLUGKIT_CACHE_DIR` env. Slow-internet contract: 30-min HTTP timeout per attempt, 3 attempts with 5s/30s/120s backoff, `Range` header resume on partial download. SHA mismatch deletes partial and retries. Lockfile is per-version dir; stale-lock detection via PID liveness + 45-min mtime cap. `plugkit.js` resolves the cached binary and falls back to legacy `bin/plugkit-*` siblings (which no longer exist in published builds) only as a last resort. Migration & rs-plugkit release.yml patch live in `docs/plugkit-bin-migration.md`. The prior 108MB push-blob constraint that drove tree-sitter grammar stripping in rs-codeinsight is GONE — Release assets have no per-file size limit (up to 2 GB), so rs-codeinsight can re-enable C / C++ / all 13 tree-sitter languages without breaking publish.
 
 ## Made with gm Page
 
