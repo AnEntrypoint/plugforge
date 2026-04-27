@@ -2,41 +2,67 @@
 'use strict';
 const { spawn, spawnSync } = require('child_process');
 const path = require('path');
-const os = require('os');
 const fs = require('fs');
+const { bootstrap, resolveCachedBinary } = require('./bootstrap');
 
 const dir = __dirname;
-const platform = os.platform();
-const arch = os.arch();
 
-let bin;
-if (platform === 'win32') {
-  bin = path.join(dir, arch === 'arm64' ? 'plugkit-win32-arm64.exe' : 'plugkit-win32-x64.exe');
-  if (!fs.existsSync(bin)) bin = path.join(dir, 'plugkit.exe');
-} else if (platform === 'darwin') {
-  bin = path.join(dir, arch === 'arm64' ? 'plugkit-darwin-arm64' : 'plugkit-darwin-x64');
-} else {
-  bin = path.join(dir, arch === 'arm64' || arch === 'aarch64' ? 'plugkit-linux-arm64' : 'plugkit-linux-x64');
+async function resolveBinary() {
+  const cached = resolveCachedBinary({ wrapperDir: dir });
+  if (cached) return cached;
+  return await bootstrap({ wrapperDir: dir });
 }
 
-const args = process.argv.slice(2);
-const isHook = args[0] === 'hook';
+async function main() {
+  let bin;
+  try {
+    bin = await resolveBinary();
+  } catch (err) {
+    process.stderr.write(`[plugkit] bootstrap failed: ${err.message}\n`);
+    const legacy = legacyFallback();
+    if (legacy) { bin = legacy; }
+    else process.exit(1);
+  }
 
-if (isHook && !process.stdin.isTTY) {
-  // Claude Code pipes JSON to the wrapper's stdin. On Windows, spawnSync with
-  // stdio:'inherit' does NOT reliably forward a piped stdin to the native child
-  // (the child sees EOF immediately and the hook treats tool_name as empty →
-  // silently allows every command). Read stdin ourselves and write it explicitly.
-  const chunks = [];
-  process.stdin.on('data', c => chunks.push(c));
-  process.stdin.on('end', () => {
-    const child = spawn(bin, args, { stdio: ['pipe', 'inherit', 'inherit'], windowsHide: true });
-    child.stdin.end(Buffer.concat(chunks));
-    child.on('close', code => process.exit(code ?? 1));
-    child.on('error', () => process.exit(1));
-  });
-  process.stdin.on('error', () => process.exit(1));
-} else {
-  const result = spawnSync(bin, args, { stdio: 'inherit', windowsHide: true });
-  process.exit(result.status ?? 1);
+  const args = process.argv.slice(2);
+  const isHook = args[0] === 'hook';
+
+  if (isHook && !process.stdin.isTTY) {
+    const chunks = [];
+    process.stdin.on('data', c => chunks.push(c));
+    process.stdin.on('end', () => {
+      const child = spawn(bin, args, { stdio: ['pipe', 'inherit', 'inherit'], windowsHide: true });
+      child.stdin.end(Buffer.concat(chunks));
+      child.on('close', code => process.exit(code ?? 1));
+      child.on('error', () => process.exit(1));
+    });
+    process.stdin.on('error', () => process.exit(1));
+  } else {
+    const result = spawnSync(bin, args, { stdio: 'inherit', windowsHide: true });
+    process.exit(result.status ?? 1);
+  }
 }
+
+function legacyFallback() {
+  const os = require('os');
+  const p = os.platform();
+  const a = os.arch();
+  let candidates = [];
+  if (p === 'win32') {
+    candidates = [
+      path.join(dir, a === 'arm64' ? 'plugkit-win32-arm64.exe' : 'plugkit-win32-x64.exe'),
+      path.join(dir, 'plugkit.exe'),
+    ];
+  } else if (p === 'darwin') {
+    candidates = [path.join(dir, a === 'arm64' ? 'plugkit-darwin-arm64' : 'plugkit-darwin-x64')];
+  } else {
+    candidates = [path.join(dir, (a === 'arm64' || a === 'aarch64') ? 'plugkit-linux-arm64' : 'plugkit-linux-x64')];
+  }
+  for (const c of candidates) if (fs.existsSync(c)) return c;
+  return null;
+}
+
+main().catch(err => {
+  process.stderr.write(`[plugkit] fatal: ${err.message}\n`);
+  process.exit(1);
+});
