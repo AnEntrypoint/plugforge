@@ -1,6 +1,6 @@
 # gm
 
-Convention-driven multi-platform AI plugin generator. One source, 10 platforms.
+Convention-driven multi-platform AI plugin generator. One source, 13 platforms.
 
 **Hub page:** https://AnEntrypoint.github.io/gm
 
@@ -32,3 +32,4 @@ Convention-driven multi-platform AI plugin generator. One source, 10 platforms.
 | Cursor IDE | https://AnEntrypoint.github.io/gm-cursor | https://github.com/AnEntrypoint/gm-cursor |
 | Zed Editor | https://AnEntrypoint.github.io/gm-zed | https://github.com/AnEntrypoint/gm-zed |
 | JetBrains IDEs | https://AnEntrypoint.github.io/gm-jetbrains | https://github.com/AnEntrypoint/gm-jetbrains |
+| Antigravity | https://AnEntrypoint.github.io/gm-antigravity | https://github.com/AnEntrypoint/gm-antigravity |
