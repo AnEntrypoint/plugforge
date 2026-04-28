@@ -53,8 +53,18 @@ jobs:
             git config --global user.name "gm-bot"
             git add gm-starter/gm.json
             git commit -m "chore: auto-bump version to $NEW_VERSION [skip ci]"
-            git push origin main
-            echo "Version bumped and pushed"
+            for i in 1 2 3 4 5; do
+              if git push origin main; then
+                echo "Version bumped and pushed (attempt $i)"
+                break
+              fi
+              echo "Push attempt $i failed; rebasing"
+              git pull --rebase origin main || true
+              if [ "$i" -eq 5 ]; then
+                echo "All push attempts exhausted" >&2
+                exit 1
+              fi
+            done
           else
             echo "No version bump needed"
           fi
