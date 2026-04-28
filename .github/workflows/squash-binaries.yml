@@ -59,6 +59,7 @@ jobs:
           plugforge-starter/bin/plugkit-darwin-arm64
           plugforge-starter/bin/plugkit-win32-x64.exe
           plugforge-starter/bin/plugkit-win32-arm64.exe
+          starter/
           EOF
           cat paths.txt
 
