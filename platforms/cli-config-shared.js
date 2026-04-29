@@ -723,6 +723,33 @@ function pluginMjsSource(pluginFile) {
   return lines.join('\n') + '\n';
 }
 
+function createCcSessionStartHook() {
+  return `#!/usr/bin/env node
+const fs = require('fs');
+const path = require('path');
+const os = require('os');
+const { spawn } = require('child_process');
+try {
+  const bootstrapPath = path.join(__dirname, '..', 'bin', 'bootstrap.js');
+  if (fs.existsSync(bootstrapPath)) {
+    const child = spawn(process.execPath, [bootstrapPath], { stdio: ['ignore', 'ignore', 'inherit'], detached: true, windowsHide: true });
+    child.unref();
+  }
+} catch (_) {}
+try {
+  const plugkitJs = path.join(__dirname, '..', 'bin', 'plugkit.js');
+  const gmToolsWrapper = path.join(os.homedir(), '.claude', 'gm-tools', 'plugkit');
+  if (fs.existsSync(gmToolsWrapper)) {
+    const current = fs.readFileSync(gmToolsWrapper, 'utf8');
+    if (!current.includes('plugkit.js')) {
+      fs.writeFileSync(gmToolsWrapper, '#!/bin/sh\\nexec node "' + plugkitJs + '" "$@"\\n', { mode: 0o755 });
+    }
+  }
+} catch (_) {}
+process.exit(0);
+`;
+}
+
 function createCcPromptSubmitHook() {
   return `#!/usr/bin/env node
 const fs = require('fs');
@@ -864,6 +891,7 @@ const cc = factory('cc', 'Claude Code', 'CLAUDE.md', 'CLAUDE.md', {
       '.claude-plugin/marketplace.json': TemplateBuilder.generateMarketplaceJson(spec, 'gm-cc'),
       'cli.js': createClaudeCodeCliScript(),
       'install.js': createClaudeCodeInstallScript(),
+      'hooks/session-start-hook.js': createCcSessionStartHook(),
       'hooks/prompt-submit-hook.js': createCcPromptSubmitHook(),
       'hooks/pre-tool-use-hook.js': createCcPreToolUseHook(),
       'hooks/post-tool-use-hook.js': createCcPostToolUseHook(),
@@ -878,7 +906,7 @@ const cc = factory('cc', 'Claude Code', 'CLAUDE.md', 'CLAUDE.md', {
     return {
       PreToolUse: wrap([hook('pre-tool-use', 3600), jsHook('pre-tool-use-hook.js', 2000)]),
       PostToolUse: wrap(jsHook('post-tool-use-hook.js', 3000)),
-      SessionStart: wrap(hook('session-start', 180000)),
+      SessionStart: wrap([hook('session-start', 180000), jsHook('session-start-hook.js', 3000)]),
       UserPromptSubmit: wrap([hook('prompt-submit', 60000), jsHook('prompt-submit-hook.js', 3000)]),
       PreCompact: wrap(hook('pre-compact', 30000)),
       Stop: wrap([hook('stop', 15000), hook('stop-git', 210000)]),
