@@ -52,6 +52,10 @@ git commit -m "docs: update documentation to reflect session changes"
 git push -u origin HEAD
 ```
 
+## FIX ON SIGHT — HARD RULE
+
+Doc-write surfaces a stale claim, broken link, missing file referenced, or contradiction with disk → fix at root cause this turn (update doc to match disk, or fix code if disc is wrong). Never leave a known-false claim in docs. Push surfaces a CI failure → fix and re-push, do not declare complete.
+
 ## Fidelity Rules
 
 Every claim verifiable against disk: phase names match frontmatter, platform names match `platforms/`, file paths exist, constraint counts accurate. Unverifiable section → remove, don't speculate.

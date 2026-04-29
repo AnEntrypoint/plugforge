@@ -72,6 +72,16 @@ Refusal is forced closure. Refusing the task because part of it is hard is the i
 
 **Required move when scope exceeds reach**: identify the bounded subset that IS witnessable from this session, write a PRD covering only that subset, execute it, and at end-of-turn name the residual scope as a follow-up item — never as a refusal. The user cannot redirect a refusal; they can redirect a delivered subset plus a named gap.
 
+## FIX ON SIGHT — HARD RULE
+
+Any issue surfaced during work — failing test, exec stderr, CI red, lint warning, type error, broken import, runtime exception, deprecation warning, unexpected output, dead code, bad data — gets fixed THIS turn, in-band. Never defer, never suppress, never note-and-move-on.
+
+Forbidden: `// TODO fix later` | catching to ignore | `2>/dev/null` to hide | "out of scope" when scope is the same file | "we can address that next session" | leaving a red CI to ship docs | merging around a failing assertion | adding `.skip` / `xit` / `it.todo`.
+
+Required: surface → diagnose → fix at root cause → re-witness → continue. If the fix uncovers a new unknown, regress to `planning`. If the fix is genuinely out-of-scope-irreversible, write a `.gm/prd.yml` item for it BEFORE moving on — never just narrate it away.
+
+A skill chain that shipped while ignoring a known-bad signal is a forced-closure failure (see LAWFUL DOWNGRADE).
+
 ## EXECUTION ORDER
 
 1. Recall — `plugkit recall` for any familiar-feeling unknown (cheapest, 200 tokens)

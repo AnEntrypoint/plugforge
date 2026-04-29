@@ -67,6 +67,10 @@ console.log(await fn(realInput));
 - All facts resolved this phase memorized via background Agent(memorize)
 - CHANGELOG.md updated; TODO.md cleared/deleted
 
+## FIX ON SIGHT — HARD RULE
+
+Pre-emit run, post-emit run, or legitimacy gate surfaces ANY issue (failing assertion, stderr, type/lint error, unexpected variance, broken import, runtime throw) → fix at root cause this turn, re-run pre-emit AND post-emit, advance only when all gates pass simultaneously. Never write-and-promise-fix-later, never `try/catch`-to-hide, never `.skip`, never silence with redirection. Known variance → fix and re-verify (self-loop). Unknown variance → regress to `planning`.
+
 ## CODE EXECUTION
 
 `exec:<lang>` only. File writes via exec:nodejs + require('fs'). Never Bash(node/npm/npx/bun).

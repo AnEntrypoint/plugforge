@@ -89,6 +89,10 @@ Stop hook watches all GitHub Actions runs for the pushed HEAD. Do not call `gh r
 - Failure → Stop blocks with run names+IDs → investigate with `gh run view <id> --log-failed`, fix, push, hook re-watches
 - Deadline 180s (override `GM_CI_WATCH_SECS`) → slow jobs get "still in progress" approve
 
+## FIX ON SIGHT — HARD RULE
+
+Any issue surfaced during verify (test.js failure, browser-validation mismatch, CI red, git-status dirt, hygiene-sweep finding, stress-suite flunk, observability gap) is fixed in-band before declaring complete. Never paper over, never `.skip`, never ship-and-followup, never silence stderr/CI signals. Failure routes to the owning phase: broken output → `gm-emit` | wrong logic → `gm-execute` | new unknown → `planning`. Never declare COMPLETE while a known-bad signal is live.
+
 ## HYGIENE SWEEP
 
 Before declaring complete:

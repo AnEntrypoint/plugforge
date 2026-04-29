@@ -118,6 +118,10 @@ Triggers: exec output answers prior unknown | CI log reveals root cause | code r
 
 N facts → N parallel Agent calls in ONE message. End-of-turn self-check mandatory.
 
+## FIX ON SIGHT — HARD RULE
+
+Issue surfaced mid-execution (failing test, exec stderr, broken import, runtime exception, lint/type error, deprecation warning, unexpected output) is fixed THIS turn, at root cause, in-band. Never `// TODO`, never `try/catch`-to-swallow, never `2>/dev/null`, never `.skip`, never "out of scope" inside the same file. Re-witness after fix. New unknown surfaced by the fix → regress to `planning`. Genuine out-of-scope → write a `.gm/prd.yml` item before continuing.
+
 ## CONSTRAINTS
 
 **Never**: Bash(node/npm/npx/bun) | fake data | mocks | scattered tests | fallbacks | Grep/Glob/Find/Explore | sequential independent items | respond mid-phase | edit before witnessing | duplicate code | if/else where dispatch suffices | one-liners that obscure | reinvent native/library

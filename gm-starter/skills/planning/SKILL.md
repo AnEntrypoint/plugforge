@@ -57,6 +57,12 @@ Forbidden: "honest stop", "stopping for a hard call", "I cannot do this from ins
 
 Required: identify the witnessable bounded subset, PRD-write it, execute it. Residual scope = follow-up item, never refusal.
 
+## FIX ON SIGHT — HARD RULE
+
+Every issue surfaced during planning, execution, or verification — failing test, exec stderr, CI red, lint/type warning, broken import, runtime exception, deprecation, unexpected output — is fixed in-band the same session. Never defer with `// TODO`, never silence with `try/catch`-to-ignore or `2>/dev/null`, never `.skip` a test, never ship while CI is red, never narrate "we'll address that next time."
+
+Surface → diagnose root cause → fix → re-witness → continue. New unknown discovered while fixing → regress here (planning). Genuinely out-of-scope → add a `.gm/prd.yml` item BEFORE moving on, never just mention it. Ignoring a known-bad signal = forced-closure failure.
+
 ## SKIP PLANNING (DEFAULT for small work)
 
 Skip if ANY: single-file single-concern edit | trivially bounded <5min | surgical user instructions | bug fix with identified root cause | zero unknowns. Heavy ceremony only for multi-file architectural work.
