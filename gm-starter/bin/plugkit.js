@@ -14,6 +14,8 @@ async function resolveBinary() {
 }
 
 async function main() {
+  const args = process.argv.slice(2);
+  const isHook = args[0] === 'hook';
   let bin;
   try {
     bin = await resolveBinary();
@@ -21,11 +23,9 @@ async function main() {
     process.stderr.write(`[plugkit] bootstrap failed: ${err.message}\n`);
     const legacy = legacyFallback();
     if (legacy) { bin = legacy; }
+    else if (isHook) { process.exit(0); }
     else process.exit(1);
   }
-
-  const args = process.argv.slice(2);
-  const isHook = args[0] === 'hook';
 
   if (isHook && !process.stdin.isTTY) {
     const chunks = [];

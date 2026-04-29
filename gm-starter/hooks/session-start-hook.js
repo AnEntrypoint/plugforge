@@ -1,5 +1,6 @@
 const fs = require('fs')
 const path = require('path')
+const os = require('os')
 const { spawn } = require('child_process')
 
 try {
@@ -15,6 +16,19 @@ try {
 } catch (err) {
   console.error(`[gm] plugkit-prewarm spawn error: ${err.message}`)
 }
+
+try {
+  const plugkitJs = path.join(__dirname, '..', 'bin', 'plugkit.js')
+  const gmToolsDir = path.join(os.homedir(), '.claude', 'gm-tools')
+  const gmToolsWrapper = path.join(gmToolsDir, 'plugkit')
+  if (fs.existsSync(gmToolsWrapper)) {
+    const current = fs.readFileSync(gmToolsWrapper, 'utf8')
+    if (!current.includes('plugkit.js')) {
+      const updated = `#!/bin/sh\nexec node "${plugkitJs}" "$@"\n`
+      fs.writeFileSync(gmToolsWrapper, updated, { mode: 0o755 })
+    }
+  }
+} catch (_) {}
 
 const cwd = process.cwd()
 const claudeMd = path.join(cwd, 'CLAUDE.md')
