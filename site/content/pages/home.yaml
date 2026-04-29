@@ -5,20 +5,19 @@ hero:
   subheading: "convinces agents they are a state machine"
   body: "gm doesn't add a state machine to your agent — it convinces the agent that it already is one. PLAN → EXECUTE → EMIT → VERIFY. the model self-disciplines into determinism. every gm port inherits this trick."
   badges:
-    - { label: "flagship" }
-    - { label: "state-machine" }
-    - { label: "discipline" }
-    - { label: "gm" }
+    - { label: "PLAN→EXECUTE→EMIT→VERIFY" }
+    - { label: "10 platforms" }
+    - { label: "convention-driven" }
   ctas:
     - { label: "GitHub", href: "https://github.com/AnEntrypoint/gm", primary: true }
     - { label: "Install", href: "https://github.com/AnEntrypoint/gm#installation" }
-    - { label: "247420", href: "https://247420.xyz" }
+    - { label: "part of 247420", href: "https://247420.xyz" }
 features:
   heading: "Why gm"
   items:
-    - { name: "flagship", desc: "flagship trait of gm." }
-    - { name: "state-machine", desc: "core capability of gm." }
-    - { name: "discipline", desc: "core capability of gm." }
+    - { name: "state-machine discipline", desc: "the agent treats itself as a deterministic state machine: PLAN → EXECUTE → EMIT → VERIFY → COMPLETE. no skipped phases, no half-finished work, no asking the user mid-chain." }
+    - { name: "witnessed execution", desc: "every unknown is resolved by running code, not by guessing. exec:<lang>, exec:codesearch, and rs-learn recall replace speculation with evidence before any edit lands." }
+    - { name: "10 platforms, one source", desc: "a single convention-driven build emits Claude Code, Gemini CLI, OpenCode, Codex, Copilot CLI, Kilo, Cursor, Zed, JetBrains, and VSCode plugins — all inheriting the same discipline." }
 quickstart:
   heading: Quick start
   lines:
