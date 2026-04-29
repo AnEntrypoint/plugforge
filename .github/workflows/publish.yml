@@ -144,6 +144,12 @@ jobs:
 
           gh repo create AnEntrypoint/${REPO_NAME} --public 2>/dev/null || true
 
+          gh api -X POST "repos/AnEntrypoint/${REPO_NAME}/pages" \
+            -f "build_type=workflow" 2>/dev/null \
+            || gh api -X PUT "repos/AnEntrypoint/${REPO_NAME}/pages" \
+                 -f "build_type=workflow" 2>/dev/null \
+            || true
+
           rm -rf "$WORK_DIR"
           mkdir -p "$WORK_DIR"
           cd "$WORK_DIR"
