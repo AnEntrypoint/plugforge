@@ -122,6 +122,18 @@ N facts → N parallel Agent calls in ONE message. End-of-turn self-check mandat
 
 Issue surfaced mid-execution (failing test, exec stderr, broken import, runtime exception, lint/type error, deprecation warning, unexpected output) is fixed THIS turn, at root cause, in-band. Never `// TODO`, never `try/catch`-to-swallow, never `2>/dev/null`, never `.skip`, never "out of scope" inside the same file. Re-witness after fix. New unknown surfaced by the fix → regress to `planning`. Genuine out-of-scope → write a `.gm/prd.yml` item before continuing.
 
+## BROWSER WITNESS — HARD RULE
+
+Editing browser-facing code (under `client/`, `docs/`, `*.html`, shaders, page-bundle imports, served JS/CSS, gh-pages assets, anything imported by a browser entry, anything visible in DOM/canvas/WebGL) → live `exec:browser` witness in THIS phase, same turn as the edit. Not deferred to EMIT, not deferred to VERIFY — those layers re-witness on top, they don't replace this one.
+
+Protocol on every client edit:
+1. Boot server / open page → HTTP 200 witnessed
+2. `exec:browser` → `page.goto(url)` → poll the affected global (`window.__app.<system>`, `window.__debug.<module>`)
+3. `page.evaluate` asserting the specific invariant the change establishes — capture numbers
+4. Variance → fix at root cause, re-witness (FIX ON SIGHT). Never advance to EMIT on unwitnessed client behavior.
+
+Forbidden: `node test.js` green as a substitute | screenshot without evaluate | "I'll check it in VERIFY" then skipping | committing a client diff without an `exec:browser` block this turn. Exempt only for server-only / no-browser repos; tag the exemption explicitly.
+
 ## CONSTRAINTS
 
 **Never**: Bash(node/npm/npx/bun) | fake data | mocks | scattered tests | fallbacks | Grep/Glob/Find/Explore | sequential independent items | respond mid-phase | edit before witnessing | duplicate code | if/else where dispatch suffices | one-liners that obscure | reinvent native/library

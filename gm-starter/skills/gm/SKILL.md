@@ -82,6 +82,22 @@ Required: surface → diagnose → fix at root cause → re-witness → continue
 
 A skill chain that shipped while ignoring a known-bad signal is a forced-closure failure (see LAWFUL DOWNGRADE).
 
+## BROWSER WITNESS — HARD RULE
+
+Any edit to code that runs in a browser (under `client/`, `docs/`, `*.html`, shaders, page-bundle imports, served JS/CSS, gh-pages assets, anything imported by a browser entry, anything visible in the DOM/canvas/WebGL) requires a live `exec:browser` witness in the SAME session — never deferred to "next session" or "follow-up".
+
+Mandatory protocol (every client edit):
+1. Boot the real server / open the static page → witness HTTP 200
+2. `exec:browser` → `page.goto(url)` → poll for the global the change affects (`window.__app.<system>`, `window.__debug.<module>`)
+3. `page.evaluate(() => …)` asserting the specific invariant the change established — instance counts, scene meshes, DOM nodes, render stats, network frames
+4. Capture witnessed numbers in the response. "Looks fine" / "should work" / "node test passes" = NOT a witness
+
+Forbidden: shipping a client change with only `node test.js` green | screenshot-without-evaluate | "browser validation deferred to VERIFY" then skipping VERIFY | "exempt because the change is small" | committing client diff without an `exec:browser` block in the same turn.
+
+Exempt only when: change is server-only with zero browser-facing surface, OR repo has no browser surface at all. Tag the exemption explicitly in the response with the reason; silent skip = forced-closure failure.
+
+This rule fires in EXECUTE (witness on edit), EMIT (post-emit verify), and VERIFY (final gate). All three. Skipping any layer counts as the failure.
+
 ## EXECUTION ORDER
 
 1. Recall — `plugkit recall` for any familiar-feeling unknown (cheapest, 200 tokens)

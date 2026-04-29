@@ -59,7 +59,9 @@ Required protocol:
 
 Long-running probes: split into navigate-call → `exec:wait N` → probe-call to stay under the per-call budget. Do not stack multi-second `setTimeout` inside one `exec:browser` invocation.
 
-Exempt only when: change is server-only with zero browser-facing surface, OR repository has no browser surface at all (pure CLI/library). Tag the exemption in the response with the reason; do not silently skip.
+Exempt only when: change is server-only with zero browser-facing surface, OR repository has no browser surface at all (pure CLI/library). Exemption requires explicit tag in the response: `BROWSER EXEMPT: <reason — must reference diff paths showing zero browser-facing surface>`. Silent skip = forced-closure failure. Default posture is NOT exempt — burden is on the agent to prove exemption with diff evidence, not to assume it.
+
+**Pre-flight check before declaring complete**: run `git diff --name-only origin/main..HEAD` and grep for `client/|docs/|\.html$|\.glsl$|\.frag$|\.vert$`. Any hit AND no `exec:browser` block in this session = mandatory regression to `gm-execute` to witness the change live. No exceptions for "small CSS tweak" or "obvious string change".
 
 ## INTEGRATION TEST GATE
 

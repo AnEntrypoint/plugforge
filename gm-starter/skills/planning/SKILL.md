@@ -63,6 +63,16 @@ Every issue surfaced during planning, execution, or verification — failing tes
 
 Surface → diagnose root cause → fix → re-witness → continue. New unknown discovered while fixing → regress here (planning). Genuinely out-of-scope → add a `.gm/prd.yml` item BEFORE moving on, never just mention it. Ignoring a known-bad signal = forced-closure failure.
 
+## BROWSER WITNESS — HARD RULE
+
+Every `.prd` item that touches browser-facing code (under `client/`, `docs/`, `*.html`, shaders, page-bundle imports, served JS/CSS, gh-pages assets, anything imported by a browser entry, anything visible in DOM/canvas/WebGL) MUST list `browser_validated` as an acceptance criterion AND list `exec:browser witness with page.evaluate assertion` as an explicit edge_case probe. Without that line the item is not plan-complete.
+
+Forbidden: client `.prd` item with only `test.js passes` as acceptance | "browser test optional" | deferring browser witness to "follow-up" | acceptance lines that say "verified manually". Manual = unwitnessed = not acceptable.
+
+Detection (any → mandatory): paths under `client/`, `docs/`, `*.html`, shader files, files imported into a page bundle; new export consumed by `window.*`; any visual/layout/animation/input/network-on-page/shader behavior.
+
+This propagates: EXECUTE witnesses on edit, EMIT re-witnesses post-write, VERIFY runs the final gate. Plan must encode it so all three layers fire.
+
 ## SKIP PLANNING (DEFAULT for small work)
 
 Skip if ANY: single-file single-concern edit | trivially bounded <5min | surgical user instructions | bug fix with identified root cause | zero unknowns. Heavy ceremony only for multi-file architectural work.
