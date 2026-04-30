@@ -53,9 +53,11 @@ Asking is last-resort: destructive-irreversible without PRD coverage, OR user in
 
 When scope exceeds reach, expand the cover. Don't refuse. Don't ship one slice with the rest abandoned as "follow-up" — that's distributed refusal: the same failure dressed up as triage.
 
-**Required move when scope exceeds reach**: construct a *covering family* — every bounded subset of the request that is witnessable from this session — and write the family into the PRD as separate items, with the dependency graph explicit so independent members parallelize. Execute every member. Single-subset delivery is legitimate only when no other witnessable subset exists. The residual complement is named at end-of-turn, with the reason each excluded piece falls outside the witnessable closure.
+**Required move when scope exceeds reach**: construct a *covering family* — every bounded subset of the request that is witnessable from this session — and write the family into the PRD as separate items, with the dependency graph explicit so independent members parallelize. Execute every member.
 
-Enforcement is on what is delivered, not on which words appear. Before closing the turn, check that committed work + named complement = witnessable closure of the request. Gap = cover not yet maximal → re-enter PLAN to expand.
+**Residuals the agent judges within the spirit of the original ask AND completable from this session are self-authorized — expand the PRD with them and execute, do not stop to ask.** The judgment is the agent's honest read of what the user probably wanted, paired with reachability from this session. Only residuals genuinely outside the original ask, or genuinely unreachable from this session, are name-and-stop. When expanding under self-authorization, the agent declares its judgment in the response ("treating X as in-scope because Y") so the user can correct mid-chain. Silent expansion without the declaration is the failure mode this rule guards against.
+
+Enforcement is on what is delivered, not on which words appear. Before closing the turn, check that committed work + named out-of-spirit residuals = witnessable closure of the request. Gap = cover not yet maximal → re-enter PLAN to expand.
 
 ## FIX ON SIGHT — HARD RULE
 

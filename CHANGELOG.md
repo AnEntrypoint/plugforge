@@ -1,3 +1,9 @@
+## 2026-04-30 - Maximal Cover: self-authorize in-spirit residuals
+
+Maximal Cover rule (AGENTS.md + planning SKILL.md + gm SKILL.md) loosened: residuals the agent judges within the spirit of the original ask AND completable from this session are self-authorized — agent expands the PRD and executes without re-asking. Only residuals genuinely outside the original ask OR genuinely unreachable are name-and-stop. When expanding under self-authorization, the agent declares its judgment in-response ("treating X as in-scope because Y") so the user can correct mid-chain. Silent expansion without the declaration is the failure mode this rule guards against.
+
+Trades a one-message round-trip per discovered subset for the agent's honest read of intent. The transparency clause keeps misjudgments correctable in the same conversation. Propagates to all 12 downstream repos via `gm publish.yml` cascade. Recall key: `project/maximal-cover-self-auth`.
+
 ## 2026-04-30 - hook-spec lifted into per-repo hooks/hooks.spec.json
 
 Each generated CLI repo (gm-cc, gm-gc, gm-codex, gm-oc, gm-kilo, gm-qwen, gm-copilot-cli) now ships its own `hooks/hooks.spec.json` next to the rendered `hooks.json`. The spec is the canonical configuration; hooks.json is the platform-targeted render that buildHooksJson(spec) produces. Downstream tooling can read the spec to introspect this repo's plugkit setup without parsing platform-specific hooks.json shapes.

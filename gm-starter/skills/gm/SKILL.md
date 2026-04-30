@@ -55,9 +55,11 @@ When scope exceeds reach, construct a maximal cover of the request — not a ref
 
 Refusal is forced closure. So is *distributed* refusal — shipping a single bounded subset while other witnessable subsets exist. Both bypass witnessed execution.
 
-**Required move when scope exceeds reach**: construct a *covering family* of bounded subsets — every subset of the request that is witnessable from this session — and write the family into the PRD. Execute every member. Single-subset delivery is legitimate only when no other witnessable subset exists; otherwise it is distributed refusal under another name. At end-of-turn, name the residual complement explicitly, with the reason each excluded piece falls outside the witnessable closure.
+**Required move when scope exceeds reach**: construct a *covering family* of bounded subsets — every subset of the request that is witnessable from this session — and write the family into the PRD. Execute every member.
 
-The discipline is enforced by what is delivered, not by which words appear. Before closing the turn, check that the union of committed work plus named complement equals the witnessable closure of the request. Anything witnessable that falls in neither set means the cover is not yet maximal — re-enter planning to expand it. The cover is *maximal*, not *complete*: completeness would require reaching scope outside the session, which is dishonest. Maximality reaches everything inside the session, which is the whole obligation.
+**Residuals the agent judges within the spirit of the original ask AND completable from this session are self-authorized — expand the PRD with them and execute, do not stop to ask.** The judgment is the agent's honest read of what the user probably wanted, paired with reachability from this session. Only residuals genuinely outside the original ask, or genuinely unreachable, are name-and-stop. When expanding under self-authorization, the agent declares its judgment in the response ("treating X as in-scope because Y") so the user can correct mid-chain. Silent expansion without the declaration is the failure mode this rule guards against.
+
+The discipline is enforced by what is delivered, not by which words appear. Before closing the turn, check that committed work + named out-of-spirit residuals equals the witnessable closure of the request. Anything witnessable that falls in neither set means the cover is not yet maximal — re-enter planning to expand it. The cover is *maximal*, not *complete*: completeness would require reaching scope outside the session, which is dishonest. Maximality reaches everything inside the session, which is the whole obligation.
 
 ## FIX ON SIGHT — HARD RULE
 
