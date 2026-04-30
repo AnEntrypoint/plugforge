@@ -43,6 +43,8 @@ Multiple facts → parallel Agent calls in ONE message. End-of-turn: scan for un
 
 A written PRD is the user's authorization. Once it exists, EXECUTE owns the work to COMPLETE. Resolve every doubt that arises during execution by witnessed probe, by recall, or by re-reading the PRD — never by asking the user. Any question whose answer the agent could obtain itself is a question the agent owes itself, not the user.
 
+**FINISH ALL REMAINING STEPS — HARD RULE**: when a request enumerates or implies multiple work items ("all", "any", "everything", "the rest", "remaining"), or after a covering family is constructed under MAXIMAL COVER, the agent finishes every witnessable item in the same turn. Stopping after one item to ask "which next?" is forbidden — the answer is *all of them*, in one chain, until `.gm/prd.yml` is empty and git is clean and pushed. Mid-chain "should I…", "want me to…", "which would you like…" prompts are forced closure; replace them with the next skill invocation.
+
 Asking is permitted only as a last resort, when the next action is destructive-irreversible AND the PRD does not cover it, OR when user intent is genuinely irrecoverable from PRD, memory, and code. The channel is structured: `exec:pause` (renames `.gm/prd.yml` → `.gm/prd.paused.yml`, question in header). In-conversation asking is last-resort beneath last-resort.
 
 The size of the task, the cost of context, and the duration of CI are never grounds to ask.
