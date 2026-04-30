@@ -40,6 +40,14 @@ node cli.js gm-starter ./build
 
 **Maximal Cover (covering-family obligation)**: When scope exceeds reach, enumerate all witnessable subsets and execute every member. Write the family into `.gm/prd.yml` as separate items with explicit dependency graph for parallelization. Name the residual complement (excluded pieces and why they fall outside the witnessable closure W). Committing a single bounded subset while abandoning witnessable subsets as "follow-up" is refusal in disguise. Detection: committed work + named complement must equal W; gap means cover is not yet maximal, re-enter PLAN. (Principle was previously phrased "lawful downgrade" — the constructive verb is what governs; refusal-to-attempt is the failure, not weakness-of-statement.)
 
+**Sync-before-emit (codeinsight + search)**: rs-codeinsight and rs-search outputs must come from a freshly-completed index. No cache may serve a result without a digest match against the live filesystem (mtime sum + git HEAD + dirty-tree marker). Default invocation always runs fresh. `--read-cache` permitted only when `.codeinsight.digest` matches exactly; on mismatch the cache auto-refreshes before emitting. rs-search runs scan + embed + sweep before printing the first result and emits an `[index fully synced: …]` line so freshness is visible. Emitting from an unverified or partial index is forced closure equivalent to bluffing strength — the agent reads stale output as ground truth and acts on a state that no longer exists.
+
+**Auto-recall on prompt-submit**: rs-plugkit prompt-submit hook derives a 2-6 word recall query from the user prompt, calls rs-learn `Searcher` directly via the shared tokio Runtime, and injects "## Recall for this prompt" into the systemMessage. Auto-search (codeinsight) runs at session-start; auto-recall runs at every prompt. Together they ensure every turn begins with prior memory loaded.
+
+**ORIENT before naming any unknown**: planning skill prescribes a parallel pack of 3-5 `exec:recall` + 3-5 `exec:codesearch` calls before the first mutable is named. Hits become weak_prior; misses confirm the unknown is fresh. Cost equals skip cost — orient is free relative to the duplicated discovery and disagree-with-prior-witness risk it prevents.
+
+**PRD MANDATORY**: writing `.gm/prd.yml` is non-negotiable for every task whose scope exceeds a literal single-file single-line edit. Skipping the PRD costs the same as writing it (the agent enumerates the work mentally either way) and loses durable trace, resumability, and the cover-maximality check.
+
 ## Rust Binary Update Pipeline
 
 Every change to any Rust library auto-cascades all the way to the installed binary:

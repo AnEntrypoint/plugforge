@@ -71,9 +71,21 @@ The trigger is functional, not a path-list: any change whose effect is observabl
 
 Propagation: EXECUTE witnesses on edit, EMIT re-witnesses post-write, VERIFY runs the final gate. The plan must encode the rule so all three layers fire.
 
-## SKIP PLANNING (DEFAULT for small work)
+## ORIENT — HARD RULE (before naming any unknown)
 
-Skip if ANY: single-file single-concern edit | trivially bounded <5min | surgical user instructions | bug fix with identified root cause | zero unknowns. Heavy ceremony only for multi-file architectural work.
+Every planning entry begins with ORIENT: a parallel pack of recalls and codesearches that loads what the store already knows about the request. Do this BEFORE you name a single mutable.
+
+Pack: 3–5 `exec:recall <2-6 word query>` calls + 3–5 `exec:codesearch <two words>` calls, fired in one message (parallel). Queries derive from each major noun in the request and each named entity. Hits become `weak_prior`; misses confirm the unknown is genuinely fresh.
+
+Cost rationale: orient is free relative to skipping it. The agent that skips orient pays the same cost in fresh-execution rounds resolving things the store already had — plus the cost of the duplicate work, plus the risk of disagreeing with prior witness. Orient runs in parallel and completes in <1s when the rs-learn HTTP serve is hot. Skipping orient is forced closure.
+
+Exempt only when: literal one-line edit AND user instruction is fully self-contained AND zero recall-able context exists. Tag the exemption explicitly.
+
+## PRD MANDATORY — HARD RULE
+
+Writing `./.gm/prd.yml` is **non-negotiable** for every task whose scope exceeds a literal single-file single-line edit. The PRD captures the covering family (paper IV §2.3 Maximal Cover), the residual complement, the dependency graph for parallelization, and the acceptance criteria. Skipping the PRD costs the same as writing it (the agent enumerates the work mentally either way) and loses three things that are not free to recover: durable trace across compaction, resumability after reboot, and the cover-maximality check.
+
+Exempt only when: literal single-line typo fix OR pure-comment edit OR user-issued one-shot command (e.g., `git status`). Anything multi-step, multi-file, or multi-concern emits a PRD before EXECUTE fires.
 
 ## PLAN PHASE — MUTABLE DISCOVERY
 
