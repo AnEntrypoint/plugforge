@@ -69,17 +69,45 @@ function Crumb() {
   );
 }
 
+function SocialProof() {
+  return h('a', {
+    id: 'gm-social-proof',
+    class: 'gm-social-proof',
+    href: './stats.html',
+    title: 'live stats — click for full dashboard',
+  },
+    h('span', { class: 'sp-item' },
+      h('span', { class: 'sp-icon' }, '⭐'),
+      h('span', { class: 'sp-num', 'data-stat': 'stars' }, '—'),
+      h('span', { class: 'sp-lbl' }, 'github stars'),
+    ),
+    h('span', { class: 'sp-sep' }, '·'),
+    h('span', { class: 'sp-item' },
+      h('span', { class: 'sp-icon' }, '📦'),
+      h('span', { class: 'sp-num', 'data-stat': 'npm' }, '—'),
+      h('span', { class: 'sp-lbl' }, 'npm downloads / 30d'),
+    ),
+    h('span', { class: 'sp-sep' }, '·'),
+    h('span', { class: 'sp-item' },
+      h('span', { class: 'sp-icon' }, '🛠️'),
+      h('span', { class: 'sp-num' }, '12'),
+      h('span', { class: 'sp-lbl' }, 'platforms'),
+    ),
+  );
+}
+
 function Hero() {
   return h('section', { class: 'gm-hero' },
+    SocialProof(),
     h('h1', {}, 'a state machine that keeps coding sessions on track.'),
     h('p', { class: 'lede' },
       'gm enforces plan → execute → emit → verify → complete on every task, across 12 platforms. each unknown is named and resolved by witnessed execution. ',
       h('span', { class: 'accent' }, 'humor is load-bearing.'),
     ),
     h('div', { class: 'actions' },
-      h('a', { class: 'gm-btn', href: './distribution.html' }, 'distribution'),
+      h('a', { class: 'gm-btn star-cta', href: 'https://github.com/AnEntrypoint/gm', target: '_blank', rel: 'noopener' }, '⭐ star on github'),
+      h('a', { class: 'gm-btn ghost', href: './distribution.html' }, 'distribution'),
       h('a', { class: 'gm-btn ghost', href: './paper4.html' }, 'paper IV'),
-      h('a', { class: 'gm-btn ghost', href: 'https://github.com/AnEntrypoint/gm', target: '_blank', rel: 'noopener' }, 'source ↗'),
     ),
     h('div', { class: 'gm-install' },
       h('div', { class: 'head' }, h('span', {}, 'install · claude code'), h('span', {}, '2 steps')),
@@ -89,6 +117,36 @@ function Hero() {
       )
     )
   );
+}
+
+async function hydrateSocialProof() {
+  const fmt = n => {
+    if (n == null || isNaN(n)) return '—';
+    if (n >= 1000000) return (n / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';
+    if (n >= 1000) return (n / 1000).toFixed(1).replace(/\.0$/, '') + 'k';
+    return String(n);
+  };
+  const set = (k, v) => {
+    const el = document.querySelector(`[data-stat="${k}"]`);
+    if (el) el.textContent = v;
+  };
+  try {
+    const [s, n] = await Promise.allSettled([
+      fetch('./api/stars.json').then(r => r.json()),
+      fetch('./api/npm-downloads.json').then(r => r.json()),
+    ]);
+    if (s.status === 'fulfilled') {
+      const v = s.value;
+      const arr = Array.isArray(v) ? v : (v && v.stars) || [];
+      const last = arr[arr.length - 1];
+      set('stars', fmt(last && last.count));
+    }
+    if (n.status === 'fulfilled' && n.value && typeof n.value.total_30d === 'number') {
+      set('npm', fmt(n.value.total_30d));
+    }
+  } catch (e) {
+    window.__debug.site.socialProofError = e.message;
+  }
 }
 
 function CurrentlyShipping() {
@@ -231,3 +289,5 @@ for (const v of vnodes) {
   const el = createDOMElement(v);
   if (el) root.appendChild(el);
 }
+
+hydrateSocialProof();

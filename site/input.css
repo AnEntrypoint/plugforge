@@ -44,3 +44,15 @@ body { display: flex; flex-direction: column; min-height: 100vh; }
 .gm-card { background: var(--panel-1); border-radius: 6px; padding: 14px 16px; box-shadow: var(--panel-shadow); }
 .gm-card .t { font-weight: 600; font-size: 13px; color: var(--panel-text); margin-bottom: 4px; }
 .gm-card .d { font-size: 12px; color: var(--panel-text-2); line-height: 1.55; }
+
+
+.gm-social-proof{display:inline-flex;align-items:center;gap:10px;padding:8px 14px;margin-bottom:18px;background:var(--panel-1);border:1px solid var(--panel-3);border-radius:999px;text-decoration:none;font-family:var(--ff-mono);font-size:12px;color:var(--panel-text-2);transition:border-color .15s,color .15s}
+.gm-social-proof:hover{border-color:var(--panel-accent);color:var(--panel-text)}
+.gm-social-proof .sp-item{display:inline-flex;align-items:center;gap:6px}
+.gm-social-proof .sp-icon{font-size:13px}
+.gm-social-proof .sp-num{font-weight:600;color:var(--panel-text);letter-spacing:.02em}
+.gm-social-proof .sp-lbl{color:var(--panel-text-3);text-transform:lowercase;letter-spacing:.04em}
+.gm-social-proof .sp-sep{color:var(--panel-text-3);opacity:.5}
+.gm-btn.star-cta{background:linear-gradient(180deg,#fbbf24,#f59e0b);color:#181a1f;border-color:#f59e0b;font-weight:600}
+.gm-btn.star-cta:hover{background:linear-gradient(180deg,#fcd34d,#fbbf24);color:#0c0d10}
+@media(max-width:560px){.gm-social-proof{flex-wrap:wrap;gap:6px;font-size:11px}.gm-social-proof .sp-sep{display:none}}

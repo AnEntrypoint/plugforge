@@ -21,6 +21,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
+      - name: Build site bundle
+        working-directory: site
+        run: |
+          npm install --no-audit --no-fund
+          npm run build
       - name: Build with flatspace
         run: npx --yes flatspace@latest build
       - name: Copy static assets

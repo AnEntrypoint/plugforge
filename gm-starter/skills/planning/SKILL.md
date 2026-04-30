@@ -75,6 +75,16 @@ The trigger is functional, not a path-list: any change whose effect is observabl
 
 Propagation: EXECUTE witnesses on edit, EMIT re-witnesses post-write, VERIFY runs the final gate. The plan must encode the rule so all three layers fire.
 
+## NOTHING FAKE — HARD RULE
+
+Plan items resolve when real input flows through real code into real output. Stubs, mocks, placeholder returns, fixture-only branches, "TODO: implement", and demo-mode short-circuits do not count as resolution — they are mutables wearing closed-status disguise.
+
+Acceptance criteria must witness behavior, not the existence of a function with the right name. "X is implemented" is not acceptance; "X called with real Y produces real Z" is. The agent that satisfies the criterion via a stub has built something that will lie when production calls it.
+
+Scaffolding and shims are permitted only when the shim *delegates* to real behavior — wraps an upstream API, calls a real subprocess, hits a real disk. Before adding a shim, the plan asks whether a published library or tool already provides that surface; maintaining a local reimplementation of an upstream solution is its own failure mode and the shim line should usually become an import line.
+
+The fake-detection test is behavioral: would the code, executed against the inputs it claims to accept, produce the outputs it claims to produce? If the answer requires "after we fill in the body" or "once X is wired up", the plan item is open, not done.
+
 ## ORIENT — HARD RULE
 
 Open every plan with a parallel pack of `exec:recall` and `exec:codesearch` against the request's nouns. Hits land as `weak_prior`; misses confirm the unknown is fresh. The pack runs in one message — never serially. The agent that skips orient pays the same cost in fresh probes a turn later, plus the price of disagreeing with its own prior witness.

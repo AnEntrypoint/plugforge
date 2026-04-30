@@ -85,6 +85,16 @@ Pure-prose edits to static documents with no JS/canvas/DOM behavior change are e
 
 This rule fires in EXECUTE (witness on edit), EMIT (post-emit verify), and VERIFY (final gate). All three.
 
+## NOTHING FAKE — HARD RULE
+
+What ships runs against real services, real data, real binaries. Stubs, mocks, placeholder returns, fixture-only paths, "TODO: implement", `return null /* fake */`, hardcoded sample responses, and demo-mode fallbacks are forbidden in source the user will run. They produce green checks that survive into production and lie about what works.
+
+Scaffolding and shims are permitted when they call through to real behavior — an empty file laid down before its body, a thin adapter wrapping an upstream API, a build target that compiles but is wired to nothing yet *and is the only callsite of itself*. The test is whether the artifact, executed, would do the thing it claims. If it would not, it is a stub.
+
+Before writing a shim or adapter, the agent asks whether an existing library or tool already provides the same surface. Maintaining a local reimplementation of something an upstream package solves is its own failure mode — the shim drifts, ages, and accumulates the bugs the upstream already fixed. If a published package fits, the shim becomes one line of import.
+
+Stub detection is by behavior, not by keyword: code paths that always succeed, always return the same value regardless of input, or short-circuit a real call to satisfy a type signature, are stubs. Comments asserting realness do not make code real. The witnessing rule that closes a mutable also closes this one — until real input has produced real output through the new code, it is provisional, and shipping provisional code as done is forced closure.
+
 ## EXECUTION ORDER
 
 1. Recall — `plugkit recall` for any familiar-feeling unknown (cheapest, 200 tokens)
