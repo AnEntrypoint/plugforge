@@ -111,3 +111,5 @@ exec:nodejs code that hits fs.readFileSync ENOENT or other synchronous system er
 2026-04-30: 5 items sampled. Strong recall (Core Rules) removed. Partial hits (Rust cascade, Site Build mermaid) refined and re-ingested to rs-learn (556B, 470B). Remaining items (Coding Style, Made with gm, Documentation Policy) kept in-buffer—recall missed them, refinement pending next cycle.
 
 2026-04-30 (second cycle): 5 items sampled (code comments, clean build, mermaid, made-with-gm, skill files). 0 recalls succeeded. All 5 correctly remain in AGENTS.md as top-level repository policy rules (not detail-heavy implementation caveats per documentation policy).
+
+2026-04-30 (Codex integration cycle): 6 codex-specific facts ingested to rs-learn (install location, hook registration format, event types, sentinel pattern, placeholder expansion, test location). 5 AGENTS.md items audited: 1 strong recall removed (Nothing fake in source), 1 refined (PRD mandatory), 3 kept in-buffer (Skills OC/Kilo, Clean build, Platform registration).
