@@ -15,6 +15,8 @@ const skillName = toolInput.skill || toolInput.name || '';
 const gmDir = path.join(process.cwd(), '.gm');
 const needsGmPath = path.join(gmDir, 'needs-gm');
 const lastskillPath = path.join(gmDir, 'lastskill');
+const prdPath = path.join(gmDir, 'prd.yml');
+const autonomous = fs.existsSync(prdPath);
 
 const isSkillTool = toolName === 'Skill' || toolName === 'skill';
 
@@ -27,6 +29,10 @@ if (isSkillTool && skillName) {
     }
   } catch (_) {}
   process.exit(0);
+}
+
+if (autonomous) {
+  try { fs.unlinkSync(needsGmPath); } catch (_) {}
 }
 
 if (fs.existsSync(needsGmPath)) {
