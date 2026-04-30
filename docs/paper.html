@@ -2,8 +2,8 @@
 <html lang="en"><head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>paper I · gm · 247420</title>
-<meta name="description" content="paper I: structured lifecycle control for coding agents.">
+<title>The Lifecycle · gm · 247420</title>
+<meta name="description" content="The Lifecycle (paper I): the phase-gated state machine PLAN→EXECUTE→EMIT→VERIFY→COMPLETE, named mutables, witnessed execution. The first of four papers describing the gm discipline.">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#181a1f" media="(prefers-color-scheme: dark)">
 <meta name="theme-color" content="#f4f5f7" media="(prefers-color-scheme: light)">
@@ -37,21 +37,65 @@ article blockquote { margin: 12px 0; padding: 8px 16px; background: var(--panel-
 article ul, article ol { padding-left: 24px; }
 article hr { border: 0; height: 1px; background: var(--panel-3); margin: 24px 0; }
 </style>
+<style>
+.gm-topbar{display:flex;align-items:center;gap:14px;padding:10px 22px;background:var(--panel-1);box-shadow:var(--panel-shadow);border-bottom:1px solid var(--panel-3);position:sticky;top:0;z-index:50}
+.gm-topbar .gm-brand{font-family:var(--ff-mono);font-size:13px;font-weight:600;color:var(--panel-text);letter-spacing:.04em}
+.gm-topbar .gm-brand .slash{color:var(--panel-text-3);margin:0 4px}
+.gm-topbar .gm-brand .leaf{color:var(--panel-text-2);font-weight:400}
+.gm-topbar nav{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-left:auto}
+.gm-topbar nav a, .gm-topbar nav .gm-dd > summary{font-family:var(--ff-mono);font-size:12px;text-transform:lowercase;letter-spacing:.04em;color:var(--panel-text);text-decoration:none;padding:6px 10px;border-radius:6px;cursor:pointer;list-style:none;display:inline-flex;align-items:center;gap:4px}
+.gm-topbar nav a:hover, .gm-topbar nav .gm-dd > summary:hover{background:var(--panel-2);color:var(--panel-accent)}
+.gm-topbar nav .gm-dd{position:relative}
+.gm-topbar nav .gm-dd > summary::-webkit-details-marker{display:none}
+.gm-topbar nav .gm-dd > summary::after{content:'▾';font-size:9px;margin-left:2px;color:var(--panel-text-3);transition:transform .15s}
+.gm-topbar nav .gm-dd[open] > summary::after{transform:rotate(180deg)}
+.gm-topbar nav .gm-dd[open] > summary{background:var(--panel-2);color:var(--panel-accent)}
+.gm-topbar nav .gm-dd-menu{position:absolute;top:calc(100% + 4px);right:0;min-width:200px;background:var(--panel-1);border:1px solid var(--panel-3);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.12);padding:6px;display:flex;flex-direction:column;gap:2px}
+.gm-topbar nav .gm-dd-menu a{padding:8px 12px;border-radius:5px;display:block}
+.gm-topbar nav .gm-dd-menu a:hover{background:var(--panel-2)}
+@media (max-width:640px){.gm-topbar{flex-wrap:wrap}.gm-topbar nav{margin-left:0;width:100%;justify-content:flex-start}.gm-topbar nav .gm-dd-menu{position:static;box-shadow:none;border:0;padding-left:14px;background:transparent}}
+</style>
+<script type="module">
+import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+const dark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+mermaid.initialize({ startOnLoad: true, theme: dark ? 'dark' : 'default', securityLevel: 'loose', themeVariables: { fontFamily: 'Inter, Segoe UI, sans-serif', fontSize: '13px' } });
+</script>
+<style>
+.mermaid{margin:18px 0;padding:14px;background:var(--panel-1);border-radius:8px;box-shadow:var(--panel-shadow);text-align:center;overflow-x:auto}
+.mermaid svg{max-width:100%;height:auto}
+.glootie-callout{margin:18px 0;padding:14px 18px 14px 56px;background:linear-gradient(90deg, var(--panel-1), var(--panel-2));border-left:4px solid var(--panel-accent);border-radius:8px;position:relative;font-style:italic;color:var(--panel-text)}
+.glootie-callout::before{content:'🦴';position:absolute;left:14px;top:14px;font-size:24px;font-style:normal}
+.glootie-callout .who{display:block;font-family:var(--ff-mono);font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--panel-text-2);font-style:normal;margin-bottom:4px}
+.cross-footer{margin:32px 0 12px 0;padding:18px;background:var(--panel-1);border-radius:8px;display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;font-family:var(--ff-mono);font-size:12px}
+.cross-footer a{display:block;padding:10px 12px;background:var(--panel-2);border-radius:6px;text-decoration:none;color:var(--panel-text);transition:background .15s}
+.cross-footer a:hover{background:var(--panel-3);color:var(--panel-accent)}
+.cross-footer a strong{display:block;color:var(--panel-text);margin-bottom:2px}
+.cross-footer a span{font-size:11px;color:var(--panel-text-2);text-transform:lowercase}
+</style>
 </head>
 <body data-screen-label="gm / paper I">
-<header class="app-topbar">
-  <span class="brand">247420<span class="slash"> / </span>gm</span>
+<header class="app-topbar gm-topbar">
+  <div class="gm-brand"><span>247420</span><span class="slash"> / </span><span class="leaf">gm</span></div>
   <nav>
-    <a href="./index.html">← home</a>
-    <a href="./index.html#process">process</a>
-    <a href="./stats.html">stats</a>
-    <a href="./distribution.html">distribution</a>
-    <a href="./made-with.html">showcase</a>
-    <a href="./paper.html">paper I</a>
-    <a href="./paper2.html">paper II</a>
-    <a href="./paper3.html">paper III</a>
-    <a href="./paper4.html">paper IV</a>
-    <a href="https://github.com/AnEntrypoint/gm" target="_blank" rel="noopener">source ↗</a>
+    <a href="./index.html">home</a>
+    <details class="gm-dd"><summary>papers</summary><div class="gm-dd-menu">
+      <a href="./paper4.html">The Cushion</a>
+      <a href="./paper3.html">The Governance</a>
+      <a href="./paper2.html">The Discipline</a>
+      <a href="./paper.html">The Lifecycle</a>
+    </div></details>
+    <details class="gm-dd"><summary>docs</summary><div class="gm-dd-menu">
+      <a href="./mascot.html">glootie</a>
+      <a href="./crates.html">crates</a>
+      <a href="./skills.html">skills</a>
+      <a href="./distribution.html">distribution</a>
+    </div></details>
+    <details class="gm-dd"><summary>more</summary><div class="gm-dd-menu">
+      <a href="./made-with.html">showcase</a>
+      <a href="./stats.html">stats</a>
+      <a href="https://247420.xyz">247420</a>
+      <a href="https://github.com/AnEntrypoint/gm" target="_blank" rel="noopener">GitHub</a>
+    </div></details>
   </nav>
 </header>
 <div class="app-crumb"><span>247420</span><span class="sep">›</span><span>gm</span><span class="sep">›</span><span class="leaf">paper I</span></div>
@@ -62,9 +106,9 @@ article hr { border: 0; height: 1px; background: var(--panel-3); margin: 24px 0;
 
 
 <div class="title-block">
-  <h1>Toward Structured Lifecycle Control<br>in Coding Agents</h1>
+  <h1>The Lifecycle: Toward Structured<br>Lifecycle Control in Coding Agents</h1>
   <div class="author">AnEntrypoint</div>
-  <div class="date">March 2026</div>
+  <div class="date">March 2026 · originally circulated as &ldquo;paper I&rdquo;</div>
 </div>
 
 <div class="abstract-block">
@@ -89,6 +133,25 @@ article hr { border: 0; height: 1px; background: var(--panel-3); margin: 24px 0;
 <p>The paper is organized as follows: &sect;2 describes the state machine model; &sect;3 introduces the discipline for handling unknowns; &sect;4&ndash;5 cover work tracking and cross-session memory; &sect;6 describes the implementation; &sect;7&ndash;9 discuss constraints, verification, and limitations; &sect;10 documents advances made in the three weeks following initial publication.</p>
 
 <h2>2. The State Machine Model</h2>
+
+<pre class="mermaid">
+stateDiagram-v2
+  direction TB
+  [*] --> PLAN
+  PLAN --> EXECUTE: zero new unknowns last pass
+  EXECUTE --> EMIT: every mutable KNOWN
+  EMIT --> VERIFY: post-emit matches pre-emit
+  VERIFY --> COMPLETE: .prd empty AND git clean AND pushed AND CI green
+  COMPLETE --> [*]: docs refreshed
+  EXECUTE --> PLAN: new unknown
+  EMIT --> PLAN: new unknown
+  VERIFY --> PLAN: new unknown
+  EMIT --> EXECUTE: logic wrong (snake)
+  VERIFY --> EMIT: broken output (snake)
+  VERIFY --> EXECUTE: logic wrong (snake)
+</pre>
+
+<div class="glootie-callout"><span class="who">The Lifecycle says:</span>"Forward transitions are conjunctive ladders. Backward transitions are snakes. The board is rigged in favour of finishing — but only if you climb every rung."</div>
 
 <h3>2.1 Phases</h3>
 <p class="first">The framework defines five phases with forward-only progression. PLAN discovers all unknowns (exits when a full pass adds zero new unknowns). EXECUTE resolves unknowns via witnessed execution (exits when all mutables are KNOWN). EMIT writes files to disk (exits when post-emit matches pre-emit exactly). VERIFY performs end-to-end witnessed validation (exits when .prd is empty and git is clean and pushed). COMPLETE updates documentation and closes the session.</p>
@@ -304,6 +367,17 @@ article hr { border: 0; height: 1px; background: var(--panel-3); margin: 24px 0;
 
 
 
+
+
+<div class="cross-footer">
+  <a href="./mascot.html"><strong>meet Glootie</strong><span>mascot, cushion theory, four commandments</span></a>
+  <a href="./crates.html"><strong>rust crates</strong><span>rs-exec · rs-codeinsight · rs-search · rs-learn · rs-plugkit</span></a>
+  <a href="./skills.html"><strong>skills</strong><span>13 skills, one chain, no skipping</span></a>
+  <a href="./paper4.html"><strong>The Cushion (paper IV)</strong><span>Maximal Cover, bounded autonomy, learning loop, exec budget</span></a>
+  <a href="./paper3.html"><strong>The Governance (paper III)</strong><span>route families, earned emission, remote-execution boundary</span></a>
+  <a href="./paper2.html"><strong>The Discipline (paper II)</strong><span>in-phase quality, observability, single test</span></a>
+  <a href="./paper.html"><strong>The Lifecycle (paper I)</strong><span>state machine, mutables, witnessed execution</span></a>
+</div>
 
 <footer style="padding:12px 20px;font-family:var(--ff-mono);font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:var(--panel-text-3);display:flex;justify-content:space-between;background:var(--panel-1);box-shadow:inset 0 1px 0 rgba(0,0,0,0.04);flex-wrap:wrap;gap:12px;">
 <span>built with <a href="https://github.com/AnEntrypoint/gm" target="_blank" rel="noopener" style="color:var(--panel-text-2)">gm</a> · <a href="./paper.html" style="color:var(--panel-text-2)">paper</a></span>

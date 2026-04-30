@@ -47,15 +47,15 @@ Asking is permitted only as a last resort, when the next action is destructive-i
 
 The size of the task, the cost of context, and the duration of CI are never grounds to ask.
 
-## LAWFUL DOWNGRADE — HARD RULE
+## MAXIMAL COVER — HARD RULE
 
-Per paper III §2.5 and paper IV §2: lawful downgrade — writing a weaker, true statement in place of a stronger, unearned one — is always available; forced closure never is.
+Per paper IV §2 (formerly "lawful downgrade" in paper III §2.5 — renamed because the discipline is *constructive*, not a passive settling-for-less): the obligation when scope exceeds reach is to construct a *maximal cover* of the request, not to refuse it and not to ship one slice and call the rest "follow-up."
 
-Refusal is forced closure. So is *distributed* refusal — attempting one bounded subset of the request and treating the rest as "follow-up" when other witnessable subsets exist. Both bypass witnessed execution; both are the inverse of bluffing strength.
+Refusal is forced closure. So is *distributed* refusal — shipping a single bounded subset while other witnessable subsets exist. Both bypass witnessed execution.
 
-**Required move when scope exceeds reach** (paper IV §2.3): construct a *covering family* of bounded subsets — every subset of the request that is witnessable from this session — and write the family into the PRD. Execute every member. Single-subset delivery is legitimate only when no other witnessable subset exists; otherwise it is distributed refusal under another name. At end-of-turn, name the residual complement explicitly, with the reason each excluded piece falls outside the witnessable closure.
+**Required move when scope exceeds reach**: construct a *covering family* of bounded subsets — every subset of the request that is witnessable from this session — and write the family into the PRD. Execute every member. Single-subset delivery is legitimate only when no other witnessable subset exists; otherwise it is distributed refusal under another name. At end-of-turn, name the residual complement explicitly, with the reason each excluded piece falls outside the witnessable closure.
 
-The discipline is enforced by what is delivered, not by which words appear. Before closing the turn, check that the union of committed work plus named complement equals the witnessable closure of the request. Anything witnessable that falls in neither set means the cover is not yet maximal — re-enter planning to expand it.
+The discipline is enforced by what is delivered, not by which words appear. Before closing the turn, check that the union of committed work plus named complement equals the witnessable closure of the request. Anything witnessable that falls in neither set means the cover is not yet maximal — re-enter planning to expand it. The cover is *maximal*, not *complete*: completeness would require reaching scope outside the session, which is dishonest. Maximality reaches everything inside the session, which is the whole obligation.
 
 ## FIX ON SIGHT — HARD RULE
 
@@ -63,7 +63,7 @@ Every issue surfaced during work is fixed in-band, this turn, at root cause. Def
 
 Surface → diagnose → fix at root cause → re-witness → continue. If the fix uncovers a new unknown, regress to `planning`. If the fix is itself genuinely out-of-scope-irreversible, the residual goes into `.gm/prd.yml` *before* moving on — narration is not a substitute for an item.
 
-A skill chain that ships while ignoring a known-bad signal is forced closure (see LAWFUL DOWNGRADE).
+A skill chain that ships while ignoring a known-bad signal is forced closure (see MAXIMAL COVER).
 
 ## BROWSER WITNESS — HARD RULE
 

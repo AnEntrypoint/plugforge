@@ -29,6 +29,23 @@ article blockquote { margin: 16px 0; padding: 12px 18px; background: var(--panel
 .commandment { font-family: var(--ff-mono); font-size: 12px; color: var(--panel-text); margin: 0 0 6px 0; padding-left: 18px; position: relative; }
 .commandment::before { content: '◆'; position: absolute; left: 0; color: var(--panel-accent); }
 </style>
+<script type="module">
+import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+const dark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+mermaid.initialize({ startOnLoad: true, theme: dark ? 'dark' : 'default', securityLevel: 'loose', themeVariables: { fontFamily: 'Inter, Segoe UI, sans-serif', fontSize: '13px' } });
+</script>
+<style>
+.mermaid{margin:18px 0;padding:14px;background:var(--panel-1);border-radius:8px;box-shadow:var(--panel-shadow);text-align:center;overflow-x:auto}
+.mermaid svg{max-width:100%;height:auto}
+.glootie-callout{margin:18px 0;padding:14px 18px 14px 56px;background:linear-gradient(90deg, var(--panel-1), var(--panel-2));border-left:4px solid var(--panel-accent);border-radius:8px;position:relative;font-style:italic;color:var(--panel-text)}
+.glootie-callout::before{content:'🦴';position:absolute;left:14px;top:14px;font-size:24px;font-style:normal}
+.glootie-callout .who{display:block;font-family:var(--ff-mono);font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--panel-text-2);font-style:normal;margin-bottom:4px}
+.cross-footer{margin:32px 0 12px 0;padding:18px;background:var(--panel-1);border-radius:8px;display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;font-family:var(--ff-mono);font-size:12px}
+.cross-footer a{display:block;padding:10px 12px;background:var(--panel-2);border-radius:6px;text-decoration:none;color:var(--panel-text);transition:background .15s}
+.cross-footer a:hover{background:var(--panel-3);color:var(--panel-accent)}
+.cross-footer a strong{display:block;color:var(--panel-text);margin-bottom:2px}
+.cross-footer a span{font-size:11px;color:var(--panel-text-2);text-transform:lowercase}
+</style>
 </head>
 <body>
 <div class="title-block">
@@ -78,6 +95,37 @@ article blockquote { margin: 16px 0; padding: 12px 18px; background: var(--panel
   "I've been to a thousand worlds, Morty. Only one of them taught its agents to sit down. The agents on that world shipped their app. The agents on the others are <em>still planning</em>." — apocryphal, but Glootie nods when you say it
 </blockquote>
 
+<h2>2.5 The cushion, as a flowchart</h2>
+
+<pre class="mermaid">
+flowchart TD
+  R[Request from user]
+  W{Is full scope<br>witnessable<br>from this session?}
+  Total[TOTAL REFUSAL ⛔<br>'I cannot do this'<br>= forced closure]
+  Distrib[DISTRIBUTED REFUSAL ⛔<br>ship one slice<br>call rest 'follow-up'<br>= refusal in disguise]
+  Cover[MAXIMAL COVER ✅<br>enumerate every witnessable subset<br>execute every member<br>name residual complement]
+  Sit[Glootie sits down]
+  Done[Cushion approves<br>session may end]
+
+  R --> W
+  W -- 'no, refuse it' --> Total
+  W -- 'partially, ship one' --> Distrib
+  W -- 'cover everything reachable' --> Cover
+  Cover --> Sit
+  Sit --> Done
+  Total -.->|forced closure| Sit
+  Distrib -.->|forced closure| Sit
+
+  classDef bad fill:#fadad6,stroke:#a4302a,color:#5a1815
+  classDef good fill:#d6f0d8,stroke:#2c7a3a,color:#1a3f1f
+  classDef glootie fill:#fff4cc,stroke:#b08800,color:#4a3700
+  class Total,Distrib bad
+  class Cover good
+  class Sit,Done glootie
+</pre>
+
+<div class="glootie-callout"><span class="who">Glootie says:</span>"The bad paths are dotted. The good path is solid. The cushion does not care which path you took to get here, only that you are now seated."</div>
+
 <h2>3. The four commandments of the cushion</h2>
 
 <p>Glootie's commandments are short. Glootie does not waste syllables.</p>
@@ -111,5 +159,16 @@ article blockquote { margin: 16px 0; padding: 12px 18px; background: var(--panel
 <p>Then sit back down. There is always more coushin' to do.</p>
 
 </article>
+
+
+<div class="cross-footer">
+  <a href="./mascot.html"><strong>meet Glootie</strong><span>mascot, cushion theory, four commandments</span></a>
+  <a href="./crates.html"><strong>rust crates</strong><span>rs-exec · rs-codeinsight · rs-search · rs-learn · rs-plugkit</span></a>
+  <a href="./skills.html"><strong>skills</strong><span>13 skills, one chain, no skipping</span></a>
+  <a href="./paper4.html"><strong>The Cushion (paper IV)</strong><span>Maximal Cover · bounded autonomy · learning loop</span></a>
+  <a href="./paper3.html"><strong>The Governance (paper III)</strong><span>route families · earned emission</span></a>
+  <a href="./paper2.html"><strong>The Discipline (paper II)</strong><span>observability · single test</span></a>
+  <a href="./paper.html"><strong>The Lifecycle (paper I)</strong><span>state machine · witnessed execution</span></a>
+</div>
 
 </body></html>

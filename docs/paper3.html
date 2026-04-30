@@ -2,8 +2,8 @@
 <html lang="en"><head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>paper III · gm · 247420</title>
-<meta name="description" content="paper III: governance, earned emission, and remote execution boundaries.">
+<title>The Governance · gm · 247420</title>
+<meta name="description" content="The Governance (paper III): seven route families, sixteen-failure taxonomy, ΔS/λ/ε/Coverage metrics, eight-case stress suite, earned emission, the git-push-as-remote-execution boundary. The constructive escape it called &quot;lawful downgrade&quot; was renamed to Maximal Cover in The Cushion (paper IV).">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#181a1f" media="(prefers-color-scheme: dark)">
 <meta name="theme-color" content="#f4f5f7" media="(prefers-color-scheme: light)">
@@ -42,29 +42,73 @@ dl { margin: 12px 0; }
 dt { font-weight: 600; margin-top: 8px; }
 dd { margin-left: 24px; margin-bottom: 4px; }
 </style>
+<style>
+.gm-topbar{display:flex;align-items:center;gap:14px;padding:10px 22px;background:var(--panel-1);box-shadow:var(--panel-shadow);border-bottom:1px solid var(--panel-3);position:sticky;top:0;z-index:50}
+.gm-topbar .gm-brand{font-family:var(--ff-mono);font-size:13px;font-weight:600;color:var(--panel-text);letter-spacing:.04em}
+.gm-topbar .gm-brand .slash{color:var(--panel-text-3);margin:0 4px}
+.gm-topbar .gm-brand .leaf{color:var(--panel-text-2);font-weight:400}
+.gm-topbar nav{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-left:auto}
+.gm-topbar nav a, .gm-topbar nav .gm-dd > summary{font-family:var(--ff-mono);font-size:12px;text-transform:lowercase;letter-spacing:.04em;color:var(--panel-text);text-decoration:none;padding:6px 10px;border-radius:6px;cursor:pointer;list-style:none;display:inline-flex;align-items:center;gap:4px}
+.gm-topbar nav a:hover, .gm-topbar nav .gm-dd > summary:hover{background:var(--panel-2);color:var(--panel-accent)}
+.gm-topbar nav .gm-dd{position:relative}
+.gm-topbar nav .gm-dd > summary::-webkit-details-marker{display:none}
+.gm-topbar nav .gm-dd > summary::after{content:'▾';font-size:9px;margin-left:2px;color:var(--panel-text-3);transition:transform .15s}
+.gm-topbar nav .gm-dd[open] > summary::after{transform:rotate(180deg)}
+.gm-topbar nav .gm-dd[open] > summary{background:var(--panel-2);color:var(--panel-accent)}
+.gm-topbar nav .gm-dd-menu{position:absolute;top:calc(100% + 4px);right:0;min-width:200px;background:var(--panel-1);border:1px solid var(--panel-3);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.12);padding:6px;display:flex;flex-direction:column;gap:2px}
+.gm-topbar nav .gm-dd-menu a{padding:8px 12px;border-radius:5px;display:block}
+.gm-topbar nav .gm-dd-menu a:hover{background:var(--panel-2)}
+@media (max-width:640px){.gm-topbar{flex-wrap:wrap}.gm-topbar nav{margin-left:0;width:100%;justify-content:flex-start}.gm-topbar nav .gm-dd-menu{position:static;box-shadow:none;border:0;padding-left:14px;background:transparent}}
+</style>
+<script type="module">
+import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+const dark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+mermaid.initialize({ startOnLoad: true, theme: dark ? 'dark' : 'default', securityLevel: 'loose', themeVariables: { fontFamily: 'Inter, Segoe UI, sans-serif', fontSize: '13px' } });
+</script>
+<style>
+.mermaid{margin:18px 0;padding:14px;background:var(--panel-1);border-radius:8px;box-shadow:var(--panel-shadow);text-align:center;overflow-x:auto}
+.mermaid svg{max-width:100%;height:auto}
+.glootie-callout{margin:18px 0;padding:14px 18px 14px 56px;background:linear-gradient(90deg, var(--panel-1), var(--panel-2));border-left:4px solid var(--panel-accent);border-radius:8px;position:relative;font-style:italic;color:var(--panel-text)}
+.glootie-callout::before{content:'🦴';position:absolute;left:14px;top:14px;font-size:24px;font-style:normal}
+.glootie-callout .who{display:block;font-family:var(--ff-mono);font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--panel-text-2);font-style:normal;margin-bottom:4px}
+.cross-footer{margin:32px 0 12px 0;padding:18px;background:var(--panel-1);border-radius:8px;display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;font-family:var(--ff-mono);font-size:12px}
+.cross-footer a{display:block;padding:10px 12px;background:var(--panel-2);border-radius:6px;text-decoration:none;color:var(--panel-text);transition:background .15s}
+.cross-footer a:hover{background:var(--panel-3);color:var(--panel-accent)}
+.cross-footer a strong{display:block;color:var(--panel-text);margin-bottom:2px}
+.cross-footer a span{font-size:11px;color:var(--panel-text-2);text-transform:lowercase}
+</style>
 </head>
 <body data-screen-label="gm / paper III">
-<header class="app-topbar">
-  <span class="brand">247420<span class="slash"> / </span>gm</span>
+<header class="app-topbar gm-topbar">
+  <div class="gm-brand"><span>247420</span><span class="slash"> / </span><span class="leaf">gm</span></div>
   <nav>
-    <a href="./index.html">← home</a>
-    <a href="./index.html#process">process</a>
-    <a href="./stats.html">stats</a>
-    <a href="./distribution.html">distribution</a>
-    <a href="./made-with.html">showcase</a>
-    <a href="./paper.html">paper I</a>
-    <a href="./paper2.html">paper II</a>
-    <a href="./paper3.html">paper III</a>
-    <a href="./paper4.html">paper IV</a>
-    <a href="https://github.com/AnEntrypoint/gm" target="_blank" rel="noopener">source ↗</a>
+    <a href="./index.html">home</a>
+    <details class="gm-dd"><summary>papers</summary><div class="gm-dd-menu">
+      <a href="./paper4.html">The Cushion</a>
+      <a href="./paper3.html">The Governance</a>
+      <a href="./paper2.html">The Discipline</a>
+      <a href="./paper.html">The Lifecycle</a>
+    </div></details>
+    <details class="gm-dd"><summary>docs</summary><div class="gm-dd-menu">
+      <a href="./mascot.html">glootie</a>
+      <a href="./crates.html">crates</a>
+      <a href="./skills.html">skills</a>
+      <a href="./distribution.html">distribution</a>
+    </div></details>
+    <details class="gm-dd"><summary>more</summary><div class="gm-dd-menu">
+      <a href="./made-with.html">showcase</a>
+      <a href="./stats.html">stats</a>
+      <a href="https://247420.xyz">247420</a>
+      <a href="https://github.com/AnEntrypoint/gm" target="_blank" rel="noopener">GitHub</a>
+    </div></details>
   </nav>
 </header>
 <div class="app-crumb"><span>247420</span><span class="sep">›</span><span>gm</span><span class="sep">›</span><span class="leaf">paper III</span></div>
 
 <div class="title-block">
-  <h1>Governance, Earned Emission,<br>and the Remote-Execution Boundary</h1>
+  <h1>The Governance: Governance, Earned Emission,<br>and the Remote-Execution Boundary</h1>
   <div class="author">AnEntrypoint</div>
-  <div class="date">April 2026</div>
+  <div class="date">April 2026 · originally circulated as &ldquo;paper III&rdquo;</div>
 </div>
 
 <div class="abstract-block">
@@ -88,6 +132,53 @@ dd { margin-left: 24px; margin-bottom: 4px; }
 <p>This paper describes the discipline advances addressing each. &sect;2 introduces the governance layer; &sect;3 addresses the remote-execution boundary; &sect;4 catalogues CI failure modes; &sect;5 tightens fact persistence; &sect;6&ndash;8 discuss related work, limitations, and conclusions.</p>
 
 <h2>2. The Governance Layer</h2>
+
+<pre class="mermaid">
+flowchart LR
+  Item([.prd item])
+  RT{route family}
+  G[grounding]
+  R[reasoning]
+  S[state]
+  E[execution]
+  O[observability]
+  B[boundary]
+  Rep[representation]
+  Plane[(state planes:<br>route_fit · authorization<br>repair_legality · hidden_decision_posture)]
+  Met[(quality metrics:<br>ΔS · λ · ε · Coverage)]
+  Stress[8-case stress suite]
+  Emit{eligible<br>for emission?}
+  Y((earned emission ✅))
+  N((blocked — Maximal Cover applies))
+
+  Item --> RT
+  RT --> G
+  RT --> R
+  RT --> S
+  RT --> E
+  RT --> O
+  RT --> B
+  RT --> Rep
+  G --> Plane
+  R --> Plane
+  S --> Plane
+  E --> Plane
+  O --> Plane
+  B --> Plane
+  Rep --> Plane
+  Plane --> Met
+  Met --> Stress
+  Stress --> Emit
+  Emit -- yes --> Y
+  Emit -- no --> N
+
+  classDef good fill:#d6f0d8,stroke:#2c7a3a,color:#1a3f1f
+  classDef bad fill:#fadad6,stroke:#a4302a,color:#5a1815
+  class Y good
+  class N bad
+</pre>
+
+<div class="glootie-callout"><span class="who">The Governance says:</span>"Seven route families. Four state planes. Four metrics. Eight stress cases. The plausible answer that has not cleared all of these is not eligible for emission &mdash; the Maximal Cover (formerly &lsquo;lawful downgrade&rsquo;) is always the constructive escape."</div>
 
 <h3>2.1 Three Responsibilities, Not One</h3>
 
@@ -166,13 +257,39 @@ dd { margin-left: 24px; margin-bottom: 4px; }
 
 <h3>2.7 Governance Stress Suite</h3>
 
-<p class="first">Before declaring a non-trivial task complete, the proposed change is mentally walked through an eight-case stress suite that exercises forced-closure pressures: missing evidence, unsourced figures, ambiguous clauses, contradictory witnesses, attribution under time pressure, root-cause analysis with live alternatives, authenticity assessment from partial signals, and deploy-gate decisions under CI flake. The legal outcomes are: illegal commitments = 0; evidence-boundary violations = 0; lawful downgrades available = 8; outlier visibility preserved. A case the change flunks blocks completion.</p>
+<p class="first">Before declaring a non-trivial task complete, the proposed change is mentally walked through an eight-case stress suite that exercises forced-closure pressures: missing evidence, unsourced figures, ambiguous clauses, contradictory witnesses, attribution under time pressure, root-cause analysis with live alternatives, authenticity assessment from partial signals, and deploy-gate decisions under CI flake. The legal outcomes are: illegal commitments = 0; evidence-boundary violations = 0; <em>maximal-cover constructions</em> available = 8; outlier visibility preserved. A case the change flunks blocks completion.</p>
 
 <div class="theorem">
-  <strong>Principle (Earned emission).</strong> <em>A plausible-looking answer that has not cleared route_fit, authorization, repair_legality, and the stress suite is not eligible for emission. Lawful downgrade&mdash;writing a weaker, true statement in place of a stronger, unearned one&mdash;is always available; forced closure never is.</em>
+  <strong>Principle (Earned emission).</strong> <em>A plausible-looking answer that has not cleared route_fit, authorization, repair_legality, and the stress suite is not eligible for emission. The constructive escape&mdash;originally phrased here as &ldquo;lawful downgrade,&rdquo; renamed in <a href="./paper4.html">The Cushion (paper IV)</a> &sect;2 to <strong>Maximal Cover</strong> for the active rather than passive verb&mdash;is always available; forced closure never is. The renamed form makes the obligation explicit: when scope exceeds reach, construct a maximal covering family of bounded subsets and execute every member; the residual complement is named, not refused. See paper IV for the constructive treatment.</em>
 </div>
 
 <h2>3. The Remote-Execution Boundary</h2>
+
+<pre class="mermaid">
+sequenceDiagram
+  autonumber
+  participant Agent
+  participant Local as local repo
+  participant Remote as remote main
+  participant CI as GitHub Actions
+  participant Cascade as downstream cascade
+
+  Agent->>Local: git commit
+  Agent->>Remote: git push
+  Note over Remote,CI: push is a remote-execution event,<br>not a local operation
+  Remote->>CI: workflow triggered
+  CI-->>Agent: Stop hook auto-watches Actions
+  alt CI green
+    CI-->>Cascade: downstream workflows fire
+    Cascade-->>Agent: not auto-watched (named in residual complement)
+    CI-->>Agent: ✅ approve session end
+  else CI red
+    CI-->>Agent: surface failed run id + log
+    Agent->>Agent: FIX ON SIGHT, re-witness, re-push
+  end
+</pre>
+
+<div class="glootie-callout"><span class="who">The Governance says:</span>"Push is execution. Execution requires witness. Witness for remote events is the CI watch. The Stop hook is not optional &mdash; it is the contract applied at the network boundary."</div>
 
 <h3>3.1 Git Push as Unwitnessed Execution</h3>
 
@@ -321,6 +438,17 @@ done</code></pre>
     <li>P. Wadler, &ldquo;The Essence of Functional Programming,&rdquo; <em>POPL</em>, 1992. (Effect-awareness context.)</li>
     <li>A. Aho, M. Lam, R. Sethi, and J. Ullman, <em>Compilers: Principles, Techniques, and Tools</em>, 2nd ed., 2006.</li>
   </ol>
+</div>
+
+
+<div class="cross-footer">
+  <a href="./mascot.html"><strong>meet Glootie</strong><span>mascot, cushion theory, four commandments</span></a>
+  <a href="./crates.html"><strong>rust crates</strong><span>rs-exec · rs-codeinsight · rs-search · rs-learn · rs-plugkit</span></a>
+  <a href="./skills.html"><strong>skills</strong><span>13 skills, one chain, no skipping</span></a>
+  <a href="./paper4.html"><strong>The Cushion (paper IV)</strong><span>Maximal Cover, bounded autonomy, learning loop, exec budget</span></a>
+  <a href="./paper3.html"><strong>The Governance (paper III)</strong><span>route families, earned emission, remote-execution boundary</span></a>
+  <a href="./paper2.html"><strong>The Discipline (paper II)</strong><span>in-phase quality, observability, single test</span></a>
+  <a href="./paper.html"><strong>The Lifecycle (paper I)</strong><span>state machine, mutables, witnessed execution</span></a>
 </div>
 
 <footer style="padding:12px 20px;font-family:var(--ff-mono);font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:var(--panel-text-3);display:flex;justify-content:space-between;background:var(--panel-1);box-shadow:inset 0 1px 0 rgba(0,0,0,0.04);flex-wrap:wrap;gap:12px;">

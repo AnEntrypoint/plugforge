@@ -38,7 +38,7 @@ node cli.js gm-starter ./build
 
 **Autonomy**: Once a PRD is written, agents EXECUTE through to COMPLETE without asking. Asking permitted only as last resort for destructive-irreversible decisions or genuinely ambiguous user intent — prefer `exec:pause` over in-conversation asking.
 
-**Covering-family obligation**: When scope exceeds reach, enumerate all witnessable subsets and execute every member. Write the family into `.gm/prd.yml` as separate items with explicit dependency graph for parallelization. Name the residual complement (excluded pieces and why they fall outside the witnessable closure W). Committing a single bounded subset while abandoning witnessable subsets as "follow-up" is refusal in disguise. Detection: committed work + named complement must equal W; gap means cover is not yet maximal, re-enter PLAN.
+**Maximal Cover (covering-family obligation)**: When scope exceeds reach, enumerate all witnessable subsets and execute every member. Write the family into `.gm/prd.yml` as separate items with explicit dependency graph for parallelization. Name the residual complement (excluded pieces and why they fall outside the witnessable closure W). Committing a single bounded subset while abandoning witnessable subsets as "follow-up" is refusal in disguise. Detection: committed work + named complement must equal W; gap means cover is not yet maximal, re-enter PLAN. (Principle was previously phrased "lawful downgrade" — the constructive verb is what governs; refusal-to-attempt is the failure, not weakness-of-statement.)
 
 ## Rust Binary Update Pipeline
 

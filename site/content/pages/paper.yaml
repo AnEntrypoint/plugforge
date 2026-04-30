@@ -1,7 +1,7 @@
 id: paper
-title: paper I
-subtitle: Toward Structured Lifecycle Control in Coding Agents
+title: The Lifecycle
+subtitle: Toward Structured Lifecycle Control in Coding Agents (originally circulated as paper I)
 date: March 2026
-description: Paper I — phase-gated state machine, named mutables, witnessed execution.
+description: The Lifecycle (paper I) — the phase-gated state machine PLAN→EXECUTE→EMIT→VERIFY→COMPLETE, named mutables, witnessed execution. The first of four papers describing the gm discipline.
 layout: article
 source: ../docs/paper.html

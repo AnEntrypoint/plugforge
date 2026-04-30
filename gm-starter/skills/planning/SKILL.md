@@ -49,9 +49,9 @@ Asking is last-resort: destructive-irreversible without PRD coverage, OR user in
 
 **Cannot stop while**: `.gm/prd.yml` has items | git uncommitted | git unpushed.
 
-## LAWFUL DOWNGRADE — HARD RULE
+## MAXIMAL COVER — HARD RULE
 
-Per paper III §2.5 and paper IV §2: lawful downgrade is always available; forced closure (refusal) is never available. Refusal has two shapes — total (no work delivered) and distributed (one bounded subset delivered, the rest abandoned despite being witnessable). Both bypass witnessed execution.
+Per paper IV §2 (renamed from paper III §2.5 "lawful downgrade" — that phrase undersold the constructive obligation): the obligation when scope exceeds reach is to *expand the cover*, not to refuse and not to ship a single slice. Refusal is forced closure. Distributed refusal — one bounded subset delivered, the rest abandoned despite being witnessable — is the same failure dressed up as triage.
 
 **Required move when scope exceeds reach**: construct a *covering family* — every bounded subset of the request that is witnessable from this session — and write the family into the PRD as separate items, with the dependency graph explicit so independent members parallelize. Execute every member. Single-subset delivery is legitimate only when no other witnessable subset exists. The residual complement is named at end-of-turn, with the reason each excluded piece falls outside the witnessable closure.
 
