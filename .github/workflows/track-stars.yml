@@ -94,4 +94,9 @@ jobs:
         run: |
           git add docs/api/stars.json
           git commit -m "chore: update star count"
-          git push
+          for i in 1 2 3 4 5; do
+            git pull --rebase origin main && git push && exit 0
+            echo "push attempt $i failed, retrying..."
+            sleep $((i * 3))
+          done
+          exit 1
