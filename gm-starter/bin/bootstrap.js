@@ -173,8 +173,10 @@ function fetchToFile(url, destPath, expectedTotal) {
       const append = res.statusCode === 206 && existing > 0;
       const out = fs.createWriteStream(destPath, { flags: append ? 'a' : 'w' });
       let bytes = append ? existing : 0;
-      let lastLog = Date.now();
+      let lastStderr = Date.now();
       let lastByte = Date.now();
+      const fetchStart = Date.now();
+      obsEvent('bootstrap', 'fetch.start', { url, resume_from: existing, status: res.statusCode });
       const stallTimer = setInterval(() => {
         if (Date.now() - lastByte > STALL_TIMEOUT_MS) {
           clearInterval(stallTimer);
@@ -184,15 +186,19 @@ function fetchToFile(url, destPath, expectedTotal) {
       res.on('data', c => {
         bytes += c.length;
         lastByte = Date.now();
-        if (Date.now() - lastLog > 5000) {
+        if (Date.now() - lastStderr > 5000) {
           const pct = expectedTotal ? ` ${Math.floor(bytes / expectedTotal * 100)}%` : '';
-          log(`downloading: ${(bytes / 1048576).toFixed(1)} MiB${pct}`);
-          lastLog = Date.now();
+          try { process.stderr.write(`[plugkit-bootstrap] downloading: ${(bytes / 1048576).toFixed(1)} MiB${pct}\n`); } catch (_) {}
+          lastStderr = Date.now();
         }
       });
       res.pipe(out);
-      out.on('finish', () => { clearInterval(stallTimer); out.close(() => resolve(bytes)); });
-      out.on('error', err => { clearInterval(stallTimer); reject(err); });
+      out.on('finish', () => {
+        clearInterval(stallTimer);
+        obsEvent('bootstrap', 'fetch.end', { url, bytes, dur_ms: Date.now() - fetchStart, ok: true });
+        out.close(() => resolve(bytes));
+      });
+      out.on('error', err => { clearInterval(stallTimer); obsEvent('bootstrap', 'fetch.end', { url, bytes, dur_ms: Date.now() - fetchStart, ok: false, err: String(err.message || err) }); reject(err); });
       res.on('error', err => { clearInterval(stallTimer); reject(err); });
       res.on('end', () => clearInterval(stallTimer));
     });
