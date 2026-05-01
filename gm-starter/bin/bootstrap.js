@@ -32,6 +32,11 @@ function binaryName() {
   return key.startsWith('win32') ? `plugkit-${key}.exe` : `plugkit-${key}`;
 }
 
+function rtkBinaryName() {
+  const key = platformKey();
+  return key.startsWith('win32') ? `rtk-${key}.exe` : `rtk-${key}`;
+}
+
 function cacheRoot() {
   const home = os.homedir();
   if (process.env.PLUGKIT_CACHE_DIR) return process.env.PLUGKIT_CACHE_DIR;
@@ -58,8 +63,8 @@ function readVersionFile(wrapperDir) {
   return fs.readFileSync(p, 'utf8').trim();
 }
 
-function readShaManifest(wrapperDir) {
-  const p = path.join(wrapperDir, 'plugkit.sha256');
+function readShaManifest(wrapperDir, manifestName) {
+  const p = path.join(wrapperDir, manifestName || 'plugkit.sha256');
   if (!fs.existsSync(p)) return null;
   const out = {};
   for (const line of fs.readFileSync(p, 'utf8').split(/\r?\n/)) {
@@ -275,10 +280,61 @@ async function bootstrap(opts) {
     fs.writeFileSync(okSentinel, new Date().toISOString());
     log(`installed ${finalPath}`);
     pruneOldVersions(root, version);
+    // Best-effort rtk fetch: failures here never block plugkit usage
+    try { await bootstrapRtk(verDir, version, wrapperDir, opts.silent); }
+    catch (err) { log(`rtk fetch skipped: ${err.message}`); }
     return finalPath;
   } finally {
     releaseLock(lockPath);
   }
+}
+
+async function bootstrapRtk(verDir, version, wrapperDir, silent) {
+  const rtkName = rtkBinaryName();
+  const rtkPath = path.join(verDir, rtkName);
+  const rtkOk = path.join(verDir, '.rtk-ok');
+  if (fs.existsSync(rtkPath) && fs.existsSync(rtkOk)) {
+    if (!silent) log(`rtk cache hit: ${rtkPath}`);
+    return rtkPath;
+  }
+  const rtkSha = readShaManifest(wrapperDir, 'rtk.sha256');
+  const expected = rtkSha ? rtkSha[rtkName] : null;
+  const tmp = `${rtkPath}.partial`;
+  const url = `https://github.com/${RELEASE_REPO}/releases/download/v${version}/${rtkName}`;
+  await downloadWithRetry(url, tmp);
+  if (expected) {
+    const got = await sha256OfFile(tmp);
+    if (got !== expected) {
+      try { fs.unlinkSync(tmp); } catch (_) {}
+      throw new Error(`rtk sha256 mismatch: expected ${expected}, got ${got}`);
+    }
+  }
+  try { fs.renameSync(tmp, rtkPath); }
+  catch (err) {
+    if (err.code === 'EEXIST' || err.code === 'EPERM') {
+      try { fs.unlinkSync(rtkPath); } catch (_) {}
+      fs.renameSync(tmp, rtkPath);
+    } else throw err;
+  }
+  if (os.platform() !== 'win32') { try { fs.chmodSync(rtkPath, 0o755); } catch (_) {} }
+  fs.writeFileSync(rtkOk, new Date().toISOString());
+  log(`installed ${rtkPath}`);
+  return rtkPath;
+}
+
+function resolveCachedRtk(opts) {
+  opts = opts || {};
+  const wrapperDir = opts.wrapperDir || __dirname;
+  const version = opts.version || readVersionFile(wrapperDir);
+  const root = (() => {
+    try { const r = cacheRoot(); ensureDir(r); return r; }
+    catch (_) { const r = fallbackCacheRoot(); ensureDir(r); return r; }
+  })();
+  const verDir = path.join(root, `v${version}`);
+  const rtkPath = path.join(verDir, rtkBinaryName());
+  const rtkOk = path.join(verDir, '.rtk-ok');
+  if (fs.existsSync(rtkPath) && fs.existsSync(rtkOk)) return rtkPath;
+  return null;
 }
 
 function resolveCachedBinary(opts) {
@@ -296,7 +352,7 @@ function resolveCachedBinary(opts) {
   return null;
 }
 
-module.exports = { bootstrap, resolveCachedBinary, platformKey, binaryName, cacheRoot };
+module.exports = { bootstrap, resolveCachedBinary, resolveCachedRtk, platformKey, binaryName, rtkBinaryName, cacheRoot };
 
 if (require.main === module) {
   bootstrap({ silent: false })

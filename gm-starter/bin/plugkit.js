@@ -3,9 +3,17 @@
 const { spawn, spawnSync } = require('child_process');
 const path = require('path');
 const fs = require('fs');
-const { bootstrap, resolveCachedBinary } = require('./bootstrap');
+const { bootstrap, resolveCachedBinary, resolveCachedRtk } = require('./bootstrap');
 
 const dir = __dirname;
+
+function envWithRtkOnPath() {
+  const rtkPath = resolveCachedRtk({ wrapperDir: dir });
+  if (!rtkPath) return process.env;
+  const rtkDir = path.dirname(rtkPath);
+  const sep = process.platform === 'win32' ? ';' : ':';
+  return { ...process.env, PATH: `${rtkDir}${sep}${process.env.PATH || ''}` };
+}
 
 async function resolveBinary() {
   const cached = resolveCachedBinary({ wrapperDir: dir });
@@ -27,18 +35,20 @@ async function main() {
     else process.exit(1);
   }
 
+  const env = envWithRtkOnPath();
+
   if (isHook && !process.stdin.isTTY) {
     const chunks = [];
     process.stdin.on('data', c => chunks.push(c));
     process.stdin.on('end', () => {
-      const child = spawn(bin, args, { stdio: ['pipe', 'inherit', 'inherit'], windowsHide: true });
+      const child = spawn(bin, args, { stdio: ['pipe', 'inherit', 'inherit'], windowsHide: true, env });
       child.stdin.end(Buffer.concat(chunks));
       child.on('close', code => process.exit(code ?? 1));
       child.on('error', () => process.exit(1));
     });
     process.stdin.on('error', () => process.exit(1));
   } else {
-    const result = spawnSync(bin, args, { stdio: 'inherit', windowsHide: true });
+    const result = spawnSync(bin, args, { stdio: 'inherit', windowsHide: true, env });
     process.exit(result.status ?? 1);
   }
 }

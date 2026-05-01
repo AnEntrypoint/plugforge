@@ -43,6 +43,8 @@ Runs until: .gm/prd.yml empty AND git clean AND all pushes confirmed AND CI gree
 
 ## AUTONOMY — HARD RULE
 
+**USER REQUEST = AUTHORIZATION.** The user's message asking for X is the green light. PLAN's job is to translate that ask into a PRD and start — not to re-confirm. "Want me to do X?", "should I take shape A or B?", "this is multi-repo work, OK to proceed?" after the user said "do X" are all forced closure. When the user surfaces a tradeoff (deep vs light, single-file vs cross-repo), pick the read that matches the obvious meaning of the request — "deeply integrate" means deep, "all platforms" means all — declare the choice in one line ("going with A because Y") and execute. Multi-repo scope, build cost, CI duration, binary-size impact, and "this will take a while" are never grounds to re-confirm. The user already knows; that's why they asked.
+
 PRD written → execute to COMPLETE without asking the user. Doubts that arise during execution are resolved by witnessed probe, by recall, or by re-reading the PRD — never by asking. Any question whose answer is reachable from the agent's tools belongs to the agent, not the user.
 
 Asking is last-resort: destructive-irreversible without PRD coverage, OR user intent irrecoverable from PRD/memory/code/web. Channel: `exec:pause` (renames `prd.yml` → `prd.paused.yml`; question in header). In-conversation asking is last-resort beneath last-resort.
