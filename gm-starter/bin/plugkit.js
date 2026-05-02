@@ -28,7 +28,15 @@ async function main() {
   obsEvent('plugkit_wrapper', 'invoke', { argv: args.slice(0, 4), is_hook: isHook });
   let bin;
   try {
-    bin = await resolveBinary();
+    if (isHook) {
+      bin = resolveCachedBinary({ wrapperDir: dir }) || legacyFallback();
+      if (!bin) {
+        obsEvent('plugkit_wrapper', 'hook_skip_uncached', { argv: args.slice(0, 4), dur_ms: Date.now() - startedAt });
+        process.exit(0);
+      }
+    } else {
+      bin = await resolveBinary();
+    }
   } catch (err) {
     process.stderr.write(`[plugkit] bootstrap failed: ${err.message}\n`);
     obsEvent('plugkit_wrapper', 'bootstrap_failed', { err: err.message, dur_ms: Date.now() - startedAt, argv: args.slice(0, 4), is_hook: isHook });
