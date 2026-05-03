@@ -32,12 +32,16 @@ async function main() {
       bin = resolveCachedBinary({ wrapperDir: dir }) || legacyFallback();
       if (!bin) {
         const hookSubcmd = args[1] || '';
-        if (hookSubcmd === 'pre-tool-use') {
-          process.stdout.write(JSON.stringify({ decision: 'block', reason: '[plugkit] binary not yet installed — bootstrap in progress. All tool use blocked until plugkit binary is downloaded and enforcement is active.' }));
-          obsEvent('plugkit_wrapper', 'hook_block_uncached', { argv: args.slice(0, 4), dur_ms: Date.now() - startedAt });
+        if (hookSubcmd === 'session-start') {
+          obsEvent('plugkit_wrapper', 'hook_bootstrap_session_start', { argv: args.slice(0, 4) });
+          try {
+            await bootstrap({ wrapperDir: dir });
+          } catch (e) {
+            process.stderr.write(`[plugkit] session-start bootstrap failed: ${e.message}\n`);
+          }
           process.exit(0);
         }
-        process.stderr.write(`[plugkit] hook ${hookSubcmd} skipped: binary not yet installed (cache miss). Enforcement disabled until bootstrap completes.\n`);
+        process.stderr.write(`[plugkit] hook ${hookSubcmd} skipped: binary not yet installed. Bootstrap will run on session-start.\n`);
         obsEvent('plugkit_wrapper', 'hook_skip_uncached', { argv: args.slice(0, 4), dur_ms: Date.now() - startedAt });
         process.exit(0);
       }
