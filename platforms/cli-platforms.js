@@ -45,6 +45,10 @@ function createAdapterClass(cfg) {
     loadLangFromSource(sourceDir) {
       return cfg.loadLangFromSource ? cfg.loadLangFromSource(sourceDir) : {};
     }
+
+    transformAgentFrontmatter(raw) {
+      return cfg.transformAgentFrontmatter ? cfg.transformAgentFrontmatter(raw) : raw;
+    }
   }
 
   return DynamicCLIAdapter;

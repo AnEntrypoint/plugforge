@@ -1414,6 +1414,21 @@ try {
 
 const gc = factory('gc', 'Gemini CLI', 'gemini-extension.json', 'GEMINI.md', {
   loadSkillsFromSource() { return {}; },
+  transformAgentFrontmatter(raw) {
+    const m = raw.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n?([\s\S]*)$/);
+    if (!m) return raw;
+    const [, fmText, body] = m;
+    const dropKeys = new Set(['agent', 'enforce', 'allowed-tools']);
+    const out = [];
+    for (const line of fmText.split(/\r?\n/)) {
+      const km = line.match(/^([a-zA-Z_-]+):\s*(.*)$/);
+      if (!km) { out.push(line); continue; }
+      const [, key] = km;
+      if (dropKeys.has(key)) continue;
+      out.push(line);
+    }
+    return `---\n${out.join('\n')}\n---\n${body}`;
+  },
   formatConfigJson(config) {
     return makePackageJson({ ...config, contextFileName: this.contextFile });
   },
