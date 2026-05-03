@@ -127,3 +127,7 @@ exec:nodejs code that hits fs.readFileSync ENOENT or other synchronous system er
 ## Made with gm Page
 
 `docs/made-with.html` is a static showcase of notable AnEntrypoint projects. Update the PROJECTS array when a new notable project is added — projects with interesting descriptions, meaningful star counts, or technically unusual scope. Static data, no runtime API calls. Standalone HTML, not bundled.
+
+## Learning audit
+
+Audit 2026-05-03: sampled 5 top-level architecture rules (clean-build, windows-spawnSync, nothing-fake-source, skills-bundled, rtk-auto-wrapping). All correctly absent from rs-learn (belong in always-on buffer per policy). 0/5 migrations, 0/5 refinements. Audit confirms: architecture rules stay in AGENTS.md, implementation details route to rs-learn.
