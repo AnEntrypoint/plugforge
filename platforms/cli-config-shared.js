@@ -818,7 +818,7 @@ function pluginMjsSource(pluginFile) {
     "      if (/^\\s*git(?:\\s|$)/.test(cmd)) return;",
     "      const m = cmd.match(/^exec(?::(\\S+))?\\n([\\s\\S]+)$/);",
      "      if (!m) {",
-     "        output.args.command = \"echo 'Bash tool can only be used with exec syntax:\\n\\nexec[:lang]\\n<command>\\n\\nExamples:\\nexec\\nls -la\\n\\nexec:nodejs\\nconsole.log(\\\"hello\\\")' 1>&2 && false\";",
+     "        output.args.command = \"node -e \\\"process.stderr.write('Bash tool can only be used with exec syntax:\\\\n\\\\nexec[:lang]\\\\n<command>\\\\n\\\\nExamples:\\\\nexec\\\\nls -la\\\\n\\\\nexec:nodejs\\\\nconsole.log(hello)'); process.exit(1)\\\"\";",
      "        return;",
      "      }",
      "      const rawLang = (m[1]||'').toLowerCase();",
