@@ -1,7 +1,7 @@
 id: paper
-title: The Lifecycle
-subtitle: Toward Structured Lifecycle Control in Coding Agents (originally circulated as paper I)
-date: March 2026
-description: The Lifecycle (paper I) — the phase-gated state machine PLAN→EXECUTE→EMIT→VERIFY→COMPLETE, named mutables, witnessed execution. The first of four papers describing the gm discipline.
+title: The Complete Discipline
+subtitle: The unified gm research paper — all phases, all hard rules, one document
+date: May 2026
+description: The Complete Discipline — the unified gm paper covering the phase-gated lifecycle, mutable discipline, search protocol, governance layer, maximal cover, bounded autonomy, learning loop, and all operational hard rules in one document.
 layout: article
 source: ../docs/paper.html

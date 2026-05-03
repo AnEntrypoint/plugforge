@@ -34,9 +34,10 @@ function rewriteLegacyLinks(html, basePath) {
   const map = {
     './index.html': basePath + '/',
     './paper.html': basePath + '/paper/',
-    './paper2.html': basePath + '/paper2/',
-    './paper3.html': basePath + '/paper3/',
-    './paper4.html': basePath + '/paper4/',
+    './paper2.html': basePath + '/paper/',
+    './paper3.html': basePath + '/paper/',
+    './paper4.html': basePath + '/paper/',
+    './paper5.html': basePath + '/paper/',
     './distribution.html': basePath + '/distribution/',
     './made-with.html': basePath + '/made-with/',
     './stats.html': basePath + '/stats/',

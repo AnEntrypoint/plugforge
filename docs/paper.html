@@ -2,8 +2,8 @@
 <html lang="en"><head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>The Lifecycle · gm · 247420</title>
-<meta name="description" content="The Lifecycle (paper I): the phase-gated state machine PLAN→EXECUTE→EMIT→VERIFY→COMPLETE, named mutables, witnessed execution. The first of four papers describing the gm discipline.">
+<title>The Complete Discipline · gm · 247420</title>
+<meta name="description" content="The Complete Discipline: the unified gm research paper. Phase-gated lifecycle, mutable discipline, search protocol, governance layer, maximal cover, bounded autonomy, learning loop, and all operational hard rules in one document.">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#181a1f" media="(prefers-color-scheme: dark)">
 <meta name="theme-color" content="#f4f5f7" media="(prefers-color-scheme: light)">
@@ -13,7 +13,6 @@
   installStyles();
   document.documentElement.classList.add('ds-247420');
 </script>
-
 <style>
 body { display: flex; flex-direction: column; min-height: 100vh; }
 body > header:not(.app-topbar), body > nav:not(.app-topbar), body > main > header, body > main > nav { display: none !important; }
@@ -71,14 +70,24 @@ mermaid.initialize({ startOnLoad: true, theme: dark ? 'dark' : 'default', securi
 .cross-footer a:hover{background:var(--panel-3);color:var(--panel-accent)}
 .cross-footer a strong{display:block;color:var(--panel-text);margin-bottom:2px}
 .cross-footer a span{font-size:11px;color:var(--panel-text-2);text-transform:lowercase}
+.hard-rule{margin:18px 0;padding:14px 18px;background:var(--panel-1);border-left:4px solid var(--panel-accent);border-radius:8px;box-shadow:var(--panel-shadow)}
+.hard-rule .rule-title{font-family:var(--ff-mono);font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--panel-accent);margin-bottom:8px;font-weight:600}
+.hard-rule p{margin:0 0 8px 0;font-size:14px;color:var(--panel-text)}
+.hard-rule p:last-child{margin:0}
+.toc{margin:24px auto;padding:16px 20px;background:var(--panel-1);border-radius:8px;box-shadow:var(--panel-shadow);max-width:72ch}
+.toc-title{font-family:var(--ff-mono);font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--panel-text-2);margin-bottom:12px}
+.toc ol{margin:0;padding-left:20px}
+.toc li{font-size:13px;line-height:1.7;color:var(--panel-text)}
+.toc a{color:var(--panel-text-2);text-decoration:none}
+.toc a:hover{color:var(--panel-accent);text-decoration:underline}
 </style>
 </head>
-<body data-screen-label="gm / paper I">
+<body data-screen-label="gm / paper">
 <header class="app-topbar gm-topbar">
   <div class="gm-brand"><span>247420</span><span class="slash"> / </span><span class="leaf">gm</span></div>
   <nav>
     <a href="./index.html">home</a>
-    <a href="./paper5.html">paper</a>
+    <a href="./paper.html">paper</a>
     <details class="gm-dd"><summary>docs</summary><div class="gm-dd-menu">
       <a href="./mascot.html">glootie</a>
       <a href="./crates.html">crates</a>
@@ -93,41 +102,76 @@ mermaid.initialize({ startOnLoad: true, theme: dark ? 'dark' : 'default', securi
     </div></details>
   </nav>
 </header>
-<div class="app-crumb"><span>247420</span><span class="sep">›</span><span>gm</span><span class="sep">›</span><span class="leaf">paper I</span></div>
-
-
-
-
-
 
 <div class="title-block">
-  <h1>The Lifecycle: Toward Structured<br>Lifecycle Control in Coding Agents</h1>
+  <h1>The Complete Discipline: Lifecycle Control,<br>Governance, and Operational Hard Rules<br>for LLM Coding Agents</h1>
   <div class="author">AnEntrypoint</div>
-  <div class="date">March 2026 · originally circulated as &ldquo;paper I&rdquo;</div>
+  <div class="date">May 2026 · consolidation of papers I–IV with additional operational rules</div>
 </div>
 
 <div class="abstract-block">
   <div class="abstract-title">Abstract</div>
   <div class="abstract-text">
-    LLM-based coding agents frequently exhibit three failure modes: silent assumption propagation, uncontrolled state drift, and memory loss across sessions. We describe a set of practical techniques for addressing these failures through external lifecycle enforcement rather than prompt-based self-discipline. The approach centers on a phase-gated state machine&mdash;PLAN &rarr; EXECUTE &rarr; EMIT &rarr; VERIFY &rarr; COMPLETE&mdash;where forward progress requires satisfying explicit conditions and newly discovered unknowns trigger backward transitions to earlier phases. We complement this with a discipline for naming unknowns before acting on them, requiring witnessed execution to resolve them, and a file-based memory system for cross-session coherence. We describe our implementation, <em>gm</em>, which has been deployed across 11 IDE and CLI platforms. An addendum (Section 10) documents major system advances made in the three weeks following initial publication, including a deterministic browser runtime, vector embedding search, session-scoped task isolation, an automated cascade build pipeline, and a mandatory observability enumeration discipline.
+    LLM-based coding agents exhibit failure modes that self-regulation cannot fix: silent assumption propagation, state drift, memory loss, premature closure, and fabricated outputs presented as results. This paper consolidates the gm discipline into a single document. We describe the phase-gated state machine (PLAN&rarr;EXECUTE&rarr;EMIT&rarr;VERIFY&rarr;COMPLETE), the named-mutable and witnessed-execution framework, the in-phase quality discipline, the governance layer with its route families and quality metrics, and the second-generation rules that emerged from two months of production use: Maximal Cover, bounded autonomy, the learning loop, and the execution budget model. We also document operational hard rules absent from earlier papers: Fix-on-Sight, Browser Witness, Nothing Fake, web-search-before-pause, the ORIENT discipline, and the single integration test policy. Together these form a complete behavioral envelope for coding agents deployed across 12 platforms.
   </div>
 </div>
 
-<h2>1. Introduction</h2>
+<div class="toc">
+  <div class="toc-title">Contents</div>
+  <ol>
+    <li><a href="#s1">Introduction</a></li>
+    <li><a href="#s2">The State Machine Model</a></li>
+    <li><a href="#s3">The Mutable Discipline</a></li>
+    <li><a href="#s4">Work Item Management: The PRD</a></li>
+    <li><a href="#s5">Cross-Session Memory Architecture</a></li>
+    <li><a href="#s6">Implementation: The gm Orchestrator</a></li>
+    <li><a href="#s7">Constraint Tiers</a></li>
+    <li><a href="#s8">Pre-Emit Verification Protocol</a></li>
+    <li><a href="#s9">In-Phase Quality: The Search and Code Discipline</a></li>
+    <li><a href="#s10">Structural Parallelism and Wave Execution</a></li>
+    <li><a href="#s11">Permanent Observability</a></li>
+    <li><a href="#s12">The Memorize Sub-Agent</a></li>
+    <li><a href="#s13">Governance Layer</a></li>
+    <li><a href="#s14">Quality Metrics</a></li>
+    <li><a href="#s15">Failure Taxonomy</a></li>
+    <li><a href="#s16">Remote Execution Boundary</a></li>
+    <li><a href="#s17">Maximal Cover</a></li>
+    <li><a href="#s18">Bounded Autonomy</a></li>
+    <li><a href="#s19">The Learning Loop</a></li>
+    <li><a href="#s20">Execution Budget Model</a></li>
+    <li><a href="#s21">ORIENT: Pre-Planning Recall Pack</a></li>
+    <li><a href="#s22">Fix on Sight</a></li>
+    <li><a href="#s23">Browser Witness</a></li>
+    <li><a href="#s24">Nothing Fake</a></li>
+    <li><a href="#s25">Web-Search Before Pause</a></li>
+    <li><a href="#s26">Single Integration Test Policy</a></li>
+    <li><a href="#s27">Sync-Before-Emit</a></li>
+    <li><a href="#s28">Auto-Recall on Prompt-Submit</a></li>
+    <li><a href="#s29">Implicit Skill Prose</a></li>
+    <li><a href="#s30">Discussion</a></li>
+    <li><a href="#s31">Conclusion</a></li>
+  </ol>
+</div>
 
-<p class="first">LLM-based coding agents&mdash;systems that autonomously write, test, and deploy software&mdash;have become increasingly capable, but their reliability remains uneven. In our experience maintaining a multi-platform agent system, we have observed three recurring failure patterns:</p>
+<article>
+
+<h2 id="s1">1. Introduction</h2>
+
+<p>LLM-based coding agents&mdash;systems that autonomously write, test, and deploy software&mdash;have become increasingly capable, but their reliability remains uneven. In our experience maintaining a multi-platform agent system across 12 IDE and CLI platforms, we have observed three primary failure categories:</p>
 
 <ol>
-  <li><strong>Assumption propagation:</strong> Agents narrate hypotheses about code behavior without verifying them, leading to cascading errors when assumptions prove false.</li>
+  <li><strong>Assumption propagation:</strong> Agents narrate hypotheses about code behavior without verifying them, producing cascading errors when assumptions prove false.</li>
   <li><strong>State amnesia:</strong> Multi-step tasks lose coherence as context windows fill, with agents forgetting earlier decisions or re-solving solved subproblems.</li>
-  <li><strong>Uncontrolled lifecycle:</strong> Without explicit phase boundaries, agents freely interleave planning, coding, and verification, making it impossible to reason about task progress or enforce quality gates.</li>
+  <li><strong>Premature closure:</strong> Agents declare work done before conditions are met, ship placeholders as results, skip verification steps, or stop short of the full scope of a request.</li>
 </ol>
 
-<p>This paper describes a set of techniques we have found useful for mitigating these failures. The approach uses a phase-gated state machine with named unknowns and mandatory witnessed execution. Rather than relying on the model to self-regulate, constraints are enforced externally through hooks that operate below the agent&rsquo;s decision layer.</p>
+<p>Self-regulation fails against these patterns because the same model that reasons through a problem also reasons through the justification for shortcuts. External behavioral enforcement&mdash;hooks below the agent&rsquo;s decision layer, stop barriers, phase gates, and hard rules encoded in the skill chain&mdash;is the only reliable mitigation.</p>
 
-<p>The paper is organized as follows: &sect;2 describes the state machine model; &sect;3 introduces the discipline for handling unknowns; &sect;4&ndash;5 cover work tracking and cross-session memory; &sect;6 describes the implementation; &sect;7&ndash;9 discuss constraints, verification, and limitations; &sect;10 documents advances made in the three weeks following initial publication.</p>
+<p>This paper is a complete reference for the gm discipline as it stands in production. Sections 2&ndash;8 cover the original lifecycle model (Phase I). Sections 9&ndash;12 cover the in-phase quality discipline (Phase II). Sections 13&ndash;16 cover the governance layer (Phase III). Sections 17&ndash;20 cover second-generation rules for autonomy and scale (Phase IV). Sections 21&ndash;29 cover operational hard rules that emerged from production and are absent from earlier papers.</p>
 
-<h2>2. The State Machine Model</h2>
+<hr>
+
+<h2 id="s2">2. The State Machine Model</h2>
 
 <pre class="mermaid">
 stateDiagram-v2
@@ -141,73 +185,82 @@ stateDiagram-v2
   EXECUTE --> PLAN: new unknown
   EMIT --> PLAN: new unknown
   VERIFY --> PLAN: new unknown
-  EMIT --> EXECUTE: logic wrong (snake)
-  VERIFY --> EMIT: broken output (snake)
-  VERIFY --> EXECUTE: logic wrong (snake)
+  EMIT --> EXECUTE: logic wrong
+  VERIFY --> EMIT: broken output
+  VERIFY --> EXECUTE: logic wrong
 </pre>
 
-<div class="glootie-callout"><span class="who">The Lifecycle says:</span>"Forward transitions are conjunctive ladders. Backward transitions are snakes. The board is rigged in favour of finishing — but only if you climb every rung."</div>
+<div class="glootie-callout"><span class="who">Glootie says:</span>"Forward transitions are conjunctive ladders. Backward transitions are snakes. The board is rigged in favour of finishing &mdash; but only if you climb every rung."</div>
 
 <h3>2.1 Phases</h3>
-<p class="first">The framework defines five phases with forward-only progression. PLAN discovers all unknowns (exits when a full pass adds zero new unknowns). EXECUTE resolves unknowns via witnessed execution (exits when all mutables are KNOWN). EMIT writes files to disk (exits when post-emit matches pre-emit exactly). VERIFY performs end-to-end witnessed validation (exits when .prd is empty and git is clean and pushed). COMPLETE updates documentation and closes the session.</p>
+<p>The framework defines five phases with forward-only progression under normal conditions. <strong>PLAN</strong> discovers all unknowns (exits when a full pass adds zero new unknowns). <strong>EXECUTE</strong> resolves unknowns via witnessed execution (exits when all mutables are KNOWN). <strong>EMIT</strong> writes files to disk (exits when post-emit matches pre-emit exactly). <strong>VERIFY</strong> performs end-to-end witnessed validation (exits when .prd is empty, git is clean and pushed, and CI is green). <strong>COMPLETE</strong> updates documentation and closes the session.</p>
 
-<p>Each phase is implemented as a discrete <em>skill</em>&mdash;a self-contained prompt with explicit tool permissions, enforcement level, and transition rules. Skills are invoked through a dedicated dispatch mechanism, never through general-purpose agent spawning, ensuring that phase identity is preserved across invocations.</p>
+<p>Each phase is implemented as a discrete skill&mdash;a self-contained prompt with explicit tool permissions, enforcement level, and transition rules. Skills are invoked through a dedicated dispatch mechanism, never through general-purpose agent spawning, ensuring phase identity is preserved.</p>
 
 <h3>2.2 Forward Transitions (Ladders)</h3>
-<p class="first">A phase advances only when its exit condition is satisfied. Conditions are conjunctive: every sub-condition must hold simultaneously. This prevents partial advancement where, for example, code is written before all unknowns are resolved.</p>
+<p>A phase advances only when its exit condition is satisfied. Conditions are conjunctive: every sub-condition must hold simultaneously. This prevents partial advancement where code is written before unknowns are resolved.</p>
 
 <h3>2.3 Backward Transitions (Snakes)</h3>
-<p class="first">Any newly discovered unknown at any phase triggers an immediate backward transition:</p>
+<p>Any newly discovered unknown at any phase triggers an immediate backward transition:</p>
 <ul>
-  <li>EXECUTE &rarr; PLAN: New unknown or mutable unresolvable after 2 passes</li>
-  <li>EMIT &rarr; EXECUTE: Logic error in known mutable; EMIT &rarr; PLAN: genuinely new unknown</li>
-  <li>VERIFY &rarr; EMIT: Broken file output; VERIFY &rarr; EXECUTE: Wrong logic; VERIFY &rarr; PLAN: Wrong requirements</li>
+  <li>EXECUTE &rarr; PLAN: new unknown, or mutable unresolvable after 2 passes</li>
+  <li>EMIT &rarr; EXECUTE: logic error in known mutable; EMIT &rarr; PLAN: genuinely new unknown</li>
+  <li>VERIFY &rarr; EMIT: broken file output; VERIFY &rarr; EXECUTE: wrong logic; VERIFY &rarr; PLAN: wrong requirements</li>
 </ul>
 
-<p>We refer to this informally as a &ldquo;snakes and ladders&rdquo; model: forward progress requires satisfying conditions (ladders), while encountering problems sends the agent back to an earlier phase (snakes). The intent is to prevent agents from patching around problems rather than reconsidering their assumptions.</p>
+<p>The intent is to prevent agents from patching around problems rather than reconsidering their assumptions. An agent that encounters unexpected behavior during EMIT must regress to fix it at the root, not accumulate workarounds.</p>
 
-<div class="theorem">
-  <strong>Observation (Termination).</strong> <em>If the set of discoverable unknowns is finite and each planning pass reduces the set of undiscovered unknowns, the process terminates. In our usage, we typically observe convergence within 2&ndash;4 planning passes.</em>
-</div>
+<blockquote><strong>Observation (Termination).</strong> If the set of discoverable unknowns is finite and each planning pass reduces the set of undiscovered unknowns, the process terminates. We typically observe convergence within 2&ndash;4 planning passes.</blockquote>
 
-<h2>3. The Mutable Discipline</h2>
+<hr>
+
+<h2 id="s3">3. The Mutable Discipline</h2>
 
 <h3>3.1 Named Unknowns</h3>
-<p class="first">A key element of our approach is the <em>named mutable</em>: every unknown fact needed to make a decision or write code is explicitly named before action is taken. A mutable has a name, an expected value, a current value (initially UNKNOWN), and a resolution method. The agent is instructed not to proceed past an unresolved mutable.</p>
+<p>A <em>named mutable</em> is every unknown fact needed to make a decision or write code, explicitly named before action is taken. A mutable has a name, an expected value, a current value (initially UNKNOWN), and a resolution method. The agent does not proceed past an unresolved mutable.</p>
 
-<p>The intent is to make uncertainty visible rather than allowing the agent to generate plausible-but-unverified code.</p>
+<p>The intent is to make uncertainty visible. Generating plausible-but-unverified code is the primary source of assumption propagation failures.</p>
 
 <h3>3.2 Resolution by Witnessed Execution</h3>
-<p class="first">In our framework, a mutable is considered resolved only when its value is assigned by the output of real execution&mdash;running actual code against actual services with actual data. The following do <em>not</em> constitute resolution:</p>
+<p>A mutable is resolved only when its value is assigned by the output of real execution&mdash;running actual code against actual services with actual data. The following do <em>not</em> constitute resolution:</p>
 <ul>
   <li>Reading documentation (may be outdated)</li>
   <li>Reasoning about expected behavior (may be wrong)</li>
   <li>Examining source code (static analysis misses runtime behavior)</li>
 </ul>
 
-<p>The rule is straightforward: only witnessed output counts as ground truth. Once a value has been observed through execution, it is treated as known. Before that, it remains unknown regardless of how plausible a guess might be.</p>
+<p>Only witnessed output counts as ground truth. Before that, a value remains unknown regardless of how plausible a guess might be.</p>
 
 <h3>3.3 The Two-Pass Rule</h3>
-<p class="first">If a mutable remains unresolved after two execution passes, it is reclassified as a new unknown and the agent snakes back to PLAN. This prevents infinite loops where the agent repeatedly attempts the same failing resolution strategy.</p>
+<p>If a mutable remains unresolved after two execution passes, it is reclassified as a new unknown and the agent snakes back to PLAN. This prevents infinite loops where the agent repeatedly attempts the same failing resolution strategy.</p>
 
 <h3>3.4 Surprise Absorption Prohibition</h3>
-<p class="first">When execution produces unexpected output, the agent is instructed not to silently absorb the surprise. Instead, every discrepancy between expected and actual output generates a new named mutable, triggering a return to PLAN. The goal is to prevent workarounds that accumulate technical debt.</p>
+<p>When execution produces unexpected output, the agent must not silently absorb the surprise. Every discrepancy between expected and actual output generates a new named mutable, triggering a return to PLAN. The goal is to prevent workarounds that accumulate technical debt.</p>
 
-<h2>4. Work Item Management: The .prd</h2>
+<hr>
+
+<h2 id="s4">4. Work Item Management: The PRD</h2>
 
 <h3>4.1 Structure</h3>
-<p class="first">The system tracks work through a <code>.prd</code> file (Product Requirements Document), a JSON array where each item carries an id, imperative subject, status (pending &rarr; in_progress &rarr; completed), acceptance criteria, edge cases, bidirectional dependency links, and effort estimates (small: &lt;15 min, medium: &lt;45 min, large: &gt;1 hour).</p>
+<p>The system tracks work through a <code>.gm/prd.yml</code> file. Each item carries an id, imperative subject, status (pending &rarr; in_progress &rarr; completed), acceptance criteria, edge cases, bidirectional dependency links, effort estimates, route family tag, and load score (0.0&ndash;1.0: consequence weight). Writing the PRD is mandatory for any task touching more than one line in one file.</p>
+
+<p>The load score governs verification budget: <code>verification_budget = load × (1 − tier_confidence)</code>. Items with load &gt; 0.75 must be witnessed before EMIT.</p>
 
 <h3>4.2 Wave-Based Parallel Execution</h3>
-<p class="first">The .prd&rsquo;s dependency graph enables parallel execution. Each wave identifies all pending items with satisfied dependencies, launches up to 3 concurrent subagents (one per item), and upon completion checks newly unblocked items for the next wave. This exploits the inherent parallelism in software tasks.</p>
+<p>The PRD&rsquo;s dependency graph enables parallel execution. Each wave identifies all pending items with satisfied dependencies, launches up to 3 concurrent subagents, and upon completion checks newly unblocked items for the next wave. Independent items are never executed sequentially.</p>
 
 <h3>4.3 Stop-Hook Enforcement</h3>
-<p class="first">A stop hook inspects the .prd at session end. If any items remain, the session cannot close. A second stop hook checks for uncommitted or unpushed git changes. Together, these act as barriers against premature completion.</p>
+<p>A stop hook inspects the PRD at session end. If any items remain, the session cannot close. A second stop hook checks for uncommitted or unpushed git changes. Together these act as barriers against premature completion.</p>
 
-<h2>5. Cross-Session Memory Architecture</h2>
+<h3>4.4 Cross-Session Continuity</h3>
+<p>The PRD is durable across sessions. Items left over from a previous session are the current session&rsquo;s work the moment they are discovered. The agent finishes every item before declaring complete, including ones the current user message did not mention. Sessions are scheduling; the PRD is the contract.</p>
+
+<hr>
+
+<h2 id="s5">5. Cross-Session Memory Architecture</h2>
 
 <h3>5.1 Memory Types</h3>
-<p class="first">The system implements a file-based persistent memory system with four semantic types:</p>
+<p>The system implements file-based persistent memory with four semantic types:</p>
 <dl>
   <dt>user:</dt><dd>Profile, role, expertise, preferences&mdash;enables tailored collaboration</dd>
   <dt>feedback:</dt><dd>Behavioral corrections and confirmations&mdash;persistent learning channel</dd>
@@ -218,133 +271,442 @@ stateDiagram-v2
 <p>Each memory is stored as a Markdown file with YAML frontmatter, indexed in <code>MEMORY.md</code>. The index loads at conversation start; individual memories are read on demand.</p>
 
 <h3>5.2 Exclusion Principle</h3>
-<p class="first">The system avoids storing information that can be derived from current project state: code patterns, architecture, file paths, git history, and debugging solutions. In our experience, memory staleness&mdash;acting on outdated cached information&mdash;is among the more damaging failure modes.</p>
+<p>The system avoids storing information derivable from current project state: code patterns, architecture, file paths, git history, debugging solutions. Memory staleness&mdash;acting on outdated cached information&mdash;is among the more damaging failure modes.</p>
 
 <h3>5.3 Verification Before Recall</h3>
-<p class="first">When a memory names a specific file, function, or flag, the agent must verify its continued existence before recommending action. A memory is a claim about a point in time, not current reality.</p>
+<p>When a memory names a specific file, function, or flag, the agent must verify its continued existence before recommending action. A memory is a claim about a point in time, not current reality.</p>
 
 <h3>5.4 Feedback Loop</h3>
-<p class="first">The feedback memory type creates a persistent behavioral correction channel. When a user corrects the agent or confirms a non-obvious approach, the agent records the rule, reason, and application context&mdash;addressing the &ldquo;Groundhog Day&rdquo; problem where agents make the same mistakes across sessions.</p>
+<p>The feedback memory type creates a persistent behavioral correction channel. When a user corrects the agent or confirms a non-obvious approach, the agent records the rule, reason, and application context. This addresses the &ldquo;Groundhog Day&rdquo; problem where agents make the same mistakes across sessions.</p>
 
-<h2>6. Implementation: The gm Orchestrator</h2>
+<hr>
+
+<h2 id="s6">6. Implementation: The gm Orchestrator</h2>
 
 <h3>6.1 Skill-Based Architecture</h3>
-<p class="first">Each phase is implemented as a skill with YAML frontmatter specifying name, description, enforcement level, and allowed tools. The skill chain is: gm &rarr; planning &rarr; gm-execute &rarr; gm-emit &rarr; gm-complete &rarr; update-docs.</p>
-
-<p>Skills are invoked through a dedicated Skill tool ensuring phase identity is explicit, tool permissions are scoped per phase, and transition logic is localized.</p>
+<p>Each phase is implemented as a skill with YAML frontmatter specifying name, description, enforcement level, and allowed tools. The skill chain is: <code>gm &rarr; planning &rarr; gm-execute &rarr; gm-emit &rarr; gm-complete &rarr; update-docs</code>. Skills are invoked through a dedicated Skill tool ensuring phase identity is explicit and tool permissions are scoped per phase.</p>
 
 <h3>6.2 Hook Lifecycle</h3>
-<p class="first">Four hooks enforce the state machine at the platform level:</p>
+<p>Four hooks enforce the state machine below the agent&rsquo;s decision layer:</p>
 <dl>
   <dt>session-start:</dt><dd>Tool installation, agent context injection, codebase analysis</dd>
-  <dt>prompt-submit:</dt><dd>Routes all user messages through the gm skill chain</dd>
+  <dt>prompt-submit:</dt><dd>Routes all user messages through the gm skill chain; injects recall results</dd>
   <dt>pre-tool-use:</dt><dd>Blocks forbidden tools, dispatches <code>exec:&lt;lang&gt;</code> execution, enforces standards</dd>
-  <dt>stop:</dt><dd>Blocks session end if .prd has remaining items or git is dirty</dd>
+  <dt>stop:</dt><dd>Blocks session end if .prd has remaining items, git is dirty, or git is unpushed</dd>
 </dl>
 
-<p>Hooks operate below the agent&rsquo;s decision layer&mdash;they cannot be bypassed by agent reasoning. This is a deliberate design choice: the agent should not be able to &ldquo;decide&rdquo; to skip planning or write code during verification.</p>
+<p>Hooks are implemented entirely in Rust (rs-plugkit). No JS hook files are generated. The agent cannot bypass hook enforcement through reasoning.</p>
 
 <h3>6.3 Unified Code Execution</h3>
-<p class="first">All code execution passes through <code>exec:&lt;lang&gt;</code> dispatch. The pre-tool-use hook intercepts shell calls, detects the prefix, routes to the appropriate runtime, and manages background tasks. Supported languages include Node.js, Python, Go, Rust, TypeScript, and extensible language plugins.</p>
+<p>All code execution passes through <code>exec:&lt;lang&gt;</code> dispatch. The pre-tool-use hook intercepts shell calls, detects the prefix, routes to the appropriate runtime, and manages background tasks. Supported languages: Node.js, Python, Go, Rust, TypeScript, browser (managed Chromium), and extensible language plugins via a project-local <code>lang/</code> directory.</p>
 
 <h3>6.4 Cross-Platform Deployment</h3>
-<p class="first">The gm orchestrator deploys across 11 platforms via plugforge, generating platform-specific implementations from a single convention-driven source: 7 CLI platforms (Claude Code, Gemini CLI, OpenCode, Kilo, Codex, Copilot CLI, Qwen Code) and 4 IDE platforms (VS Code, Cursor, Zed, JetBrains).</p>
+<p>The gm orchestrator deploys across 12 platforms via a single convention-driven source generating platform-specific implementations: 8 CLI platforms (Claude Code, Gemini CLI, OpenCode, Kilo, Codex, Copilot CLI, Qwen Code, Hermes) and 4 IDE platforms (VS Code, Cursor, Zed, JetBrains). A fully automated cascade pipeline links all five Rust repositories; a push to any rs-* repo triggers binary builds for all 6 targets and downstream publication with no manual steps.</p>
 
-<h2>7. Constraint Tiers</h2>
+<hr>
 
-<p class="first">The framework defines four tiers of constraints with decreasing severity:</p>
+<h2 id="s7">7. Constraint Tiers</h2>
+
+<p>The framework defines four tiers of constraints with decreasing severity:</p>
 <dl>
-  <dt>Tier 0 (Absolute):</dt><dd>no_crash, no_exit, ground_truth_only, real_execution&mdash;enforced by hooks, cannot be overridden</dd>
-  <dt>Tier 1 (Quality):</dt><dd>max_file_lines=200, hot_reloadable, checkpoint_state</dd>
-  <dt>Tier 2 (Modularity):</dt><dd>no_duplication, no_hardcoded_values</dd>
-  <dt>Tier 3 (Style):</dt><dd>no_comments, convention_over_code</dd>
+  <dt>Tier 0 (Absolute):</dt><dd><code>no_crash</code>, <code>no_exit</code>, <code>ground_truth_only</code>, <code>real_execution</code>&mdash;enforced by hooks, cannot be overridden</dd>
+  <dt>Tier 1 (Quality):</dt><dd><code>max_file_lines=200</code>, <code>hot_reloadable</code>, <code>checkpoint_state</code></dd>
+  <dt>Tier 2 (Modularity):</dt><dd><code>no_duplication</code>, <code>no_hardcoded_values</code></dd>
+  <dt>Tier 3 (Style):</dt><dd><code>no_comments</code>, <code>convention_over_code</code></dd>
 </dl>
 
-<h2>8. Pre-Emit Verification Protocol</h2>
+<hr>
 
-<p class="first">The EMIT phase implements two-stage verification. <strong>Pre-emit:</strong> the agent imports the target module, runs proposed logic in-memory with real and error inputs, records expected outputs, and verifies all gate conditions hold simultaneously. Only then does it write to disk.</p>
+<h2 id="s8">8. Pre-Emit Verification Protocol</h2>
+
+<p>The EMIT phase implements two-stage verification. <strong>Pre-emit:</strong> the agent imports the target module, runs proposed logic in-memory with real and error inputs, records expected outputs, and verifies all gate conditions hold simultaneously. Only then does it write to disk.</p>
 
 <p><strong>Post-emit:</strong> the agent re-imports the actual file from disk (not in-memory), runs identical inputs, and compares output exactly. Known variance triggers fix-and-reverify; unknown variance triggers a snake to PLAN. This catches errors that test-after-write approaches miss: serialization bugs, import resolution differences, and file system race conditions.</p>
 
-<h2>9. Discussion</h2>
+<hr>
 
-<h3>9.1 Relationship to Formal Methods</h3>
-<p class="first">The approach shares surface similarities with model checking (named state variables, explicit transitions) and design-by-contract (pre/post-conditions on advancement). However, it operates at a much coarser level of abstraction&mdash;the &ldquo;states&rdquo; are task phases, not program states, and the &ldquo;contracts&rdquo; concern what the agent knows rather than program correctness.</p>
+<h2 id="s9">9. In-Phase Quality: The Search and Code Discipline</h2>
 
-<h3>9.2 Relationship to Test-Driven Development</h3>
-<p class="first">There is a loose analogy to TDD: both emphasize verification before implementation. The difference is that our verifications are not persisted as test files&mdash;they exist only as witnessed execution during the EXECUTE phase. This trades the long-term regression safety of a test suite for reduced context overhead during agentic sessions. Whether this tradeoff is worthwhile likely depends on the project and use case.</p>
+<h3>9.1 Codebase Search Protocol</h3>
+<p>Before naming any unknown as absent, the agent must conduct a minimum search campaign:</p>
+<ul>
+  <li>Start with a 2-word query; change or add one word per pass</li>
+  <li>Minimum 4 attempts before concluding a concern is absent</li>
+  <li>Searches run via <code>exec:codesearch</code> exclusively (Glob/Grep/Find tools are hook-blocked during agent phases)</li>
+</ul>
+<p>An existing concern found during search is consolidated, not duplicated. Adding a new abstraction over an existing one creates two competing implementations and is the primary source of duplication debt.</p>
 
-<h3>9.3 Overhead vs. Benefit</h3>
-<p class="first">The snake-back mechanism introduces overhead: an agent discovering a new unknown during EMIT must re-plan and re-execute, potentially discarding partial work. In our experience, this cost is generally offset by reduced late-stage rework, though we have not conducted controlled experiments to quantify the tradeoff.</p>
-
-<h3>9.4 Limitations</h3>
+<h3>9.2 Minimal-Code Resolution Order</h3>
+<p>When a problem can be solved multiple ways, the agent follows a four-step resolution order and stops at the first that applies:</p>
 <ol>
-  <li><strong>Finite unknown assumption:</strong> Termination requires discoverable unknowns to be finite. In adversarial environments, this may not hold.</li>
-  <li><strong>Witnessed execution cost:</strong> Real execution against real services may be prohibitive for expensive external APIs.</li>
-  <li><strong>Memory staleness window:</strong> The time between memory creation and verification creates potential for stale-memory-induced errors.</li>
+  <li><strong>Native first:</strong> does the language or runtime already provide this?</li>
+  <li><strong>Library second:</strong> does an existing dependency solve this pattern?</li>
+  <li><strong>Structure third:</strong> can the problem be encoded as data (map, dispatch table, pipeline) so the structure enforces correctness?</li>
+  <li><strong>Write last:</strong> only author new logic when the above three are exhausted.</li>
+</ol>
+<p>Dispatch tables replacing switch chains, pipelines replacing loop-with-accumulator, and maps replacing if/else forests are treated as correctness properties, not style preferences. Structure eliminates the class of wrong states that arise when logic must be kept consistent manually.</p>
+
+<hr>
+
+<h2 id="s10">10. Structural Parallelism and Wave Execution</h2>
+
+<p>Independent work items are never executed sequentially. The wave discipline: identify all pending items whose dependencies are satisfied, launch up to 3 parallel subagents in one message using <code>Promise.allSettled</code>, collect results, then evaluate the next wave. Each idea gets its own try/catch block. Wave execution completes the entire PRD covering family; the agent does not stop after any single wave to ask which item is next.</p>
+
+<p>The only serialization constraint is the browser: <code>exec:browser</code> tasks do not parallelize (shared Chromium instance). All other execution is fair game for the wave model.</p>
+
+<hr>
+
+<h2 id="s11">11. Permanent Observability</h2>
+
+<h3>11.1 Mandatory Enumeration</h3>
+<p>On every planning iteration, the agent must enumerate every subsystem that lacks a permanent queryable inspection endpoint and add a PRD item to address each gap. The planning skill exits only when this enumeration pass produces zero gaps.</p>
+
+<h3>11.2 Server-Side</h3>
+<p>Every subsystem exposes a <code>/debug/&lt;subsystem&gt;</code> endpoint emitting structured <code>{subsystem, severity, ts}</code> JSONL events. <code>console.log</code> is not observability. Instrumentation lives at the dispatch boundary&mdash;one wrap per dispatcher covers all variants&mdash;never scattered per-handler.</p>
+
+<h3>11.3 Client-Side</h3>
+<p><code>window.__debug</code> is the live structured registry for all in-page state. Every component registers its state, active requests, and WebSocket connections on mount and deregisters on unmount. The registry is addressable by key and requires no restart to query. No parallel observability surfaces are permitted; if an in-page behavior needs exercising, it is registered here and asserted via <code>test.js</code>.</p>
+
+<h3>11.4 Stack Observability</h3>
+<p>The gm stack writes structured JSONL to <code>~/.claude/gm-log/&lt;YYYY-MM-DD&gt;/&lt;subsystem&gt;.jsonl</code> across all subsystems. Inspection commands: <code>plugkit log tail</code>, <code>plugkit log grep &lt;terms&gt;</code>, <code>plugkit log stats</code>, <code>plugkit log path</code>. Diagnosing a behavior without first checking the log is a forced closure equivalent to guessing.</p>
+
+<hr>
+
+<h2 id="s12">12. The Memorize Sub-Agent</h2>
+
+<p>Every unknown-to-known transition triggers a background memorize invocation in the same turn it resolves. The sub-agent pattern:</p>
+<pre><code>Agent(subagent_type='gm:memorize', model='haiku', run_in_background=true,
+      prompt='## CONTEXT TO MEMORIZE\n&lt;fact&gt;')</code></pre>
+
+<p>Multiple facts resolved in one turn spawn multiple parallel Agent calls in a single message. End-of-turn self-check: scan for un-memorized resolutions and spawn immediately. Batching memorize calls is prohibited (facts memorized together are classified together, losing semantic separation). The sub-agent also manages <code>AGENTS.md</code> and <code>CLAUDE.md</code>; inline edits to those files by the main agent are prohibited.</p>
+
+<p>Recall and memorize together form the learning loop. Skipping either half breaks it.</p>
+
+<hr>
+
+<h2 id="s13">13. Governance Layer</h2>
+
+<h3>13.1 Seven Route Families</h3>
+<p>Every PRD item is tagged with one of seven route families that determine which quality constraints apply:</p>
+<dl>
+  <dt>grounding:</dt><dd>Constrains the agent&rsquo;s belief formation&mdash;what counts as evidence, what counts as knowledge, when to regress to planning. Governs all information-gathering operations.</dd>
+  <dt>reasoning:</dt><dd>Constrains inference chains. Requires each reasoning step to be witnessable, prohibits conclusions that outrun their premises, enforces the two-pass rule and surprise absorption prohibition.</dd>
+  <dt>state:</dt><dd>Governs mutable state transitions. Every mutation must be visible in the PRD; state-bearing operations require pre- and post-conditions. The PRD is the authoritative state record.</dd>
+  <dt>execution:</dt><dd>Constrains code execution: real services only, witnessed output, exec:&lt;lang&gt; dispatch, timeout budgets. No stubs, no mocks, no hardcoded responses.</dd>
+  <dt>observability:</dt><dd>Every subsystem must be inspectable without restart. Covers /debug endpoints, window.__debug, structured logging, the gm-log JSONL stack.</dd>
+  <dt>boundary:</dt><dd>Governs the agent&rsquo;s interaction surface with external systems: git, CI, remote APIs, the user. The remote-execution boundary (§16) is the primary concern of this family.</dd>
+  <dt>representation:</dt><dd>Governs how information is encoded and communicated: skill prose must be implicit not explicit, memory must use the four semantic types, PRD items must use the mandated schema.</dd>
+</dl>
+
+<h3>13.2 Four State Planes</h3>
+<p>Agent state is tracked across four orthogonal planes that must be consistent at every phase transition:</p>
+<dl>
+  <dt>epistemic:</dt><dd>What the agent knows, what it is uncertain about, what mutables remain unresolved</dd>
+  <dt>operational:</dt><dd>What the agent has done, what artifacts exist on disk, what code has been executed</dd>
+  <dt>relational:</dt><dd>What the agent has communicated to the user, what commitments have been made</dd>
+  <dt>temporal:</dt><dd>What happened in earlier sessions, what the PRD preserves across context resets</dd>
+</dl>
+
+<p>A phase transition is legitimate only when all four planes are consistent with the transition&rsquo;s exit condition. An agent that advances EXECUTE&rarr;EMIT while the epistemic plane still contains unresolved mutables is in an inconsistent state regardless of what the operational plane shows.</p>
+
+<h3>13.3 Five Refused Collapses</h3>
+<p>Five patterns are categorically refused because they collapse the discipline without appearing to:</p>
+<ol>
+  <li><strong>Narrating as executing:</strong> describing what code would do rather than running it</li>
+  <li><strong>Assumption as resolution:</strong> treating a plausible value as witnessed</li>
+  <li><strong>Partial closure:</strong> declaring a PRD item done while its acceptance criteria are unmet</li>
+  <li><strong>Deferred observability:</strong> shipping code without an inspection endpoint and noting it as a future task</li>
+  <li><strong>Asking-as-progress:</strong> routing through the user a question the agent could answer itself via tools</li>
 </ol>
 
-<h2>10. Advances Since Initial Publication</h2>
+<hr>
 
-<p class="first">This section documents major advances made between the paper&rsquo;s initial publication (March 25, 2026) and April 12, 2026. Entries are dated to the commit that introduced the capability.</p>
+<h2 id="s14">14. Quality Metrics</h2>
 
-<h3>10.1 Deterministic Browser Runtime (March 31, 2026)</h3>
-<p class="first">An <code>exec:browser</code> runtime was added to rs-exec, replacing ad-hoc browser invocations with a deterministic managed-Chrome pipeline. The runtime launches a portable Chromium instance with a fixed debugging port (32882), detects an existing session before spawning a new one, and cleans up all browser state on session end. Early versions suffered from file-lock races on Windows when two agents shared a Chrome profile; this was resolved by per-agent cwd-local profiles (April 12).</p>
+<p>Four metrics govern quality gate decisions at phase transitions:</p>
+<dl>
+  <dt>&Delta;S (state delta):</dt><dd>The number of state-plane inconsistencies introduced by a proposed change. A change with &Delta;S &gt; 0 must be rejected or the inconsistency must be resolved before advancing.</dd>
+  <dt>&lambda; (load score):</dt><dd>Consequence weight of a PRD item (0.0&ndash;1.0). Items with &lambda; &gt; 0.75 require witnessed verification before EMIT. Verification budget = &lambda; &times; (1 &minus; tier_confidence).</dd>
+  <dt>&epsilon; (epistemic gap):</dt><dd>Count of unresolved mutables in the epistemic plane. PLAN exits only at &epsilon; = 0 on the final pass.</dd>
+  <dt>Coverage (&ge;0.70):</dt><dd>The proportion of load-bearing behaviors witnessed by <code>test.js</code>. The test file enforces a 200-line budget; coverage &ge;0.70 at that budget is the acceptance criterion. Behaviors not witnessable within the budget are not load-bearing by definition.</dd>
+</dl>
 
-<p>Session ownership is enforced at the RPC layer: <code>getTask</code>, <code>getAndClearOutput</code>, and <code>waitForOutput</code> all reject requests from sessions that did not create the task. Cross-session contamination on Windows&mdash;where a race in port-to-session mapping could return another agent&rsquo;s browser&mdash;was closed on April 9.</p>
+<hr>
 
-<h3>10.2 exec:rust and exec:serial (March&ndash;April 2026)</h3>
-<p class="first"><code>exec:rust</code> was added (March 31) supporting inline <code>// cargo-dep:</code> and <code>// cargo-path:</code> annotations so Rust snippets can declare their own dependencies without a manifest file. <code>exec:serial</code> was added (April 6) for COM-port streaming, routing through the global npm root for the serialport native module.</p>
+<h2 id="s15">15. Failure Taxonomy</h2>
 
-<h3>10.3 Orphan Process Reaper (April 11, 2026)</h3>
-<p class="first">On runner restart, the in-memory active-PID map is lost, leaving <code>--exec-process-mode</code> child processes with no cleanup path. A startup reaper was added to rs-exec that uses sysinfo to find exec-process-mode processes whose parent is not a live runner-mode process (with a 5-second age guard) and kills them via recursive process-tree kill. Without this, orphans accumulated across restarts, reaching 300+ processes and ~5.9&nbsp;GB RAM in observed failure cases.</p>
+<p>Sixteen failure modes are catalogued across four categories. Every PLAN pass cross-references this taxonomy against each PRD item:</p>
 
-<h3>10.4 Fixed Port and Stable Task Tracking (April 6, 2026)</h3>
-<p class="first">The runner previously selected a random port on each start. This caused task-ID loss across restarts because the plugkit client could not reconnect to the same port. The port was fixed at 32882, making task IDs stable across runner restarts and enabling reliable <code>exec:sleep</code> / <code>exec:status</code> / <code>exec:close</code> workflows.</p>
+<h3>Grounding Failures</h3>
+<ol>
+  <li><strong>Assumption propagation:</strong> unverified hypothesis treated as ground truth</li>
+  <li><strong>Documentation trust:</strong> stale docs used as resolution evidence</li>
+  <li><strong>Static analysis substitution:</strong> code reading used instead of execution</li>
+  <li><strong>Memory staleness:</strong> outdated memory acted on without verification</li>
+</ol>
 
-<h3>10.5 Vector Embedding Search (April 11, 2026)</h3>
-<p class="first">rs-search gained a vector embedding backend using <code>nomic-embed-text-v1.5.Q4_K_M</code> (a GGUF-quantized model, split into 6 parts for distribution). Search output is now structured as four sections: BM25 symbol hits, BM25 content hits, vector similarity hits, and git commit index hits. The combination gives the agent semantic recall for concepts that BM25 misses due to vocabulary mismatch, while retaining BM25&rsquo;s precision for exact identifiers.</p>
+<h3>Execution Failures</h3>
+<ol start="5">
+  <li><strong>Stub shipping:</strong> placeholder code presented as real implementation</li>
+  <li><strong>Mock leakage:</strong> test fixtures surviving into production paths</li>
+  <li><strong>Timeout blindness:</strong> execution result truncated without detection</li>
+  <li><strong>Orphan accumulation:</strong> background processes not cleaned up on restart</li>
+</ol>
 
-<p>The git commit index was added simultaneously, enabling search queries to surface relevant commit messages alongside code results&mdash;surfacing the &ldquo;why&rdquo; of a change alongside the &ldquo;what.&rdquo;</p>
+<h3>State Failures</h3>
+<ol start="9">
+  <li><strong>Partial closure:</strong> PRD item marked complete with unmet acceptance criteria</li>
+  <li><strong>Epistemic advance:</strong> phase transition attempted with unresolved mutables</li>
+  <li><strong>Cross-session amnesia:</strong> PRD items from prior sessions not discovered and executed</li>
+  <li><strong>Dirty exit:</strong> session closed with uncommitted or unpushed changes</li>
+</ol>
 
-<h3>10.6 Session-Scoped Task Isolation (April 8, 2026)</h3>
-<p class="first">Background tasks are now isolated by a compound key of <code>session_id + cwd</code>. This prevents tasks from one agent session from appearing in another agent&rsquo;s task list when both operate in the same working directory. The compound key is forwarded by the pre-tool-use hook on every exec invocation.</p>
+<h3>Boundary Failures</h3>
+<ol start="13">
+  <li><strong>CI blindness:</strong> COMPLETE declared before CI result is known</li>
+  <li><strong>Remote-execution misread:</strong> git push treated as local execution, CI result not watched</li>
+  <li><strong>Forced pause:</strong> exec:pause issued for a question the web could have answered</li>
+  <li><strong>Asking-as-progress:</strong> user asked a question answerable via tools</li>
+</ol>
 
-<h3>10.7 exec:kill-port and Runner Start Lock (April 6, 2026)</h3>
-<p class="first">An <code>exec:kill-port</code> command was added to reclaim ports held by stale processes. A start-lock mechanism was added to prevent multiple simultaneous plugkit runner instances&mdash;a race that previously caused split task state between two competing daemons.</p>
+<hr>
 
-<h3>10.8 Memorize Sub-Agent (April 10, 2026)</h3>
-<p class="first">Inline edits to <code>CLAUDE.md</code> were replaced by a background <code>memorize</code> sub-agent (Haiku model, run_in_background=true). The sub-agent receives context, extracts non-obvious caveats, deduplicates against existing entries, and writes. This separates the agent&rsquo;s task stream from memory management and prevents mid-task context pollution from large file reads.</p>
+<h2 id="s16">16. Remote Execution Boundary</h2>
 
-<h3>10.9 Observability Mandate (April 11, 2026)</h3>
-<p class="first">The planning skill was extended with a mandatory <em>observability enumeration</em> pass: on every planning iteration, the agent must enumerate every subsystem that lacks a permanent queryable inspection endpoint and add a .prd item to address each gap. The mandate distinguishes permanent structures (named, addressable, queryable without restart) from ad-hoc logs (<code>console.log</code>). On the client side, <code>window.__debug</code> must be a live structured registry&mdash;every component&rsquo;s state, every active request, every WebSocket connection, addressable by key. New modules register on mount and deregister on unmount.</p>
+<h3>16.1 git push as Remote Execution</h3>
+<p>A git push is not a local operation; it is a remote-execution event that dispatches a build, test, and deploy pipeline on external infrastructure. The CI result is the canonical verdict on whether the change is correct. Declaring COMPLETE before that verdict is premature closure.</p>
 
-<h3>10.10 Minimal-Code / Maximal-DX Mandate (April 12, 2026)</h3>
-<p class="first">A four-step resolution order was codified across all phases: (1)&nbsp;native first&mdash;does the language or runtime already do this?; (2)&nbsp;library second&mdash;does an existing dependency solve this pattern?; (3)&nbsp;structure third&mdash;can the problem be encoded as data (map, table, pipeline) so the structure enforces correctness?; (4)&nbsp;write last&mdash;only author new logic when the above three are exhausted. The mandate names the pattern when structure eliminates a class of wrong states: dispatch tables replacing switch chains, pipelines replacing loop-with-accumulator, maps replacing if/else forests are treated as correctness properties, not style preferences.</p>
+<h3>16.2 CI Watch Protocol</h3>
+<p>After every push, the stop hook initiates a CI watch: polling the remote until the run completes, then inspecting the result. Green CI is a precondition for the VERIFY&rarr;COMPLETE transition. The agent cannot advance past VERIFY while CI is pending or red.</p>
 
-<h3>10.11 Immutable State Machine Terminology (April 9, 2026)</h3>
-<p class="first">The &ldquo;snakes and ladders&rdquo; metaphor (Section 2.3) was replaced throughout the skill chain with explicit immutable state machine language: forward transitions are named by their condition, backward transitions are named by the trigger that caused them. This eliminates ambiguity about which phase boundary an agent is at and what condition must be satisfied to leave it.</p>
+<h3>16.3 Parse-Time CI Failure Shapes</h3>
+<p>Five CI failure shapes are catalogued for rapid triage:</p>
+<ol>
+  <li><strong>Import error:</strong> module not found&mdash;check package.json or Cargo.toml, not the source file</li>
+  <li><strong>Type error:</strong> schema mismatch&mdash;regression to PLAN to re-witness the interface</li>
+  <li><strong>Test failure:</strong> assertion mismatch&mdash;root cause first, never silence the assertion</li>
+  <li><strong>Lint failure:</strong> style constraint violation&mdash;fix in-band, never <code>// eslint-disable</code></li>
+  <li><strong>Build timeout:</strong> infrastructure issue&mdash;re-trigger once; if repeated, open a PRD item with <code>blockedBy: external</code></li>
+</ol>
 
-<h3>10.12 Cascade Pipeline (April 3, 2026)</h3>
-<p class="first">A fully automated cascade pipeline was established linking all five Rust repositories. A push to any of rs-exec, rs-codeinsight, rs-search, or rs-plugkit triggers a <code>workflow_dispatch</code> to rs-plugkit&rsquo;s release workflow, which runs <code>cargo update</code> (picking up the latest git dep hashes), builds six platform binaries (linux/mac/win &times; x64/arm64), auto-bumps the rs-plugkit patch version, commits the binaries into plugforge, and triggers the plugforge publish workflow. The plugforge publish workflow builds and pushes to the downstream <code>gm-cc</code> repository, whose HEAD hash is what the <code>/plugin</code> command tracks to deliver updates to agents. No manual version bumps or local cargo builds are required at any step.</p>
+<hr>
 
-<h3>10.13 Qwen Platform and Lang Plugin System (April 5&ndash;6, 2026)</h3>
-<p class="first">An eleventh platform, <code>gm-qwen</code>, was added for Qwen Code (a Claude Code fork with a Qwen-specific extension manifest). Simultaneously, a <code>lang/</code> plugin system was introduced: language plugins in a local project&rsquo;s <code>lang/</code> directory are resolved before global package plugins, allowing per-project runtime extensions without modifying the package. The <code>lang/browser.js</code> plugin routes <code>exec:browser</code> through plugkit in the kilo/oc platforms.</p>
+<h2 id="s17">17. Maximal Cover</h2>
 
-<h3>10.14 CI Enforcement Gate (April 8, 2026)</h3>
-<p class="first">The gm-complete skill was extended with a CI enforcement gate: the COMPLETE phase cannot be declared until CI is confirmed green on the pushed commit. This closes a gap where a session could terminate with all .prd items resolved and git clean but a failing build on the remote.</p>
+<div class="hard-rule">
+  <div class="rule-title">Hard Rule: Maximal Cover</div>
+  <p>When scope exceeds reach, construct a maximal cover&mdash;not a refusal, not a single slice with the rest deferred. Distributed refusal is the same failure dressed as triage.</p>
+  <p>Required move: construct a covering family of every bounded subset of the request witnessable from this session. Write the family into the PRD with the dependency graph explicit. Execute every member.</p>
+  <p>Residuals the agent judges within the spirit of the original ask AND completable from this session are self-authorized. Expand the PRD with them and execute, do not stop to ask. Only residuals genuinely outside the original ask, or genuinely unreachable from this session, are name-and-stop.</p>
+  <p>When expanding under self-authorization, the agent declares its judgment in-response (&ldquo;treating X as in-scope because Y&rdquo;) so the user can correct mid-chain. Silent expansion without the declaration is the failure mode this rule guards against.</p>
+  <p>Enforcement: committed work + named out-of-spirit residuals must equal the witnessable closure of the request. Gap = cover not maximal &rarr; re-enter planning.</p>
+</div>
 
-<h2>11. Related Work</h2>
+<p>The Maximal Cover obligation emerges from recognizing that scope-exceeds-reach is not a stopping condition; it is a planning condition. The covering family is the plan. Stopping at one slice is the same as refusing&mdash;both leave witnessable work unexecuted, both are forced closure.</p>
 
-<p class="first">ReAct [1] interleaves reasoning and action but lacks formal phase boundaries or named unknowns. Reflexion [2] adds self-reflection but does not enforce witnessed execution as the sole resolution mechanism. AutoGPT and BabyAGI implement task decomposition but without dependency-aware parallel execution or stop-hook enforcement. SWE-Agent [3] provides a coding agent interface but delegates lifecycle control to the LLM&rsquo;s judgment rather than enforcing it through external hooks.</p>
+<hr>
 
-<p>Our approach is largely orthogonal to these efforts: it provides an external behavioral envelope that constrains agent lifecycle through hooks, stop barriers, and tool permissions, rather than improving the agent&rsquo;s internal reasoning. In principle, these techniques could be combined.</p>
+<h2 id="s18">18. Bounded Autonomy</h2>
 
-<h2>12. Conclusion</h2>
+<div class="hard-rule">
+  <div class="rule-title">Hard Rule: User Request = Authorization</div>
+  <p>The user&rsquo;s first message asking for X is the approval to do X. The PRD records the authorization; it is not a second permission gate. Re-asking &ldquo;want me to do X?&rdquo;, &ldquo;should I proceed?&rdquo;, &ldquo;which shape of X?&rdquo; after the user said &ldquo;do X&rdquo; is forced closure dressed as deference&mdash;the user already authorized the work and waits while the agent stalls.</p>
+  <p>Surfacing tradeoffs is allowed inside the same chain (one sentence: &ldquo;going with shape A because Y&rdquo;) so the user can interrupt&mdash;never as a stop-and-wait. Multi-repo scope, build cost, CI duration, and binary-size impact are never grounds to re-confirm.</p>
+  <p>A written PRD is the user&rsquo;s authorization. Once it exists, EXECUTE owns the work to COMPLETE. Every doubt arising during execution is resolved by witnessed probe, by recall, or by re-reading the PRD&mdash;never by asking the user.</p>
+  <p>Asking is last-resort: destructive-irreversible AND not covered by the PRD, OR user intent irrecoverable from PRD/memory/code/web. Channel: <code>exec:pause</code> (renames <code>prd.yml</code> &rarr; <code>prd.paused.yml</code>; question in header). In-conversation asking is last-resort beneath last-resort.</p>
+</div>
 
-<p class="first">We have described a set of techniques for improving the reliability of LLM coding agents: a phase-gated state machine, a discipline for naming and resolving unknowns, and a persistent memory system for cross-session coherence. These techniques are implemented in the <em>gm</em> orchestrator and deployed across 11 platforms.</p>
+<p>The asking-cost principle: asking always costs at least one round trip. The agent that asks a question answerable via tools has transferred work to the user that belongs to the agent. The accumulated asking tax across a session&mdash;five questions each costing the user 30 seconds of context reconstruction&mdash;is a form of quality failure as real as a broken test.</p>
 
-<p>Our experience suggests that agent reliability depends substantially on lifecycle control&mdash;not just model capability. An agent operating within explicit phase boundaries and external enforcement mechanisms tends to produce more predictable results than one relying on self-regulation alone. We offer these techniques as practical tools rather than general claims, and expect that further work will clarify their scope and limitations.</p>
+<hr>
+
+<h2 id="s19">19. The Learning Loop</h2>
+
+<p>The learning loop consists of two operations that must both fire to function:</p>
+
+<h3>19.1 Recall (Read)</h3>
+<p>Before resolving any unknown via fresh execution, check past sessions. The recall operation:</p>
+<pre><code>exec:recall
+&lt;2-6 word query&gt;</code></pre>
+<p>Triggers: unknown feels familiar | sub-task on a known project | about to ask user something likely already discussed | about to design where a prior decision likely exists. Hits become <code>weak_prior</code>; still witness before adopting. Cost: ~200 tokens, ~5ms.</p>
+
+<h3>19.2 Memorize (Write)</h3>
+<p>Every unknown&rarr;known transition triggers a background memorize invocation the same turn it resolves. Multiple facts &rarr; multiple parallel Agent calls in one message. Skipping memorize breaks the loop: subsequent sessions will rediscover what this session solved, paying the full discovery cost again.</p>
+
+<h3>19.3 rs-learn Backend</h3>
+<p>Both operations run against the rs-learn SQLite database at <code>.gm/rs-learn.db</code>. The database is committed to git so memory and index state share across machines, sessions, and CI. The <code>Searcher</code> is called directly from the prompt-submit hook via the shared tokio Runtime, injecting recall results as &ldquo;## Recall for this prompt&rdquo; into the systemMessage before the agent sees the user turn.</p>
+
+<hr>
+
+<h2 id="s20">20. Execution Budget Model</h2>
+
+<p>Every <code>exec:&lt;lang&gt;</code> invocation operates within a three-layer budget:</p>
+<ol>
+  <li><strong>CLI layer:</strong> <code>--timeout-ms &lt;u64&gt;</code> flag; defaults to 300,000 ms if omitted</li>
+  <li><strong>RPC layer:</strong> <code>timeoutMs</code> field mandatory in the execute RPC; rs-exec hard-rejects missing or zero values</li>
+  <li><strong>Runner layer:</strong> partial output is preserved on timeout; rs-exec returns <code>"timedOut": true</code> alongside output; plugkit exits 124</li>
+</ol>
+
+<p>On timeout, the agent treats the <code>[exec timed out after Nms; partial output above]</code> marker as authoritative truncation and re-issues with a higher budget. Retrying the same call after a timeout without increasing the budget is a fixed-cost infinite loop.</p>
+
+<p>The stall watchdog: if an exec task produces no output for more than 60 seconds, the agent checks whether the process is alive and kills the tree if not. Orphan accumulation from abandoned tasks was observed to reach 300+ processes and 5.9 GB RAM in production before the watchdog was added.</p>
+
+<hr>
+
+<h2 id="s21">21. ORIENT: Pre-Planning Recall Pack</h2>
+
+<div class="hard-rule">
+  <div class="rule-title">Hard Rule: ORIENT</div>
+  <p>Open every planning session with a parallel pack of 3&ndash;5 <code>exec:recall</code> calls and 3&ndash;5 <code>exec:codesearch</code> calls against the request&rsquo;s nouns, all in one message. Hits land as <code>weak_prior</code>; misses confirm the unknown is fresh.</p>
+  <p>The pack runs in one message&mdash;never serially. The agent that skips ORIENT pays the same cost in fresh probes a turn later, plus the price of disagreeing with its own prior witness if the earlier session established a relevant fact.</p>
+  <p>ORIENT is free relative to the duplicated discovery and disagree-with-prior-witness risk it prevents. Its cost equals the cost of skipping it, because the skipping agent will eventually run the same searches; it just does so later, after having already named unknowns that may be stale.</p>
+</div>
+
+<p>The ORIENT discipline formalizes a pre-planning reconnaissance phase. Before the agent names any unknown as absent, it must have searched for it. Before the agent designs an abstraction, it must have checked whether one exists. The parallel pack ensures this reconnaissance runs at maximum speed and does not serialize the planning phase unnecessarily.</p>
+
+<hr>
+
+<h2 id="s22">22. Fix on Sight</h2>
+
+<div class="hard-rule">
+  <div class="rule-title">Hard Rule: Fix on Sight</div>
+  <p>Every issue surfaced during work is fixed in-band, this turn, at root cause. Defer-markers, swallowed errors, suppressed output, skipped tests, and &ldquo;address it next session&rdquo; are variants of the same failure: a known-bad signal carried past the moment of detection.</p>
+  <p>Surface &rarr; diagnose &rarr; fix at root cause &rarr; re-witness &rarr; continue. New unknown surfaced by the fix &rarr; regress to planning. Out-of-scope-irreversible fix &rarr; residual into PRD before moving on. Narration is not a substitute for a PRD item.</p>
+</div>
+
+<h3>22.1 Auto-PRD on Incidental Error</h3>
+<p>Any reasonably fixable error surfacing mid-task&mdash;pre-existing build break, lockfile drift, broken dep, lint failure on neighboring code, type error in adjacent module, stale generated file, dead import&mdash;is added to <code>.gm/prd.yml</code> as a new item the same turn it surfaces, and executed before COMPLETE. The user does not have to ask. Closing a turn with a known-bad signal still emitting is forced closure regardless of whether the signal was &ldquo;from a different task.&rdquo;</p>
+
+<p>Genuinely out-of-reach errors (require user credentials, depend on external services that are down, demand product decisions) are named and stopped with the residual recorded in the PRD with <code>blockedBy: external</code>&mdash;never silently dropped, never narrated past.</p>
+
+<h3>22.2 Auto-PRD on Re-Architecting Opportunities</h3>
+<p>The same rule applies to obvious refactor wins surfaced while doing the user&rsquo;s task: a hand-rolled implementation that a well-known library does cleaner; a multi-file ad-hoc system one import would replace; duplicated logic crying out for one helper; a boilerplate pattern repeated in N places where one upstream tool covers it. These are not separate sessions&mdash;they are PRD items, added the same turn they surface, executed before COMPLETE.</p>
+
+<p>The bar is <em>obvious + reachable from this session</em>, not any conceivable refactor. Speculative or aesthetic changes stay out. Library-replacement is a specific case: before keeping a local reimplementation of something a published package already provides, add a PRD item to swap to the import. Local code competes with upstream maintenance and loses.</p>
+
+<hr>
+
+<h2 id="s23">23. Browser Witness</h2>
+
+<div class="hard-rule">
+  <div class="rule-title">Hard Rule: Browser Witness</div>
+  <p>Editing code that runs in a browser requires a live <code>exec:browser</code> witness in the same turn as the edit. The witness does not defer to a later phase; later phases re-witness on top, they do not replace this one.</p>
+  <p>Protocol: (1) boot the real surface&mdash;server up, page reachable, HTTP 200 witnessed; (2) <code>exec:browser</code> &rarr; navigate &rarr; poll for the global the change affects; (3) <code>page.evaluate</code> asserting the specific invariant the change establishes, capturing the witnessed values; (4) variance &rarr; fix at root cause, re-witness (Fix on Sight). Never advance on unwitnessed client behavior.</p>
+  <p>Pure-prose edits to static documents with no JS/canvas/DOM behavior change are exempt; the exemption is tagged explicitly with the reason so the skip is auditable. Silent skip on actual behavior change is forced closure.</p>
+  <p>This rule fires in EXECUTE (witness on edit), EMIT (post-emit verify), and VERIFY (final gate).</p>
+</div>
+
+<p>The browser witness rule closes the gap between &ldquo;the test passes&rdquo; and &ldquo;the feature works.&rdquo; A test that passes against a mock DOM cannot witness whether the live page renders the change correctly. The only authoritative evidence is the live page&rsquo;s own evaluation of the invariant.</p>
+
+<hr>
+
+<h2 id="s24">24. Nothing Fake</h2>
+
+<div class="hard-rule">
+  <div class="rule-title">Hard Rule: Nothing Fake</div>
+  <p>What ships runs against real services, real data, real binaries. Stubs, mocks, placeholder returns, fixture-only paths, &ldquo;TODO: implement&rdquo;, hardcoded sample responses, and demo-mode fallbacks are forbidden in source the user will run. They produce green checks that survive into production and lie about what works.</p>
+  <p>Scaffolding and shims are permitted when they call through to real behavior: an empty file laid down before its body, a thin adapter wrapping an upstream API, a build target that compiles but is wired to nothing yet and is the only callsite of itself. The test is whether the artifact, executed, would do the thing it claims. If it would not, it is a stub.</p>
+  <p>Before writing a shim or adapter, the agent asks whether an existing library or tool already provides the same surface. Maintaining a local reimplementation of something an upstream package solves is its own failure mode&mdash;the shim drifts, ages, and accumulates the bugs the upstream already fixed.</p>
+  <p>Stub detection is behavioral, not by keyword: code paths that always succeed, always return the same value regardless of input, or short-circuit a real call to satisfy a type signature are stubs. Comments asserting realness do not make code real.</p>
+</div>
+
+<p>The Nothing Fake rule is the execution-layer complement to the witnessed-execution principle: witnessed execution requires real code to run; Nothing Fake prohibits shipping code that passes witnessing through deception. Together they close the loop: you cannot fabricate a witness, and you cannot ship fabricated code past a witness.</p>
+
+<hr>
+
+<h2 id="s25">25. Web-Search Before Pause</h2>
+
+<div class="hard-rule">
+  <div class="rule-title">Hard Rule: Web-Search Before Pause</div>
+  <p>Before <code>exec:pause</code> or any in-conversation question whose answer plausibly exists on the public web&mdash;missing artifact, prebuilt binary, library status, build recipe, version compatibility, upstream issue, &ldquo;does X exist for Y&rdquo;&mdash;fire <code>WebSearch</code> and at least one targeted <code>WebFetch</code> first. Pause or ask only after the web pass returns empty, or returns candidates the agent has witnessed and rejected.</p>
+  <p>Pausing on a question the web could have answered is forced closure dressed as humility. Fix on sight: re-enter planning, web-search, and resume.</p>
+  <p>Genuine user-only questions: private credentials, preference among already-surfaced viable options, destructive-irreversible authorization.</p>
+</div>
+
+<p>The web-search-before-pause rule addresses the pattern where an agent stalls on an unknown that is publicly documented. The stall taxes the user with a round trip that the agent&rsquo;s tools could have resolved. The rule is a specific instance of the broader autonomy principle: any question whose answer the agent could obtain itself is a question the agent owes itself, not the user.</p>
+
+<hr>
+
+<h2 id="s26">26. Single Integration Test Policy</h2>
+
+<div class="hard-rule">
+  <div class="rule-title">Hard Rule: Single Integration Test</div>
+  <p>One <code>test.js</code> at project root. 200-line hard cap. No fixtures, mocks, or scattered test files under any naming convention. Plain assertions, real data, real system. <code>gm-complete</code> runs it. Failure = regression to EXECUTE.</p>
+  <p>Any second test runner&mdash;under any name, in any directory&mdash;is a smuggled parallel surface that fights the observability discipline. If a behavior needs exercising in-page, register it in <code>window.__debug</code> and assert via <code>test.js</code>.</p>
+</div>
+
+<h3>26.1 Budget, Not Target</h3>
+<p><code>test.js</code> is a 200-line budget, not a target. Every line witnesses a load-bearing behavior; redundant assertions are dead weight. Subsystems get one group each&mdash;combined groups (<code>profiles+observability+auth+context</code>) are the norm, not the exception. The win from combining comes from collapsing per-subsystem groups into multi-subsystem ones: the test surface grows linearly with subsystem count, not multiplicatively.</p>
+
+<h3>26.2 Use Overlap to Exclude</h3>
+<p>When subsystem A&rsquo;s test exercises B as a side effect, B does not need its own group. Examples from production: the agent-machine tool-loop test exercises bash dispatch; the dashboard test asserts the API surface and tool registration; the gateway test exercising one platform with a stub-shape loop covers all 18 adapters. Overlap is a signal to drop the redundant group, not to add another assertion.</p>
+
+<h3>26.3 Hygiene at Edit Time</h3>
+<p>Every change to <code>test.js</code> prefers compaction over expansion. If the file exceeds 200 lines, the discipline is to merge groups and drop redundancy until it fits&mdash;not to split the file or lift the cap. If the budget is genuinely insufficient, the question is whether the assertion is load-bearing, not whether the cap should move.</p>
+
+<h3>26.4 Group Naming Convention</h3>
+<p>Name combined groups by joining their subsystems with <code>+</code>: <code>home+config+skin</code>, <code>mcp+swe+distributions+account+credpool</code>, <code>env+pi+cli+tui+setup+website</code>. A group with 4&ndash;6 components is healthy; a group with 1 component should be questioned.</p>
+
+<hr>
+
+<h2 id="s27">27. Sync-Before-Emit</h2>
+
+<p>rs-codeinsight and rs-search outputs must come from a freshly-completed index. No cache may serve a result without a digest match against the live filesystem (mtime sum + git HEAD + dirty-tree marker). Default invocation always runs fresh. <code>--read-cache</code> is permitted only when the <code>.codeinsight.digest</code> matches exactly; on mismatch, the cache auto-refreshes before emitting.</p>
+
+<p>rs-search runs scan + embed + sweep before printing the first result and emits an <code>[index fully synced: &hellip;]</code> line so freshness is visible in the output. Emitting from an unverified or partial index is forced closure equivalent to bluffing strength&mdash;the agent reads stale output as ground truth and acts on a state that no longer exists.</p>
+
+<hr>
+
+<h2 id="s28">28. Auto-Recall on Prompt-Submit</h2>
+
+<p>The rs-plugkit prompt-submit hook derives a 2&ndash;6 word recall query from the user prompt, calls the rs-learn <code>Searcher</code> directly via the shared tokio Runtime, and injects &ldquo;## Recall for this prompt&rdquo; into the systemMessage before the agent sees the user turn. Auto-search (codeinsight) runs at session-start; auto-recall runs at every prompt.</p>
+
+<p>Together these ensure every turn begins with prior memory loaded. The agent that skips ORIENT still receives the auto-recall injection; the ORIENT discipline adds 3&ndash;5 targeted queries on top of the single auto-recall hit.</p>
+
+<hr>
+
+<h2 id="s29">29. Implicit Skill Prose</h2>
+
+<p>Skill files and system prompts elicit behavior&mdash;they do not describe it. Write terse imperative principles whose phrasing triggers the model&rsquo;s already-learned dispositions, not numbered procedures that spell out what to do.</p>
+
+<p>Forbidden in skill prose: numbered step lists like &ldquo;1. agent runs N parallel calls 2. then writes 3. then&hellip;&rdquo;; citations to site pages or paper numbers; references to the documentation as an input (&ldquo;as described in docs/skills.html&rdquo;); multi-step recipes. The skill is a prompt, not a manual. If it reads like a manual, the behavior gets imitated as a script and breaks at the first edge case.</p>
+
+<p>The papers and site are outputs of the discipline, not inputs to it. Cross-cutting rules that need a citation belong in <code>AGENTS.md</code>, not in skills. <code>CLAUDE.md</code> in the project root is a pure <code>@AGENTS.md</code> pointer&mdash;nothing else is written there directly.</p>
+
+<hr>
+
+<h2 id="s30">30. Discussion</h2>
+
+<h3>30.1 Relationship to Formal Methods</h3>
+<p>The approach shares surface similarities with model checking (named state variables, explicit transitions) and design-by-contract (pre/post-conditions on advancement). It operates at a coarser abstraction level: the &ldquo;states&rdquo; are task phases, not program states, and the &ldquo;contracts&rdquo; concern what the agent knows rather than program correctness. The governance layer (§13) adds route families that function like typing domains: they partition the space of valid operations rather than verifying program properties.</p>
+
+<h3>30.2 Relationship to Test-Driven Development</h3>
+<p>There is a loose analogy to TDD: both emphasize verification before completion. The difference is that verifications in this system are not persisted as a test suite during EXECUTE&mdash;they exist as witnessed execution. The single integration test (§26) is the COMPLETE-phase residual of this witnessing. The 200-line budget trades regression depth for context-window economy.</p>
+
+<h3>30.3 External vs. Self-Regulation</h3>
+<p>A recurring design choice is external enforcement over self-regulation. Hooks enforce phase gates because the same model that reasons through a problem also reasons through the justification for shortcuts. The agent cannot bypass a stop hook by deciding it has already verified; the hook runs independently of the agent&rsquo;s judgment. The hard rules in §§21&ndash;29 are externally enforced in the same sense: they are in the skill chain, not in the agent&rsquo;s in-context reasoning.</p>
+
+<h3>30.4 Overhead vs. Benefit</h3>
+<p>Every backward transition introduces overhead: discovering a new unknown during EMIT discards partial work and requires re-planning and re-executing. In production, this cost is offset by reduced late-stage rework. The snake-back mechanism surfaces problems early when their scope is still bounded; problems discovered at COMPLETE have compounded across all subsequent work.</p>
+
+<h3>30.5 Limitations</h3>
+<ol>
+  <li><strong>Finite unknown assumption:</strong> Termination requires discoverable unknowns to be finite. In adversarial or chaotic environments this may not hold.</li>
+  <li><strong>Witnessed execution cost:</strong> Real execution against expensive external APIs may be prohibitive for some resolution paths.</li>
+  <li><strong>Memory staleness window:</strong> Time between memory creation and verification creates a window for stale-memory-induced errors.</li>
+  <li><strong>Browser witness scope:</strong> The managed Chromium runtime is single-instance; browser tasks serialize and cannot exploit wave parallelism.</li>
+  <li><strong>Test budget ceiling:</strong> The 200-line cap is a forcing function for compact coverage, but genuinely large subsystems may not be adequately witnessed within it.</li>
+</ol>
+
+<hr>
+
+<h2 id="s31">31. Conclusion</h2>
+
+<p>We have described the complete gm discipline: a phase-gated lifecycle model, a mutable-naming and witnessed-execution framework, an in-phase quality discipline, a governance layer with seven route families and four state planes, second-generation rules for autonomy and scope, and operational hard rules that close gaps the earlier model left open.</p>
+
+<p>The discipline is not a set of aspirational guidelines. Every rule in this document is enforced either by hooks running below the agent&rsquo;s decision layer, or by hard-rule encoding in the skill chain that the agent cannot reason its way around. The agent&rsquo;s job is to execute within the envelope; the envelope&rsquo;s job is to prevent the agent from collapsing the discipline under the pressure of local optimality.</p>
+
+<p>Our experience across 12 platforms and two months of production use suggests that agent reliability depends substantially on lifecycle control&mdash;not just model capability. We offer this discipline as a practical engineering artifact rather than a theoretical claim.</p>
 
 <div class="references">
   <h2>References</h2>
@@ -358,20 +720,13 @@ stateDiagram-v2
   </ol>
 </div>
 
-
-
-
-
-
+</article>
 
 <div class="cross-footer">
   <a href="./mascot.html"><strong>meet Glootie</strong><span>mascot, cushion theory, four commandments</span></a>
   <a href="./crates.html"><strong>rust crates</strong><span>rs-exec · rs-codeinsight · rs-search · rs-learn · rs-plugkit</span></a>
   <a href="./skills.html"><strong>skills</strong><span>13 skills, one chain, no skipping</span></a>
-  <a href="./paper4.html"><strong>The Cushion (paper IV)</strong><span>Maximal Cover, bounded autonomy, learning loop, exec budget</span></a>
-  <a href="./paper3.html"><strong>The Governance (paper III)</strong><span>route families, earned emission, remote-execution boundary</span></a>
-  <a href="./paper2.html"><strong>The Discipline (paper II)</strong><span>in-phase quality, observability, single test</span></a>
-  <a href="./paper.html"><strong>The Lifecycle (paper I)</strong><span>state machine, mutables, witnessed execution</span></a>
+  <a href="./distribution.html"><strong>distribution</strong><span>the SQLite model</span></a>
 </div>
 
 <footer style="padding:12px 20px;font-family:var(--ff-mono);font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:var(--panel-text-3);display:flex;justify-content:space-between;background:var(--panel-1);box-shadow:inset 0 1px 0 rgba(0,0,0,0.04);flex-wrap:wrap;gap:12px;">

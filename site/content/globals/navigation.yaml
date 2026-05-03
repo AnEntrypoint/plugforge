@@ -2,7 +2,7 @@ links:
   - label: home
     href: ./
   - label: paper
-    href: ./paper5/
+    href: ./paper/
   - label: docs
     group:
       - { label: glootie,      href: "./mascot/" }
