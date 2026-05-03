@@ -31,7 +31,13 @@ async function main() {
     if (isHook) {
       bin = resolveCachedBinary({ wrapperDir: dir }) || legacyFallback();
       if (!bin) {
-        process.stderr.write(`[plugkit] hook ${args[1] || ''} skipped: binary not yet installed (cache miss). Enforcement disabled until bootstrap completes.\n`);
+        const hookSubcmd = args[1] || '';
+        if (hookSubcmd === 'pre-tool-use') {
+          process.stdout.write(JSON.stringify({ decision: 'block', reason: '[plugkit] binary not yet installed — bootstrap in progress. All tool use blocked until plugkit binary is downloaded and enforcement is active.' }));
+          obsEvent('plugkit_wrapper', 'hook_block_uncached', { argv: args.slice(0, 4), dur_ms: Date.now() - startedAt });
+          process.exit(0);
+        }
+        process.stderr.write(`[plugkit] hook ${hookSubcmd} skipped: binary not yet installed (cache miss). Enforcement disabled until bootstrap completes.\n`);
         obsEvent('plugkit_wrapper', 'hook_skip_uncached', { argv: args.slice(0, 4), dur_ms: Date.now() - startedAt });
         process.exit(0);
       }
