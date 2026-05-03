@@ -31,6 +31,7 @@ async function main() {
     if (isHook) {
       bin = resolveCachedBinary({ wrapperDir: dir }) || legacyFallback();
       if (!bin) {
+        process.stderr.write(`[plugkit] hook ${args[1] || ''} skipped: binary not yet installed (cache miss). Enforcement disabled until bootstrap completes.\n`);
         obsEvent('plugkit_wrapper', 'hook_skip_uncached', { argv: args.slice(0, 4), dur_ms: Date.now() - startedAt });
         process.exit(0);
       }
