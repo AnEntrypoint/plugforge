@@ -3,6 +3,7 @@ links:
     href: ./
   - label: papers
     group:
+      - { label: "The Complete Discipline", href: "./paper5/" }
       - { label: "The Cushion",    href: "./paper4/" }
       - { label: "The Governance", href: "./paper3/" }
       - { label: "The Discipline", href: "./paper2/" }
