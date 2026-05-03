@@ -86,7 +86,7 @@ AGENTS.md is the **always-on context buffer** — every prompt sees it. rs-learn
 4. Decide:
    - **Recall accurate AND complete** → the rs-learn store has internalized this fact; **remove it from AGENTS.md**. Frees buffer space and confirms learning.
    - **Recall partial / outdated / missing** → keep the AGENTS.md item AND ingest a refined version of the fact via `exec:memorize` so next round it can pass. Note the outcome in your run log.
-5. Record the audit cycle: how many items checked, how many removed, how many refined. Append this single-line summary to AGENTS.md under a `## Learning audit` section so future audits can see drift over time.
+5. Report the audit cycle in the run output (items checked, removed, refined). Do not write the audit result to AGENTS.md — it is changelog-shaped and AGENTS.md forbids dated audit sections.
 
 Why: AGENTS.md grows monotonically without this loop. rs-learn already filters by relevance per-prompt, so duplicating stable facts in AGENTS.md just inflates the always-on context. The migration drains AGENTS.md into the retrieval store as the store proves it can recall. Failed migrations leave the fact in AGENTS.md (safe default) and improve the store. Success rate over time = a metric for how well gm is learning this project.
 
