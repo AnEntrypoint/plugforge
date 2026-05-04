@@ -1,7 +1,7 @@
 ---
 name: research
 description: Web research via parallel subagent fan-out. Use when a question needs the live web, spans multiple sources, requires comparison across vendors/papers/repos, or would saturate a single context window. Skip for one-page lookups answerable by a single WebFetch.
-allowed-tools: Task, WebFetch, WebSearch
+allowed-tools: Skill, Bash, Agent, WebFetch, WebSearch, Read, Write
 ---
 
 # Research

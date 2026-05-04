@@ -1,7 +1,7 @@
 ---
 name: planning
 description: State machine orchestrator. Mutable discovery, PRD construction, and full PLAN→EXECUTE→EMIT→VERIFY→COMPLETE lifecycle. Invoke at session start and on any new unknown.
-allowed-tools: Write
+allowed-tools: Skill, Bash, Write, Read, Agent
 ---
 
 # Planning — State Machine Orchestrator
