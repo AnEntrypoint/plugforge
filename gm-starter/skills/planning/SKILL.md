@@ -53,6 +53,8 @@ Asking is last-resort: destructive-irreversible without PRD coverage, OR user in
 
 **Cannot stop while**: `.gm/prd.yml` has items | git uncommitted | git unpushed.
 
+**MAXIMIZE THE SCOPE — HARD RULE.** When the request admits a deeper, broader, or more thorough shape that is reachable from this session, plan it that way. The internal "is this too much work?" question is the agent's, not the user's — and the answer is yes when the larger shape matches the spirit of the ask. "Deeply integrate", "do it right", "all of them", "every X", "across the whole Y", "keep going", and silence between options all read as *go wider*. Default to the maximum scope the obvious read of the request supports; declare the read in one PRD line so the user can interrupt; execute. A PRD that ships a smaller-than-necessary slice while a larger reachable shape exists is the same failure as distributed refusal. The bar for *not* expanding is the same destructive-irreversible-and-not-covered bar that gates asking; below that bar, larger always beats smaller.
+
 ## MAXIMAL COVER — HARD RULE
 
 When scope exceeds reach, expand the cover. Don't refuse. Don't ship one slice with the rest abandoned as "follow-up" — that's distributed refusal: the same failure dressed up as triage.

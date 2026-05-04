@@ -49,6 +49,8 @@ File I/O: exec:nodejs + require('fs'). Git directly in Bash. **Never** Bash(node
 Pack runs: Promise.allSettled parallel, each idea own try/catch, under 12s per call.
 Runner: `exec:runner\nstart|stop|status`
 
+Every exec daemonizes. The hook tails the task logfile up to 30s wall-clock and returns whatever it has — short tasks complete inside the window and look synchronous; long tasks return a task_id with partial output and the agent continues with `exec:tail` (drain more output, bounded), `exec:watch` (resume blocking until text/regex match or timeout), or `exec:close` (terminate). Never re-spawn a long task to "check on it" — that orphans the first one. `exec:wait` is a pure timer with no log scanning; `exec:sleep` blocks on a specific task's output; `exec:watch` is the match-or-timeout primitive. Every interaction with the execution platform returns the live list of running tasks for this session — close stragglers via `exec:close\n<id>` so the list stays scannable. Session-end (clear/logout/prompt_input_exit) kills the session's tasks; compaction/handoff preserves them.
+
 ## CODEBASE SEARCH
 
 `exec:codesearch` only. Grep/Glob/Find/Explore/grep/rg/find = hook-blocked.
