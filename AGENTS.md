@@ -64,6 +64,8 @@ node cli.js gm-starter ./build
 
 **Skill SKILL.md frontmatter `allowed-tools:` is harness-enforced**: If a skill omits `allowed-tools` or does not list `Skill`, the model loses the ability to hand off to the next skill in the chain that turn. Symptom: model writes a PRD then stops at `→ gm-execute` without invoking it — appears to be laziness but is actually a tool gate. Any new skill participating in the chain (especially those transitioning to gm:gm-execute or other downstream skills) MUST list `Skill` in `allowed-tools`, or omit the line to inherit the default full tool set.
 
+**rs-exec RPC session isolation**: Every RPC handler touching per-task or per-session resources must require non-empty `sessionId` in params and verify the task's stored `session_id` matches before read/mutate. Empty sessionId always returns forbidden—never falls through. Applies to: tail, watch, getTask, deleteTask, appendOutput, getAndClearOutput, waitForOutput, sendStdin (task-scoped RPCs) and listSessionTasks, drainSessionOutput, killSessionTasks, deleteSessionTasks (session-scoped RPCs). Task-creating RPCs (spawn, execute) require non-empty sessionId to avoid orphaned tasks. Known gap: startTask/completeTask/failTask spawned-child callbacks lack sessionId verification. Browser sessions separately scoped via `browser_session_map_file()` keyed by `claude_session_id`.
+
 ## Rust Binary Update Pipeline
 
 Every change to any Rust library auto-cascades all the way to the installed binary:
@@ -110,7 +112,9 @@ rs-exec injects an rtk shell-function preamble into every bash script so common 
 
 Every hook event (session-start, pre/post-tool-use, prompt-submit, pre/post-compact, session-end, stop, stop-git) dispatches to a module under `rs-plugkit/src/hook/`. The `hooks/` directory in each generated platform contains only `hooks.json` (the manifest) — never `.js` files. Cross-hook coordination uses `.gm/turn-state.json` written by `prompt_submit` and read/incremented by pre/post-tool-use. Only execution-path JS that survives is `gm-starter/bin/bootstrap.js` (chicken-egg: it downloads plugkit). Adding a new hook event = new module under `src/hook/` + arm in `main.rs` Hook match + entry in `lib/hook-spec.js::CANONICAL_SUBCOMMANDS` + wiring in `platforms/cli-config-shared.js`. Do not reintroduce `{kind:'js'}` hook entries — the conhost pop-up bug on Windows came from Node `spawn(detached:true)` allocating a fresh console even with `windowsHide:true`.
 
-**gm:gm tool-use sequencing**: The pre-tool-use hook writes `.gm/gm-fired-this-turn` marker file after Skill(gm:gm) fires. The needs-gm gate in `needs_gm_and_skill_tracking()` passes if either needs-gm is absent OR gm-fired-this-turn exists. prompt_submit deletes gm-fired-this-turn at the start of each new turn. This enables all tool calls in the same turn after gm:gm executes; without the marker, subsequent calls would be blocked by the needs-gm gate.
+**gm:gm tool-use sequencing**: The pre-tool-use hook writes `.gm/gm-fired-this-turn` marker file after Skill(gm:gm) OR Agent(subagent_type="gm:gm") fires — both forms satisfy the needs-gm gate equivalently. The needs-gm gate in `needs_gm_and_skill_tracking()` passes if either needs-gm is absent OR gm-fired-this-turn exists. prompt_submit deletes gm-fired-this-turn at the start of each new turn. This enables all tool calls in the same turn after gm:gm executes; without the marker, subsequent calls would be blocked by the needs-gm gate. Subagent form is preferred for sustained multi-turn work (isolates orchestration loop in own context window); skill form remains valid for short turns.
+
+**Session-end kills background tasks**: `session_end.rs` calls rs-exec `killSessionTasks` RPC on real-exit reasons (clear/logout/prompt_input_exit) before the existing browser cleanup. Surfaces `[session-end] killed N background tasks` to stderr.
 
 ## Observability is on by default
 
