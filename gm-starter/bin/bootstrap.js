@@ -9,11 +9,16 @@ const crypto = require('crypto');
 const { URL } = require('url');
 
 const RELEASE_REPO = 'AnEntrypoint/plugkit-bin';
-const ATTEMPT_TIMEOUT_MS = 60 * 1000;
-const STALL_TIMEOUT_MS = 20 * 1000;
+const ATTEMPT_TIMEOUT_MS = 5 * 60 * 1000;
+const STALL_TIMEOUT_MS = 60 * 1000;
 const MAX_ATTEMPTS = 5;
 const BACKOFF_MS = [2000, 5000, 15000, 30000];
-const LOCK_STALE_MS = 5 * 60 * 1000;
+// Worst case: a slow link downloading 140MB at 1MB/s = ~140s. Allow 30 minutes
+// before another bootstrap process treats this lock as abandoned. Below this,
+// concurrent bootstrap calls would wipe an in-progress download mid-stream
+// (see the v0.1.294 incident where a race between two wrappers blew away the
+// .partial during a 10-minute fetch).
+const LOCK_STALE_MS = 30 * 60 * 1000;
 
 function log(msg) {
   try { process.stderr.write(`[plugkit-bootstrap] ${msg}\n`); } catch (_) {}
@@ -170,6 +175,10 @@ function fetchToFile(url, destPath, expectedTotal) {
         return reject(new Error(`HTTP ${res.statusCode} for ${url}`));
       }
       const append = res.statusCode === 206 && existing > 0;
+      // Ensure parent dir exists — a concurrent prune may have removed it
+      // between lock-acquire and now. Recreating is cheap and avoids a
+      // confusing ENOENT later.
+      try { ensureDir(path.dirname(destPath)); } catch (_) {}
       const out = fs.createWriteStream(destPath, { flags: append ? 'a' : 'w' });
       let bytes = append ? existing : 0;
       let lastStderr = Date.now();
@@ -402,7 +411,65 @@ function resolveCachedBinary(opts) {
   return null;
 }
 
-module.exports = { bootstrap, resolveCachedBinary, resolveCachedRtk, platformKey, binaryName, rtkBinaryName, cacheRoot, obsEvent };
+// ---------------------------------------------------------------------------
+// Daemon kill on version change.
+//
+// The plugin tarball pins `plugkit.version`. When that pin advances and we
+// install a newer cached binary, any long-running daemon (the runner) holds
+// stale code and serves stale RPCs until killed. We track which version the
+// daemon was last started under via `.daemon-version`; on every wrapper
+// invocation, if the wrapper-pinned version differs, we kill the daemon so
+// the next exec spawns it fresh under the new binary.
+// ---------------------------------------------------------------------------
+
+function daemonVersionSentinel() {
+  const root = (() => {
+    try { const r = cacheRoot(); ensureDir(r); return r; }
+    catch (_) { const r = fallbackCacheRoot(); ensureDir(r); return r; }
+  })();
+  return path.join(root, '.daemon-version');
+}
+
+function readDaemonVersion() {
+  try { return fs.readFileSync(daemonVersionSentinel(), 'utf8').trim(); }
+  catch (_) { return null; }
+}
+
+function writeDaemonVersion(v) {
+  try { fs.writeFileSync(daemonVersionSentinel(), String(v)); } catch (_) {}
+}
+
+function killRunningDaemons(reason) {
+  const tmp = os.tmpdir();
+  let killed = 0;
+  for (const pidFile of ['glootie-runner.pid', 'plugkit-runner.pid']) {
+    const pidPath = path.join(tmp, pidFile);
+    if (!fs.existsSync(pidPath)) continue;
+    try {
+      const pid = parseInt(fs.readFileSync(pidPath, 'utf8').trim(), 10);
+      if (Number.isFinite(pid) && pid !== process.pid && pidAlive(pid)) {
+        try { process.kill(pid, 'SIGTERM'); killed++; }
+        catch (_) { try { process.kill(pid); killed++; } catch (_) {} }
+        obsEvent('bootstrap', 'daemon.killed', { pid, pidFile, reason });
+      }
+      try { fs.unlinkSync(pidPath); } catch (_) {}
+    } catch (_) {}
+  }
+  return killed;
+}
+
+// Compare wrapper-pinned version against last-recorded daemon version. If
+// they differ, kill the daemon so it respawns under the new binary.
+function killStaleDaemonIfVersionChanged(wrapperDir) {
+  let currentVersion;
+  try { currentVersion = readVersionFile(wrapperDir); } catch (_) { return; }
+  const recorded = readDaemonVersion();
+  if (recorded === currentVersion) return;
+  if (recorded) killRunningDaemons(`version_change:${recorded}->${currentVersion}`);
+  writeDaemonVersion(currentVersion);
+}
+
+module.exports = { bootstrap, resolveCachedBinary, resolveCachedRtk, platformKey, binaryName, rtkBinaryName, cacheRoot, obsEvent, killRunningDaemons, killStaleDaemonIfVersionChanged };
 
 if (require.main === module) {
   bootstrap({ silent: false })

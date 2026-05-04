@@ -3,7 +3,7 @@
 const { spawn, spawnSync } = require('child_process');
 const path = require('path');
 const fs = require('fs');
-const { bootstrap, resolveCachedBinary, resolveCachedRtk, obsEvent } = require('./bootstrap');
+const { bootstrap, resolveCachedBinary, resolveCachedRtk, obsEvent, killStaleDaemonIfVersionChanged } = require('./bootstrap');
 
 const dir = __dirname;
 
@@ -26,21 +26,31 @@ async function main() {
   const isHook = args[0] === 'hook';
   const startedAt = Date.now();
   obsEvent('plugkit_wrapper', 'invoke', { argv: args.slice(0, 4), is_hook: isHook });
+  // If the plugin tarball updated `plugkit.version` since the runner daemon
+  // was last started, kill the daemon so the next `runner start` picks up
+  // the freshly-installed binary instead of serving stale RPCs.
+  try { killStaleDaemonIfVersionChanged(dir); } catch (_) {}
   let bin;
   try {
-    if (isHook) {
+    const hookSubcmd = isHook ? (args[1] || '') : '';
+    // session-start ALWAYS bootstraps: this is the once-per-session moment
+    // where we guarantee the cached binary matches the wrapper-pinned version.
+    // If the bootstrap fails (offline) we fall through to whatever the cache
+    // currently has — the hook itself isn't blocking, just refreshing.
+    if (isHook && hookSubcmd === 'session-start') {
+      obsEvent('plugkit_wrapper', 'hook_bootstrap_session_start', { argv: args.slice(0, 4) });
+      try {
+        bin = await bootstrap({ wrapperDir: dir, silent: true });
+      } catch (e) {
+        process.stderr.write(`[plugkit] session-start bootstrap failed: ${e.message}\n`);
+        bin = resolveCachedBinary({ wrapperDir: dir }) || legacyFallback();
+      }
+      // session-start hook itself runs in the freshly-bootstrapped binary
+      // below — fall through to the spawn path so the actual handler runs.
+      if (!bin) process.exit(0);
+    } else if (isHook) {
       bin = resolveCachedBinary({ wrapperDir: dir }) || legacyFallback();
       if (!bin) {
-        const hookSubcmd = args[1] || '';
-        if (hookSubcmd === 'session-start') {
-          obsEvent('plugkit_wrapper', 'hook_bootstrap_session_start', { argv: args.slice(0, 4) });
-          try {
-            await bootstrap({ wrapperDir: dir });
-          } catch (e) {
-            process.stderr.write(`[plugkit] session-start bootstrap failed: ${e.message}\n`);
-          }
-          process.exit(0);
-        }
         process.stderr.write(`[plugkit] hook ${hookSubcmd} skipped: binary not yet installed. Bootstrap will run on session-start.\n`);
         obsEvent('plugkit_wrapper', 'hook_skip_uncached', { argv: args.slice(0, 4), dur_ms: Date.now() - startedAt });
         process.exit(0);
@@ -76,16 +86,18 @@ async function main() {
   }
 }
 
+// legacyFallback only returns a binary that lives next to the wrapper. We
+// never reach across to ~/.claude/gm-tools/plugkit.exe or other ambient
+// install dirs — those have proven to mask bootstrap failures by serving a
+// stale version whose hooks silently mismatch the active wrapper code (see
+// the v0.1.292-vs-v0.1.294 incident).
 function legacyFallback() {
   const os = require('os');
   const p = os.platform();
   const a = os.arch();
   let candidates = [];
   if (p === 'win32') {
-    candidates = [
-      path.join(dir, a === 'arm64' ? 'plugkit-win32-arm64.exe' : 'plugkit-win32-x64.exe'),
-      path.join(dir, 'plugkit.exe'),
-    ];
+    candidates = [path.join(dir, a === 'arm64' ? 'plugkit-win32-arm64.exe' : 'plugkit-win32-x64.exe')];
   } else if (p === 'darwin') {
     candidates = [path.join(dir, a === 'arm64' ? 'plugkit-darwin-arm64' : 'plugkit-darwin-x64')];
   } else {
