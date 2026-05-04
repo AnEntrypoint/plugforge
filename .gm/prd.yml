@@ -1,0 +1,113 @@
+# PAUSED — awaiting user response
+# Question: This PRD is the atomic-daemonize + mandatory-gm-subagent change spanning rs-exec, rs-plugkit, and gm. It is real, authorized work but spans 3 cascade pushes and 6 repos — too large for a single session's context budget. Resume in a fresh session: the PRD will rename back from .gm/prd.paused.yml automatically on next user prompt, and the gm chain will pick up at item rs-exec-daemonize-default. Design decisions locked: (1) all execs daemonize by default — no --foreground escape; (2) hook tails for strict 30s wall-clock; (3) graceful gate transition — both Skill('gm:gm') and Agent(gm:gm) satisfy the needs-gm gate during rollout; (4) session-end kills tasks only on real-exit reasons (clear/logout/prompt_input_exit); (5) regex+dirs deps already added to rs-exec/Cargo.toml. Resume by starting a new session with the prompt 'continue gm chain'.
+# Saved-at: 1777884172
+
+# PRD: atomic-daemonize execution model + mandatory gm subagent
+# Authorized by user 2026-05-04. All exec calls daemonize, hook tails ≤30s,
+# wait/sleep/watch primitives, running-task reminders, session-end cleanup,
+# gm subagent (not skill) becomes the mandatory entry point.
+#
+# Cascade order: rs-exec → rs-plugkit → gm. Each push triggers downstream rebuild.
+
+- id: rs-plugkit-hook-tail-30s
+  subject: Pre-tool-use Bash hook tails task logfile for ≤30s after exec spawn
+  status: pending
+  description: |
+    rs-plugkit/src/hook/pre_tool_use.rs exec-dispatch path: after rs-exec
+    returns task_id, immediately call tail RPC with max_wait_ms=30000. Return
+    accumulated output to Claude Code as the bash result. If task is still
+    running at 30s, append:
+    ```
+    [task <id> still running after 30s — partial output above]
+    [tail more: exec:tail\n<id>] [match: exec:watch\n<id> --until-text/regex]
+    [stop: exec:close\n<id>]
+    [other running tasks: <list>]
+    ```
+    Strict wall-clock 30s, never idle-based.
+  effort: large
+  category: feature
+  route_family: execution
+  load: 0.9
+  failure_modes: [hook-timeout-cascade, output-truncation, contract-divergence]
+  blocking: []
+  blockedBy: [rs-exec-tail-rpc]
+  acceptance:
+    - exec:bash 'sleep 0.05; echo done' returns 'done' synchronously (tail completes fast)
+    - exec:bash 'sleep 60; echo done' returns at exactly 30s ±200ms with running-id message
+    - the hook process never blocks longer than 30.5s wall clock
+
+- id: rs-plugkit-tail-watch-verbs
+  subject: Wire exec:tail and exec:watch utility verbs in plugkit CLI + bash deny prompt
+  status: pending
+  description: |
+    Add 'tail' and 'watch' to rs-plugkit Cmd enum + main.rs dispatch. Update
+    gm-starter/prompts/bash-deny.txt utility-commands list to document
+    exec:tail (task_id on next line, optional --max-wait-ms) and exec:watch
+    (task_id on line 1, --until-text=… or --until-regex=… on line 2,
+    optional --timeout-ms). Update bash_has_raw_sleep / utility-allowlist
+    in pre_tool_use.rs to recognize tail/watch.
+  effort: medium
+  category: feature
+  route_family: boundary
+  load: 0.6
+  blocking: []
+  blockedBy: [rs-exec-tail-rpc, rs-exec-watch-primitive]
+  acceptance:
+    - exec:tail\n<id> returns logfile contents up to default 5000ms window
+    - exec:watch\n<id>\n--until-text=ready blocks until match or default 30s
+    - inline form (exec:tail <id>) denied with helpful message
+
+- id: rs-plugkit-reminder-injection
+  subject: Inject running-task reminder into every exec result returned to Claude
+  status: pending
+  description: |
+    pre_tool_use.rs exec dispatch: after RPC returns, append a footer to the
+    output sent back to Claude:
+    ```
+    [running tasks: id=N (cmd, elapsed); id=M (...) — close with exec:close\n<id>]
+    ```
+    Empty list → omit footer entirely (no noise). Source: running_task_ids
+    field already in every RPC response (see rs-exec-task-list-rpc).
+    Footer also injected on tail/watch/wait/sleep/status/close responses —
+    every interaction with the execution platform.
+  effort: medium
+  category: observability
+  route_family: observability
+  load: 0.7
+  blocking: []
+  blockedBy: [rs-exec-task-list-rpc]
+  acceptance:
+    - exec:bash 'echo hi' with 0 other running tasks → no footer
+    - exec:bash 'echo hi' with 2 other running tasks → footer with both ids + close hint
+    - footer fires on every exec verb (tail/watch/wait/sleep/status/close included)
+
+- id: rs-exec-cargo-test
+  subject: cargo test passes in rs-exec after all changes
+  status: pending
+  description: |
+    Run cargo test in c:/dev/rs-exec. Existing session_isolation_tests must
+    pass. New tests for tail/watch/wait/kill_session_tasks added in same
+    file pattern (inline #[cfg(test)] mod). No external test runner.
+  effort: medium
+  category: infra
+  route_family: observability
+  load: 0.85
+  blockedBy: [rs-exec-session-end-cleanup, rs-exec-watch-primitive, rs-exec-wait-pure, rs-exec-task-list-rpc]
+  acceptance:
+    - cargo test --release passes locally before push
+    - new behaviors covered by inline unit tests
+
+- id: rs-plugkit-cargo-test
+  subject: cargo test passes in rs-plugkit after hook changes
+  status: pending
+  description: |
+    Run cargo test in c:/dev/rs-plugkit. Hook changes (pre_tool_use gate
+    rewrite, session_end kill wiring, tail/watch dispatch) covered by
+    inline tests where logic is non-trivial.
+  effort: medium
+  category: infra
+  load: 0.8
+  blockedBy: [rs-plugkit-session-end-wire, rs-plugkit-reminder-injection, rs-plugkit-tail-watch-verbs, gm-subagent-mandatory-replace-skill]
+  acceptance:
+    - cargo test --release passes locally before push
+
