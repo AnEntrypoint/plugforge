@@ -3,30 +3,34 @@ name: gm-emit
 description: EMIT phase. Pre-emit debug, write files, post-emit verify from disk. Any new unknown triggers immediate snake back to planning — restart chain.
 ---
 
-# GM EMIT — Write and Verify
+# GM EMIT — Write and verify from disk
 
-GRAPH: `PLAN → EXECUTE → [EMIT] → VERIFY → COMPLETE`
-Entry: all mutables KNOWN. From `gm-execute` or re-entered from VERIFY.
+Entry: every mutable KNOWN, from `gm-execute` or re-entered from VERIFY. Exit: gates clear → `gm-complete`.
 
-## TRANSITIONS
+Cross-cutting dispositions live in `gm` SKILL.md.
 
-**EXIT → VERIFY**: all gate conditions true → invoke `gm-complete` immediately.
-**SELF-LOOP**: post-emit variance with known cause → fix, re-verify, stay in EMIT.
-**REGRESS → EXECUTE**: pre-emit reveals known logic error.
-**REGRESS → PLAN**: pre-emit reveals new unknown | post-emit variance with unknown cause | scope changed.
+## Transitions
 
-## LEGITIMACY GATE (before pre-emit run)
+- All gates clear → `gm-complete`
+- Post-emit variance with known cause → fix in-band, re-verify, stay in EMIT
+- Pre-emit reveals known logic error → `gm-execute`
+- Pre-emit reveals new unknown OR post-emit variance with unknown cause OR scope changed → `planning`
 
-For every claim landing in a file:
-1. **Earned specificity** — traces to `authorization=witnessed`, not inflated from weak prior?
-2. **Repair legality** — local patch dressed as structural repair? Downgrade scope or snake to PLAN.
-3. **Lawful downgrade** — can a weaker, true statement replace it? PREFER the downgrade.
-4. **Alternative-route suppression** — live competing route being silenced? Preserve it.
-5. **Strongest objection** — if a reviewer pushed back on this change, what would the sharpest argument be? Articulate it. Cannot articulate = have not understood the alternatives = regress to `gm-execute`.
+## Legitimacy gate (before pre-emit run)
 
-Fail any → regress to `gm-execute` to witness what was missing, or `planning` if gap is structural.
+For every claim landing in a file, answer five questions:
 
-## PRE-EMIT RUN (mandatory before writing any file)
+1. Earned specificity — does it trace to `authorization=witnessed`, or is it inflated from a weak prior?
+2. Repair legality — is a local patch dressed as structural repair? Downgrade scope or regress to PLAN.
+3. Lawful downgrade — can a weaker, true statement replace it? Prefer the downgrade.
+4. Alternative-route suppression — is a live competing route being silenced? Preserve it.
+5. Strongest objection — what would the sharpest reviewer pushback be? Articulate it. Cannot articulate = have not understood the alternatives → `gm-execute`.
+
+Any failure regresses to `gm-execute` to witness what was missing, or `planning` if the gap is structural.
+
+## Pre-emit run
+
+Mandatory before writing any file.
 
 ```
 exec:nodejs
@@ -34,58 +38,29 @@ const { fn } = await import('/abs/path/to/module.js');
 console.log(await fn(realInput));
 ```
 
-1. Import actual module from disk — witness current behavior as baseline
-2. Run proposed logic in isolation WITHOUT writing — witness with real inputs
-3. Probe failure paths with real error inputs
-4. Compare: matches expected → write. Unexpected → new unknown → `planning`.
+Import the actual module from disk to witness current behavior as the baseline. Run the proposed logic in isolation without writing — witness with real inputs and with real error inputs. Match expected → write. Unexpected → new unknown → `planning`.
 
-## WRITING FILES
+## Writing
 
-`exec:nodejs` with `require('fs')`. Write only when every gate mutable resolved simultaneously.
+`exec:nodejs` with `require('fs')`. Write only when every gate mutable resolves simultaneously.
 
-## POST-EMIT VERIFICATION (immediately after writing)
+## Post-emit verification
 
-1. Re-import from disk (not in-memory — stale is inadmissible)
-2. Run identical inputs as pre-emit — must match pre-emit baseline exactly
-3. Known variance → fix immediately, re-verify (EMIT self-loop)
-4. Unknown variance → new unknown → invoke `planning`
+Re-import from disk — in-memory state is stale and inadmissible. Run identical inputs as pre-emit; output must match the baseline exactly. Known variance → fix and re-verify (self-loop). Unknown variance → `planning`.
 
-## GATE CONDITIONS (all true simultaneously)
+## Gate (all true at once)
 
-- Legitimacy gate passed; none of five refused collapses
-- Pre-emit passed with real inputs + error inputs
+- Legitimacy gate passed; no refused collapse
+- Pre-emit passed with real inputs and real error inputs
 - Post-emit matches pre-emit exactly
-- Hot reloadable; errors throw with context (no fallbacks, `|| default`, `catch { return null }`)
-- No mocks/fakes/stubs/scattered test files (delete on discovery)
-- Behavior change in this emit = a corresponding assertion in test.js (a change no test would catch is a change you cannot prove)
-- If this emit changes any browser-facing code (client/, served HTML/JS, shaders, page-bundle imports, gh-pages assets), the post-emit verify MUST include a live browser witness via `exec:browser` (boot server → page.goto → page.evaluate asserting the invariant the change established). Node-side import + test.js does NOT satisfy this — see `gm-complete` BROWSER VALIDATION GATE.
-- Files ≤200 lines
-- No duplicate concern (run exec:codesearch for primary concern after writing; any overlap → `planning`)
-- No comments; no hardcoded values; no adjectives in identifiers; no unnecessary files
-- Observability: new server subsystems expose `/debug/<subsystem>`; new client modules in `window.__debug`
-- Structure: no if/else where dispatch table suffices; no one-liners that require decoding; no reinvented APIs
-- All facts resolved this phase memorized via background Agent(memorize)
-- CHANGELOG.md updated; TODO.md cleared/deleted
-
-## FIX ON SIGHT — HARD RULE
-
-Pre-emit run, post-emit run, or legitimacy gate surfaces ANY issue (failing assertion, stderr, type/lint error, unexpected variance, broken import, runtime throw) → fix at root cause this turn, re-run pre-emit AND post-emit, advance only when all gates pass simultaneously. Never write-and-promise-fix-later, never `try/catch`-to-hide, never `.skip`, never silence with redirection. Known variance → fix and re-verify (self-loop). Unknown variance → regress to `planning`.
-
-## CODE EXECUTION
-
-`exec:<lang>` only. File writes via exec:nodejs + require('fs'). Never Bash(node/npm/npx/bun).
-Pack runs: Promise.allSettled, each idea own try/catch, under 12s per call.
-
-## CODEBASE SEARCH
-
-`exec:codesearch` only. Grep/Glob/Find/Explore = hook-blocked. Known path → `Read`.
-
-## MEMORIZE
-
-```
-Agent(subagent_type='gm:memorize', model='haiku', run_in_background=true, prompt='## CONTEXT TO MEMORIZE\n<fact>')
-```
-
-Same turn as resolution. Parallel when multiple. End-of-turn self-check mandatory.
-
-**Never**: write before pre-emit | advance with post-emit variance | absorb surprises | respond to user mid-phase
+- Hot-reloadable; errors throw with context (no `|| default`, no `catch { return null }`, no fallbacks)
+- No mocks, fakes, stubs, or scattered test files (delete on discovery)
+- Any behavior change has a corresponding assertion in `test.js` — a change no test catches is a change you cannot prove
+- Browser-facing change → post-emit verify includes a live `exec:browser` witness (boot server → `page.goto` → `page.evaluate` asserting the invariant the change established). Node-side import + test.js does not satisfy this — the final gate runs again in `gm-complete`.
+- Files ≤ 200 lines
+- No duplicate concern (run `exec:codesearch` for the primary concern after writing; overlap → `planning`)
+- No comments, no hardcoded values, no adjectives in identifiers, no unnecessary files
+- Observability: new server subsystems expose `/debug/<subsystem>`; new client modules register in `window.__debug`
+- Structure: no if/else where dispatch suffices; no one-liners that obscure; no reinvented APIs
+- Every fact resolved this phase memorized via background `Agent(memorize)`
+- CHANGELOG.md updated; TODO.md cleared or deleted

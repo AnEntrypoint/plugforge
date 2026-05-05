@@ -3,35 +3,36 @@ name: gm-complete
 description: VERIFY and COMPLETE phase. End-to-end system verification and git enforcement. Any new unknown triggers immediate snake back to planning — restart chain.
 ---
 
-# GM COMPLETE — Verify and Complete
+# GM COMPLETE — Verify, then close
 
-GRAPH: `PLAN → EXECUTE → EMIT → [VERIFY] → UPDATE-DOCS → COMPLETE`
-Entry: all EMIT gates passed. From `gm-emit`.
+Entry: EMIT gates clear, from `gm-emit`. Exit: `.prd` deleted + test.js green + pushed + CI green → `update-docs`.
 
-## TRANSITIONS
+Cross-cutting dispositions live in `gm` SKILL.md.
 
-**EXIT → EXECUTE**: .prd items remain → invoke `gm-execute` immediately.
-**EXIT → COMPLETE**: .prd deleted + test.js passes + pushed + CI green → invoke `update-docs`.
-**REGRESS → EMIT**: broken file output.
-**REGRESS → EXECUTE**: logic wrong.
-**REGRESS → PLAN**: new unknown or wrong requirements.
+## Transitions
 
-Failure triage: broken output → EMIT | wrong logic → EXECUTE | new unknown → PLAN. Never patch around surprises.
+- `.prd` items remain → `gm-execute`
+- `.prd` empty AND test.js green AND pushed AND CI green → `update-docs`
+- Broken file output → `gm-emit`
+- Wrong logic → `gm-execute`
+- New unknown or wrong requirements → `planning`
 
-## MUTABLES — ALL MUST RESOLVE BEFORE COMPLETE
+Failure triage: broken output to EMIT, wrong logic to EXECUTE, new unknown to PLAN. Never patch around surprises.
+
+## Mutables that must resolve before COMPLETE
 
 - `witnessed_e2e` — real end-to-end run with witnessed output
-- `browser_validated` — MANDATORY for any change touching client/UI/browser-facing code (anything served to a browser, rendered, or whose output is visible to a user). Must invoke `browser` skill, navigate the live page, and witness the change in `window` / DOM / scene state. test.js + node-side imports DO NOT satisfy this gate. See BROWSER VALIDATION GATE below.
+- `browser_validated` — for any change touching client / UI / browser-facing code, see gate below. test.js + node-side imports DO NOT satisfy this gate.
 - `git_clean` — `git status --porcelain` returns empty
 - `git_pushed` — `git log origin/main..HEAD --oneline` returns empty
-- `ci_passed` — all GitHub Actions runs reach `conclusion: success`
-- `prd_empty` — `.gm/prd.yml` deleted (file must not exist)
-- `stress_suite_clear` — change walked through all applicable governance stress cases (M1-D1), none flunk
-- `hidden_decision_posture` — advances open→down_weighted→closed only when CI green + stress suite clear
+- `ci_passed` — every GitHub Actions run reaches `conclusion: success`
+- `prd_empty` — `.gm/prd.yml` deleted
+- `stress_suite_clear` — change walked through M1–D1 (governance), none flunked
+- `hidden_decision_posture` — open → down_weighted → closed only when CI is green AND stress suite is clear
 
-## END-TO-END VERIFICATION
+## End-to-end verification
 
-Run real system, real data, witness actual output. NOT verification: docs updates, saying done, screenshots alone.
+Real system, real data, witness actual output. Doc updates, "saying done", and screenshots alone are not verification.
 
 ```
 exec:nodejs
@@ -39,31 +40,23 @@ const { fn } = await import('/abs/path/to/module.js');
 console.log(await fn(realInput));
 ```
 
-Browser/UI: invoke `browser` skill. After every success: enumerate what remains — never stop at first green.
+After every success, enumerate what remains — never stop at first green.
 
-## BROWSER VALIDATION GATE — MANDATORY FOR CLIENT WORK
+## Browser validation gate
 
-If this session changed any code that runs in a browser — anything under client/, UI components, shaders, page-loaded JS, served HTML, gh-pages assets, dev-server endpoints, or any module imported into the page bundle — `browser_validated` MUST resolve before COMPLETE. Skipping it because "node tests pass" or "test.js is green" is a forced-closure refusal of witnessed verification.
+Required when this session changed any code that runs in a browser: anything under `client/`, UI components, shaders, page-loaded JS, served HTML, gh-pages assets, dev-server endpoints, or any module imported into the page bundle.
 
-Trigger detection (any one suffices):
-- `git diff --name-only origin/main..HEAD` includes paths under `client/`, `apps/*/index.js` with client export, `docs/`, `*.html`, shader files, or any file imported by a browser entry.
-- New/changed export consumed by `window.*` or rendered in DOM/canvas/WebGL.
-- Visual, layout, animation, input, network-on-page, or shader behavior altered.
+Trigger detection (any one): `git diff --name-only origin/main..HEAD` includes paths under `client/`, `apps/*/index.js` with client export, `docs/`, `*.html`, shader files, or any file imported by a browser entry; new/changed export consumed by `window.*` or rendered in DOM/canvas/WebGL; visual, layout, animation, input, network-on-page, or shader behavior altered.
 
-Required protocol:
-1. Boot the real server (or open the static page) on a known URL — witness HTTP 200.
-2. `exec:browser` → `page.goto(url)` → wait for app init (poll for the global the change affects, e.g. `window.__app.<system>`).
-3. Probe via `page.evaluate(() => …)` — assert the specific invariant the change was supposed to establish (instance counts, scene meshes, DOM nodes, render stats, network frames, etc.).
-4. Capture the witnessed numbers in the response. "Looks fine" is not a witness.
-5. Failures → regress to `gm-execute` (logic) or `gm-emit` (output) — never paper over.
+Protocol: boot the real server (or open the static page) on a known URL — witness HTTP 200. `exec:browser` → `page.goto(url)` → wait for app init by polling for the global the change affects (`window.__app.<system>`). Probe via `page.evaluate(() => …)` asserting the specific invariant the change was supposed to establish — instance counts, scene meshes, DOM nodes, render stats, network frames. Capture witnessed numbers in the response — "looks fine" is not a witness. Failures route to `gm-execute` (logic) or `gm-emit` (output) — never paper over.
 
-Long-running probes: split into navigate-call → `exec:wait N` → probe-call to stay under the per-call budget. Do not stack multi-second `setTimeout` inside one `exec:browser` invocation.
+Long-running probes split into navigate-call → `exec:wait N` → probe-call to stay under the per-call budget. Do not stack multi-second `setTimeout` inside one `exec:browser` invocation.
 
-Exempt only when: change is server-only with zero browser-facing surface, OR repository has no browser surface at all (pure CLI/library). Exemption requires explicit tag in the response: `BROWSER EXEMPT: <reason — must reference diff paths showing zero browser-facing surface>`. Silent skip = forced-closure failure. Default posture is NOT exempt — burden is on the agent to prove exemption with diff evidence, not to assume it.
+Exempt only when: change is server-only with zero browser-facing surface, OR the repository has no browser surface at all (pure CLI / library). Exemption requires explicit tag in the response: `BROWSER EXEMPT: <reason — must reference diff paths showing zero browser-facing surface>`. Default posture is NOT exempt — burden is on the agent to prove exemption with diff evidence.
 
-**Pre-flight check before declaring complete**: run `git diff --name-only origin/main..HEAD` and grep for `client/|docs/|\.html$|\.glsl$|\.frag$|\.vert$`. Any hit AND no `exec:browser` block in this session = mandatory regression to `gm-execute` to witness the change live. No exceptions for "small CSS tweak" or "obvious string change".
+Pre-flight: run `git diff --name-only origin/main..HEAD` and grep for `client/|docs/|\.html$|\.glsl$|\.frag$|\.vert$`. Any hit AND no `exec:browser` block in this session → mandatory regression to `gm-execute`.
 
-## INTEGRATION TEST GATE
+## Integration test gate
 
 ```
 exec:nodejs
@@ -72,9 +65,9 @@ try { execSync('node test.js', { stdio: 'inherit', timeout: 30000 }); console.lo
 catch (e) { console.error('FAIL'); process.exit(1); }
 ```
 
-Failure → regress to `gm-execute`. No test.js + testable surface → regress to `gm-execute` to create it.
+Failure → `gm-execute`. No test.js in a repo with testable surface → `gm-execute` to create it.
 
-## GIT ENFORCEMENT
+## Git enforcement
 
 ```
 exec:bash
@@ -82,48 +75,30 @@ git status --porcelain
 git log origin/main..HEAD --oneline
 ```
 
-Both must return empty. Local commit without push ≠ complete.
+Both must return empty. Local commit without push is not complete.
 
-## CI — AUTOMATED
+## CI is automated
 
-Stop hook watches all GitHub Actions runs for the pushed HEAD. Do not call `gh run list` manually.
-- All-green → Stop approves with CI summary in next turn context
-- Failure → Stop blocks with run names+IDs → investigate with `gh run view <id> --log-failed`, fix, push, hook re-watches
-- Deadline 180s (override `GM_CI_WATCH_SECS`) → slow jobs get "still in progress" approve
+The Stop hook watches Actions for the pushed HEAD. Do not call `gh run list` manually. All-green → Stop approves with CI summary in next-turn context. Failure → Stop blocks with run names + IDs; investigate via `gh run view <id> --log-failed`, fix, push, hook re-watches. Deadline 180s (override `GM_CI_WATCH_SECS`); slow jobs get a "still in progress" approve.
 
-## FIX ON SIGHT — HARD RULE
+## Hygiene sweep
 
-Any issue surfaced during verify (test.js failure, browser-validation mismatch, CI red, git-status dirt, hygiene-sweep finding, stress-suite flunk, observability gap) is fixed in-band before declaring complete. Never paper over, never `.skip`, never ship-and-followup, never silence stderr/CI signals. Failure routes to the owning phase: broken output → `gm-emit` | wrong logic → `gm-execute` | new unknown → `planning`. Never declare COMPLETE while a known-bad signal is live.
-
-## HYGIENE SWEEP
-
-Before declaring complete:
 1. Files >200 lines → split
 2. Comments in code → remove
-3. Scattered test files (.test.js, .spec.js, __tests__/, fixtures/, mocks/) → delete, consolidate into root test.js
-4. Mock/stub/simulation files → delete
-5. Unnecessary doc files (not CHANGELOG/CLAUDE/README/TODO.md) → delete
-6. Duplicate concern → snake to `planning` with restructuring instructions
+3. Scattered test files (`.test.js`, `.spec.js`, `__tests__/`, `fixtures/`, `mocks/`) → delete, consolidate into root `test.js`
+4. Mock / stub / simulation files → delete
+5. Unnecessary doc files (not CHANGELOG, CLAUDE, README, TODO.md) → delete
+6. Duplicate concern → regress to `planning` with restructuring instructions
 7. Hardcoded values → derive from ground truth
-8. Fallback/demo modes → remove, fail loud
-9. TODO.md → empty/deleted
-10. CHANGELOG.md → has entries for this session
+8. Fallback / demo modes → remove, fail loud
+9. TODO.md → empty or deleted
+10. CHANGELOG.md → entries for this session
 11. Observability gaps → server subsystems expose `/debug/<subsystem>`; client modules register in `window.__debug`
-12. Memorize → every fact from verification handed off via background Agent(memorize) at moment of resolution
-13. Deploy/publish → if deployable, deploy; if npm package, publish
+12. Memorize → every fact from verification handed off via background `Agent(memorize)` at moment of resolution
+13. Deploy / publish → if deployable, deploy; if npm package, publish
 14. GitHub Pages → check `.github/workflows/pages.yml` + `docs/index.html` exist; invoke `pages` skill if absent
-15. Governance stress-suite → walk change through M1,F1,C1,H1,S1,B1,A1,D1; any flunk = regress to owning phase
+15. Governance stress-suite → walk change through M1, F1, C1, H1, S1, B1, A1, D1; any flunk regresses to the owning phase
 
-## MEMORIZE
+## Completion
 
-```
-Agent(subagent_type='gm:memorize', model='haiku', run_in_background=true, prompt='## CONTEXT TO MEMORIZE\n<fact>')
-```
-
-One per fact, parallel, same turn resolved. End-of-turn self-check mandatory.
-
-## COMPLETION DEFINITION
-
-All: witnessed e2e | browser_validated (when client work touched) | failure paths exercised | test.js passes | .prd deleted | git clean+pushed | CI green | hygiene sweep clean | TODO.md gone | CHANGELOG.md updated
-
-**Never**: claim done without witnessed output | claim done on a client change without browser-validation witness | stop while .prd has items | skip hygiene | skip test.js | uncommitted/unpushed work | stop at first green
+All true at once: witnessed e2e | browser_validated when client work touched | failure paths exercised | test.js passes | `.prd` deleted | git clean and pushed | CI green | hygiene sweep clean | TODO.md gone | CHANGELOG.md updated.

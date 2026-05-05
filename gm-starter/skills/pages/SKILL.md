@@ -3,41 +3,37 @@ name: pages
 description: Scaffold and maintain a GitHub Pages site. Buildless in browser (webjsx + rippleui via CDN), flatspace for content aggregation built during GH Actions. Use when user wants to create or update a GH Pages site.
 ---
 
-# Pages — GitHub Pages Site Scaffolder
+# Pages — GitHub Pages site scaffolder
 
-Scaffold a complete GH Pages site: **no local build step**, content managed via flatspace flat-file CMS, UI via webjsx + rippleui CDN, GH Actions builds and deploys.
-
-**Follow full gm skill chain: planning → gm-execute → gm-emit → gm-complete → update-docs.**
+Scaffold a complete GH Pages site with no local build step. Content via flatspace flat-file CMS, UI via webjsx + rippleui CDN, GH Actions builds and deploys. Follow the full chain: `planning → gm-execute → gm-emit → gm-complete → update-docs`.
 
 ## Stack
 
 | Layer | Tool | How |
-|-------|------|-----|
+|---|---|---|
 | UI rendering | [webjsx](https://webjsx.org) | ES module via importmap, `applyDiff` for DOM updates |
 | Styling | [rippleui](https://ripple-ui.com) | CDN `<link>` — Tailwind-based component classes |
 | Content CMS | [flatspace](https://npmjs.com/package/flatspace) | Aggregates `content/` → `docs/data/*.json` at build time |
 | Build | GH Actions | `npx flatspace` runs in CI, commits output to `docs/` |
-| Hosting | GitHub Pages | Source: `docs/` branch, or GH Actions deploy |
+| Hosting | GitHub Pages | Source set to "GitHub Actions" |
 
-## Directory Layout
+## Layout
 
 ```
 <project>/
-  content/              # Source content (markdown, json, yaml)
-    pages/              # Static pages (index.md, about.md, ...)
-    posts/              # Blog posts or articles
-    data/               # Structured data files
-  docs/                 # GH Pages root (gitignored build output except index.html)
-    index.html          # Entry point — committed, never regenerated
-    app.js              # Main webjsx app — committed
-    data/               # flatspace output — gitignored, built by CI
-  .github/
-    workflows/
-      pages.yml         # Build + deploy workflow
-  flatspace.config.js   # flatspace aggregation config
+  content/
+    pages/
+    posts/
+    data/
+  docs/
+    index.html       # committed, never regenerated
+    app.js           # committed
+    data/            # flatspace output, gitignored
+  .github/workflows/pages.yml
+  flatspace.config.js
 ```
 
-## index.html — Buildless Entry
+## index.html
 
 ```html
 <!DOCTYPE html>
@@ -63,28 +59,19 @@ Scaffold a complete GH Pages site: **no local build step**, content managed via 
 </html>
 ```
 
-## app.js — webjsx App Pattern
+## app.js
 
 ```js
 import { applyDiff } from 'webjsx';
 
 const h = (tag, props, ...children) => ({ tag, props: props || {}, children });
-
 const state = { page: null, data: {} };
 
-async function loadData(path) {
-  const res = await fetch(path);
-  return res.json();
-}
-
-function render() {
-  applyDiff(document.getElementById('root'), App(state));
-}
+async function loadData(path) { return (await fetch(path)).json(); }
+function render() { applyDiff(document.getElementById('root'), App(state)); }
 
 function App(s) {
-  if (!s.page) return h('div', { class: 'flex justify-center p-8' },
-    h('span', { class: 'spinner' })
-  );
+  if (!s.page) return h('div', { class: 'flex justify-center p-8' }, h('span', { class: 'spinner' }));
   return h('div', { class: 'max-w-4xl mx-auto p-4' },
     h('nav', { class: 'navbar bg-backgroundSecondary mb-6' },
       h('span', { class: 'navbar-brand text-xl font-bold' }, s.page.title)
@@ -100,11 +87,7 @@ function Section(section) {
   );
 }
 
-async function main() {
-  state.page = await loadData('./data/index.json');
-  render();
-}
-
+async function main() { state.page = await loadData('./data/index.json'); render(); }
 main();
 ```
 
@@ -122,11 +105,10 @@ module.exports = {
 };
 ```
 
-## GH Actions Workflow — pages.yml
+## pages.yml
 
 ```yaml
 name: Deploy GitHub Pages
-
 on:
   push:
     branches: [main]
@@ -142,14 +124,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
+        with: { node-version: '20' }
       - name: Build content with flatspace
         run: npx flatspace
-
       - name: Commit built data
         run: |
           git config user.name "github-actions[bot]"
@@ -157,11 +135,8 @@ jobs:
           git add docs/data/
           git diff --staged --quiet || git commit -m "chore: build content [skip ci]"
           git push
-
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: docs/
+      - uses: actions/upload-pages-artifact@v3
+        with: { path: docs/ }
 
   deploy:
     needs: build
@@ -174,26 +149,14 @@ jobs:
         uses: actions/deploy-pages@v4
 ```
 
-## Scaffolding Steps
+## Scaffold sequence
 
-When user says "set up pages" or "create GH pages site":
+Read existing `docs/` and `content/` if present — never clobber existing content. Create the directory structure. Write `docs/index.html`, `docs/app.js`, `flatspace.config.js`, `.github/workflows/pages.yml`, `content/pages/index.md` with minimal frontmatter (`title`, `sections` array). Add `docs/data/` to `.gitignore`. Verify GH Pages setting is "GitHub Actions" in repo Settings — remind the user if you can't verify.
 
-1. **Read** existing `docs/` and `content/` if present — never clobber existing content
-2. **Create** directory structure above
-3. **Write** `docs/index.html` with correct site title
-4. **Write** `docs/app.js` with webjsx app skeleton
-5. **Write** `flatspace.config.js`
-6. **Write** `.github/workflows/pages.yml`
-7. **Write** `content/pages/index.md` with minimal frontmatter (`title`, `sections` array)
-8. **Add** `docs/data/` to `.gitignore` (built by CI, not committed by humans)
-9. **Verify** GH Pages setting is "GitHub Actions" in repo Settings — remind user if can't verify
-
-## rippleui Component Classes Quick Reference
-
-Use these directly in JSX className strings — no config needed:
+## rippleui classes
 
 | Component | Class |
-|-----------|-------|
+|---|---|
 | Button | `btn btn-primary`, `btn btn-secondary`, `btn btn-ghost` |
 | Card | `card p-4` |
 | Input | `input input-primary` |
@@ -203,30 +166,18 @@ Use these directly in JSX className strings — no config needed:
 | Spinner | `spinner` |
 | Divider | `divider` |
 
-Background: `bg-backgroundPrimary`, `bg-backgroundSecondary`. Text: `text-content1`, `text-content2`.
+Background `bg-backgroundPrimary`, `bg-backgroundSecondary`. Text `text-content1`, `text-content2`. rippleui CSS color vars (e.g. `--gray-2`) are raw space-separated RGB tuples — invalid in `rgb()` directly. Use the component classes instead.
 
-**CSS variable warning**: rippleui color vars (e.g. `--gray-2`) are raw space-separated RGB tuples — not valid CSS colors. Never use them in `rgb()` directly from JS. Use the component classes instead.
+## webjsx
 
-## webjsx Patterns
+No JSX transpile needed. Use the `h()` factory in `.js` files served directly. `.jsx` with native importmap requires the server to set the correct MIME type, which GH Pages does not — stay in `.js` + `h()`.
 
-**No JSX transpile needed** — use `h()` factory or import from CDN with importmap and write JSX in `.jsx` files served directly (Chrome supports importmap natively).
+`applyDiff(domNode, vnodeOrArray)` — never pass a string. State updates mutate `state` and call `render()`; no reactive system.
 
-For `.js` files without transpile, use the `h` factory pattern shown above.
-
-For `.jsx` with native importmap (no build):
-```js
-/** @jsxImportSource webjsx */
-import { applyDiff } from 'webjsx';
-```
-Only works if server sets correct MIME type for `.jsx` — GH Pages does not. Use `.js` + `h()` factory.
-
-**applyDiff signature**: `applyDiff(domNode, vnodeOrArray)` — never pass a string, always pass a vnode from `h()`.
-
-**State updates**: mutate `state`, call `render()` — no reactive system, explicit re-render on every change.
-
-## Content Format (flatspace input)
+## Content format
 
 Markdown with YAML frontmatter:
+
 ```markdown
 ---
 title: Home
@@ -240,19 +191,18 @@ sections:
 Full markdown body here.
 ```
 
-flatspace outputs `docs/data/pages/index.json`:
+Output `docs/data/pages/index.json`:
+
 ```json
 { "title": "Home", "sections": [...], "body": "<p>Full markdown body here.</p>", "slug": "index" }
 ```
 
-## Known Gotchas
+## Gotchas
 
-**GH Pages must be set to "GitHub Actions"** in Settings → Pages. "Deploy from branch" ignores the deploy-pages action entirely.
+GH Pages must be set to "GitHub Actions" in Settings → Pages. "Deploy from branch" ignores the deploy-pages action.
 
-**docs/data/ must be in .gitignore** but `docs/index.html` and `docs/app.js` must NOT be ignored — they are the committed source files.
+`docs/data/` is gitignored; `docs/index.html` and `docs/app.js` are not — they are the committed source files.
 
-**flatspace npx cold start**: first CI run downloads flatspace — takes ~10s extra. Subsequent runs use cache if `actions/setup-node` cache is configured.
+`npx flatspace` cold-start is ~10s on first CI run; subsequent runs use the `actions/setup-node` cache.
 
-**importmap browser support**: all modern browsers support importmap. No IE, no Safari < 16.4. For GH Pages this is fine.
-
-**webjsx CDN version**: pin to explicit version in importmap (e.g. `@0.0.42`) — avoid `@latest` to prevent silent breakage on upstream updates.
+Pin the webjsx CDN version in importmap (e.g. `@0.0.42`) — `@latest` breaks silently on upstream updates.

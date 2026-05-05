@@ -3,48 +3,40 @@ name: create-lang-plugin
 description: Create a lang/ plugin that wires any CLI tool or language runtime into gm-cc — adds exec:<id> dispatch, optional LSP diagnostics, and optional prompt context injection. Zero hook configuration required.
 ---
 
-# CREATE LANG PLUGIN
+# Create lang plugin
 
 Single CommonJS file at `<projectDir>/lang/<id>.js`. Auto-discovered — no hook editing.
 
-## Plugin Shape
+## Plugin shape
 
 ```js
 'use strict';
 module.exports = {
-  id: 'mytool',                         // must match filename
+  id: 'mytool',
   exec: {
     match: /^exec:mytool/,
     run(code, cwd) { /* returns string or Promise<string> */ }
   },
-  lsp: {                                // optional — synchronous only
+  lsp: {
     check(fileContent, cwd) { /* returns Diagnostic[] */ }
   },
-  extensions: ['.ext'],                 // optional — for lsp.check
-  context: `=== mytool ===\n...`       // optional — string or () => string
+  extensions: ['.ext'],
+  context: `=== mytool ===\n...`
 };
 ```
 
 `type Diagnostic = { line: number; col: number; severity: 'error'|'warning'; message: string }`
 
-## How It Works
+`exec.run` runs in a child process, 30s timeout, async OK. Called when Claude writes `exec:mytool\n<code>`. `lsp.check` is synchronous-only, called per prompt-submit. `context` is injected into every prompt, truncated to 2000 chars.
 
-- `exec.run` — child process, 30s timeout, async OK. Called when Claude writes `exec:mytool\n<code>`.
-- `lsp.check` — synchronous, called per prompt submit. Use `spawnSync`/`execFileSync`. No async.
-- `context` — injected into every prompt (truncated 2000 chars).
+## Identify the tool
 
-## Step 1 — Identify Tool
+What is the CLI name or npm package? Does it run a single expression (`tool eval`, `tool -e`, HTTP POST) or a file (`tool run <file>`)? What is its lint/check mode and output format? File extensions? Does it require a running server, or does it run headless?
 
-1. CLI name or npm package?
-2. Run single expression? (`tool eval <expr>`, `tool -e <code>`, HTTP POST...)
-3. Run file? (`tool run <file>`)
-4. Lint/check mode + output format?
-5. File extensions?
-6. Requires running server or headless?
+## exec.run patterns
 
-## Step 2 — exec.run Patterns
+HTTP eval against a running server:
 
-HTTP eval (running server):
 ```js
 function httpPost(port, urlPath, body) {
   return new Promise((resolve, reject) => {
@@ -61,7 +53,8 @@ function httpPost(port, urlPath, body) {
 }
 ```
 
-File-based (headless):
+File-based, headless:
+
 ```js
 function runFile(code, cwd) {
   const tmp = path.join(os.tmpdir(), `plugin_${Date.now()}.ext`);
@@ -71,12 +64,13 @@ function runFile(code, cwd) {
 }
 ```
 
-Single expr detection:
+Single-expression detection:
+
 ```js
 const isSingleExpr = code => !code.trim().includes('\n') && !/\b(func|def|fn |class|import)\b/.test(code);
 ```
 
-## Step 3 — lsp.check
+## lsp.check
 
 ```js
 function check(fileContent, cwd) {
@@ -94,14 +88,15 @@ function check(fileContent, cwd) {
 }
 ```
 
-## Step 4 — context String
+## context
 
 Under 300 chars:
+
 ```js
 context: `=== mytool ===\nexec:mytool\n<expression>\n\nRuns via <how>. Use for <when>.`
 ```
 
-## Step 5 — Write + Verify
+## Verify
 
 ```
 exec:nodejs
@@ -110,6 +105,7 @@ console.log(p.id, typeof p.exec.run, p.exec.match.toString());
 ```
 
 Then test dispatch:
+
 ```
 exec:mytool
 <simple test expression>
@@ -117,9 +113,9 @@ exec:mytool
 
 ## Constraints
 
-- `exec.run` async OK (30s timeout)
+- `exec.run` async OK, 30s timeout
 - `lsp.check` synchronous only — no Promises
 - CommonJS only — no ES module syntax
 - No persistent processes
 - `id` must match filename exactly
-- First match wins — make `match` specific
+- First match wins — keep `match` specific

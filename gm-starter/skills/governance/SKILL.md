@@ -3,24 +3,25 @@ name: governance
 description: Governance reference invoked by PLAN/EXECUTE/EMIT/VERIFY. Separates route discovery (PLAN) from weak-prior handoff (EXECUTE) from earned-emission legitimacy (EMIT/VERIFY). Encodes 16-failure taxonomy, 4 state planes, ΔS/λ/ε/Coverage metrics, governance stress suite.
 ---
 
-# Governance — Route, Bridge, Legitimacy
+# Governance — Route, bridge, legitimacy
 
-Three roles, three failure surfaces:
-1. **Route discovery** — what family of fault? Owned by `planning`.
-2. **Weak-prior bridge** — plausibility ≠ authorization. Owned by `gm-execute`.
-3. **Legitimacy gate** — did this answer earn its strength? Owned by `gm-emit`/`gm-complete`.
+Three roles, three failure surfaces.
 
-## Five Refused Collapses
+1. Route discovery — what family of fault? Owned by `planning`.
+2. Weak-prior bridge — plausibility is not authorization. Owned by `gm-execute`.
+3. Legitimacy gate — did this answer earn its strength? Owned by `gm-emit` and `gm-complete`.
 
-1. Route → authorization ("plan looks good" → "code is right")
-2. Candidate → structural repair (local patch presented as architectural fix)
+## Five refused collapses
+
+1. Route → authorization ("plan looks good" treated as "code is right")
+2. Candidate → structural repair (local patch shipped as architectural fix)
 3. Hidden → public law (internal convenience shipped as contract)
-4. Cleanliness → legitimacy (compiles = evidence-supports)
+4. Cleanliness → legitimacy (compiles treated as evidence-supports)
 5. One strong route → universal closure (best answer treated as only answer)
 
-When in doubt: preserve ambiguity. Lawful downgrade beats forced closure.
+When in doubt, preserve ambiguity. Lawful downgrade beats forced closure.
 
-## 7 Route Families
+## 7 route families
 
 | Family | What breaks | Repair |
 |---|---|---|
@@ -32,7 +33,7 @@ When in doubt: preserve ambiguity. Lawful downgrade beats forced closure.
 | boundary | Interfaces, contracts, seams | Re-assert contract from one source |
 | representation | Data shape, schema, type | Make illegal states unrepresentable |
 
-## 16 Failure Modes
+## 16 failure modes
 
 | # | Name | Family |
 |---|---|---|
@@ -53,7 +54,7 @@ When in doubt: preserve ambiguity. Lawful downgrade beats forced closure.
 | 15 | Deployment deadlock | execution |
 | 16 | Pre-deploy collapse | execution |
 
-## 4 State Planes
+## 4 state planes
 
 | Plane | Owner | States | Implication |
 |---|---|---|---|
@@ -62,18 +63,18 @@ When in doubt: preserve ambiguity. Lawful downgrade beats forced closure.
 | repair_legality | gm-emit | unverified → local_candidate → structural | Local cannot ship as structural |
 | hidden_decision_posture | gm-complete | open → down_weighted → closed | Close only after CI green |
 
-## Quality Metrics
+## Quality metrics
 
 - **ΔS** — witnessed output equals expected. ΔS≠0 = still open.
-- **λ≥2** — two independent paths agree. λ=1 = still unknown.
+- **λ ≥ 2** — two independent paths agree. λ=1 = still unknown.
 - **ε** — adjacent invariants hold (types, tests, neighboring callers).
-- **Coverage≥0.70** — enough corpus inspected to rule out contradicting evidence.
+- **Coverage ≥ 0.70** — enough corpus inspected to rule out contradicting evidence.
 
-All four must pass before mutable flips UNKNOWN→KNOWN.
+All four pass before a mutable flips UNKNOWN → KNOWN.
 
-## Stress Suite (8 Cases)
+## Stress suite
 
-Run before declaring COMPLETE:
+Run before declaring COMPLETE.
 
 | # | Case | Failure if flunked |
 |---|---|---|
@@ -86,11 +87,11 @@ Run before declaring COMPLETE:
 | A1 | Authenticity eval partial signals | Surface appearance beats evidence |
 | D1 | Deploy-gate under CI flake | Treats noise as green |
 
-Legal: illegal_commitment=0, evidence_boundary_violation=0, lawful_downgrade=available in all 8, outlier_visibility=preserved.
+Legal: `illegal_commitment=0`, `evidence_boundary_violation=0`, `lawful_downgrade=available` in all 8, `outlier_visibility=preserved`.
 
-## Phase Application
+## Phase application
 
 - **planning** — tag every `.prd` item with route family + failure-mode IDs
-- **gm-execute** — weak prior only; witnessed probe required before authorization
+- **gm-execute** — weak prior only; witnessed probe before authorization
 - **gm-emit** — legitimacy gate; unearned specificity → lawful downgrade
-- **gm-complete** — stress-suite pass; close posture only CI green
+- **gm-complete** — stress-suite pass; close posture only when CI is green

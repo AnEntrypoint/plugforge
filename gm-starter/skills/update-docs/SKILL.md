@@ -5,22 +5,22 @@ description: UPDATE-DOCS phase. Refresh README.md, AGENTS.md, and docs/index.htm
 
 # GM UPDATE-DOCS
 
-GRAPH: `PLAN → EXECUTE → EMIT → VERIFY → [UPDATE-DOCS] → COMPLETE`
-Entry: feature verified, committed, pushed. From `gm-complete`.
+Entry: feature verified, committed, pushed. Exit: docs match disk, committed, pushed → COMPLETE. Unknown architecture change → `planning`.
 
-**FORWARD**: docs updated + committed + pushed → COMPLETE
-**BACKWARD**: unknown architecture change → `planning`
+Every claim in docs is verifiable against disk. Phase names match frontmatter, platform names match `platforms/`, file paths exist, constraint counts are accurate. An unverifiable section is removed, not speculated.
 
 ## Sequence
 
-**1 — What changed**:
+What changed:
+
 ```
 exec:bash
 git log -5 --oneline
 git diff HEAD~1 --stat
 ```
 
-**2 — Read current docs**:
+Read current docs:
+
 ```
 exec:nodejs
 const fs = require('fs');
@@ -30,35 +30,26 @@ const fs = require('fs');
 });
 ```
 
-**3 — Write changed sections only**:
+Write changed sections only:
 
-- **README.md**: platform count, skill tree diagram, quick start commands
-- **AGENTS.md**: via memorize sub-agent only — never inline-edit. `Agent(subagent_type='gm:memorize', model='haiku', run_in_background=true, prompt='## CONTEXT TO MEMORIZE\n<learnings>')`
-- **docs/index.html**: `PHASES` array, platform lists, state machine diagram
-- **gm-starter/agents/gm.md**: skill chain line if new skills added
+- **README.md** — platform count, skill tree diagram, quick-start commands
+- **AGENTS.md** — via `Agent(subagent_type='gm:memorize', model='haiku', run_in_background=true, prompt='## CONTEXT TO MEMORIZE\n<learnings>')`. Never inline-edit.
+- **docs/index.html** — `PHASES` array, platform lists, state machine diagram
+- **gm-starter/agents/gm.md** — skill chain line if new skills added
 
-**4 — Verify from disk**:
+Verify from disk:
+
 ```
 exec:nodejs
 const content = require('fs').readFileSync('/abs/path/file.md', 'utf8');
 console.log(content.includes('expectedString'), content.length);
 ```
 
-**5 — Commit and push**:
+Commit and push:
+
 ```
 exec:bash
 git add README.md docs/index.html gm-starter/agents/gm.md
 git commit -m "docs: update documentation to reflect session changes"
 git push -u origin HEAD
 ```
-
-## FIX ON SIGHT — HARD RULE
-
-Doc-write surfaces a stale claim, broken link, missing file referenced, or contradiction with disk → fix at root cause this turn (update doc to match disk, or fix code if disc is wrong). Never leave a known-false claim in docs. Push surfaces a CI failure → fix and re-push, do not declare complete.
-
-## Fidelity Rules
-
-Every claim verifiable against disk: phase names match frontmatter, platform names match `platforms/`, file paths exist, constraint counts accurate. Unverifiable section → remove, don't speculate.
-
-**Never**: write from memory | push without disk verify | add comments | claim done without witnessed push
-**Always**: git diff first | read before overwriting | verify after write | push

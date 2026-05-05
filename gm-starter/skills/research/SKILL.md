@@ -6,21 +6,17 @@ allowed-tools: Skill, Bash, Agent, WebFetch, WebSearch, Read, Write
 
 # Research
 
-Lead orchestrates. Workers fetch. Findings converge. The lead never reads pages — workers do.
+Lead orchestrates. Workers fetch. Findings converge on disk. The lead never reads pages — workers do.
 
-## Shape of the work
+Effort matches stakes. A single fact is one short fetch. A vendor comparison is a handful of workers, each owning one vendor. A landscape survey is ten or more, each owning one axis. Spending a fan-out on a fact wastes tokens; spending a fact-fetch on a landscape under-delivers.
 
-Breadth first, depth on demand. Open with a wide sweep that maps the terrain; commit deep dives only where the sweep surfaces something load-bearing. A narrow opening misses the alternative the user actually needed.
-
-Effort matches stakes. A single fact warrants one short fetch. A vendor comparison warrants a handful of workers, each owning one vendor. A landscape survey warrants ten or more, each owning one axis. Spending a fan-out on a fact wastes tokens; spending a fact-fetch on a landscape under-delivers.
-
-Workers run in parallel. Independent questions launch in one message, never serialized. Serial fan-out is the default failure mode — guard against it explicitly.
+Breadth first, depth on demand. Open with a wide sweep that maps the terrain, then commit deep dives only where the sweep surfaces something load-bearing. A narrow opening misses the alternative the user actually needed.
 
 ## Worker contract
 
-Each worker receives: the precise question it owns, the shape of the answer (bullets, table row, prose paragraph), the boundary of what it must not pursue, and the destination path under `.gm/research/<slug>/<worker-id>.md` for its findings. Vague briefs produce vague returns; the lead's job is to make the brief unambiguous before spawning.
+Each worker receives the precise question it owns, the shape of the answer (bullets, table row, prose paragraph), the boundary of what it must not pursue, and the destination path under `.gm/research/<slug>/<worker-id>.md`. Workers write structured findings to disk and return only a path plus a one-line summary. The lead reads the paths it cares about; the rest stay on disk. Returning full prose through the agent boundary burns context that the synthesis pass needs.
 
-Workers write structured findings to disk and return only a path plus a one-line summary. The lead reads paths it cares about; the rest stay on disk. Returning full prose through the agent boundary burns context that the synthesis pass needs.
+Workers run in parallel — independent questions launch in one message, never serialized.
 
 ## Citations
 
@@ -28,13 +24,11 @@ A claim without a source URL is a hallucination waiting to be quoted. Workers at
 
 ## Source quality
 
-Content farms and SEO-optimised listicles outrank primary sources on most queries. Prefer vendor docs, RFCs, primary repos, dated blog posts from named authors, and academic preprints over aggregator pages. When two sources disagree, the older primary usually beats the newer aggregator.
+Vendor docs, RFCs, primary repos, dated blog posts from named authors, and academic preprints beat aggregator pages. When two sources disagree, the older primary usually beats the newer aggregator.
 
 ## Convergence
 
-Synthesis happens once, after all workers return. Mid-flight summarisation truncates findings the next worker would have built on. The lead holds the question, the workers' paths, and the synthesis prompt; everything else lives on disk.
-
-If a worker's return reveals a new axis the original plan missed, expand the fan-out — do not stretch an existing worker past its brief.
+Synthesis happens once, after all workers return. Mid-flight summarisation truncates findings the next worker would have built on. If a worker's return reveals a new axis the original plan missed, expand the fan-out — do not stretch an existing worker past its brief.
 
 ## When not to fan out
 
@@ -42,4 +36,4 @@ One question, one page, one fetch. A single `WebFetch` answers it. The fan-out m
 
 ## Handoff
 
-Final answer cites every load-bearing claim, names the workers' output paths for audit, and surfaces disagreements between sources rather than averaging them away.
+Final answer cites every load-bearing claim, names the workers' output paths for audit, and surfaces disagreements rather than averaging them away.

@@ -4,15 +4,15 @@ description: Browser automation via playwriter. Use when user needs to interact 
 allowed-tools: Skill, Bash, Read, Write, Edit, Agent
 ---
 
-# Browser Automation
+# Browser automation
 
-Two pathways — never mix:
+Two pathways — never mix in the same Bash call.
 
-**`exec:browser`** — JS against `page`. `page`, `snapshot`, `screenshotWithAccessibilityLabels`, `state` globals available. 15s live window then backgrounds; drains auto on every subsequent plugkit call.
+`exec:browser` runs JS against `page`. Globals available: `page`, `snapshot`, `screenshotWithAccessibilityLabels`, `state`. 15s live window, then backgrounds; output drains automatically on every subsequent plugkit call.
 
-**`browser:` prefix** — playwriter session management. One command per block.
+`browser:` prefix is playwriter session management. One command per block.
 
-## Core Usage
+## Core
 
 ```
 exec:browser
@@ -30,11 +30,11 @@ browser:
 playwriter -s 1 -e 'await page.goto("http://example.com")'
 ```
 
-Session state persists across `browser:` calls. `-e` arg: single quotes outside, double quotes inside JS strings.
+Session state persists across `browser:` calls. `-e` arg uses single quotes outside, double inside JS strings.
 
 ## Timing
 
-Never `await setTimeout(N)` with N > 10000. Use poll loops:
+Never `await setTimeout(N)` with N > 10000. Poll instead.
 
 ```
 exec:browser
@@ -45,11 +45,12 @@ while (!state.done && Date.now() - start < 12000) {
 console.log(state.result)
 ```
 
-"Assertion failed: UV_HANDLE_CLOSING" = backgrounded normally, ignore noise.
+`Assertion failed: UV_HANDLE_CLOSING` is normal background-on-exit noise; ignore it.
 
-## Common Patterns
+## Patterns
 
 Data extraction:
+
 ```
 exec:browser
 const items = await page.$$eval('.title', els => els.map(e => e.textContent))
@@ -57,6 +58,7 @@ console.log(JSON.stringify(items))
 ```
 
 Console monitoring — set listeners first, then poll:
+
 ```
 exec:browser
 state.logs = []
@@ -68,10 +70,9 @@ exec:browser
 console.log(JSON.stringify(state.logs.slice(-20)))
 ```
 
-## Rules
+## Constraints
 
-- One `playwriter` command per `browser:` block
-- Never mix pathways in same Bash call
-- `exec:browser` = plain JS, no shell quoting
-- All browser tasks drain automatically on every plugkit interaction
-- Sessions reap after 5-15min idle; browser cleaned up on session end
+- One playwriter command per `browser:` block
+- `exec:browser` is plain JS, no shell quoting
+- Browser tasks drain automatically on every plugkit interaction
+- Sessions reap after 5–15 min idle; cleaned up on session end
