@@ -26,7 +26,7 @@ Failure triage: broken output to EMIT, wrong logic to EXECUTE, new unknown to PL
 - `git_clean` — `git status --porcelain` returns empty
 - `git_pushed` — `git log origin/main..HEAD --oneline` returns empty
 - `ci_passed` — every GitHub Actions run reaches `conclusion: success`
-- `prd_empty` — `.gm/prd.yml` deleted
+- `prd_empty` — `.gm/prd.yml` deleted AFTER residual scan: enumerate every in-spirit reachable residual surfaced this session; any hit re-enters `planning`, appends PRD items, executes. Empty PRD is necessary, not sufficient — done = empty PRD AND zero reachable in-spirit residuals. Out-of-spirit-or-unreachable residuals are named in the response and skipped; everything else is this turn's work.
 - `stress_suite_clear` — change walked through M1–D1 (governance), none flunked
 - `hidden_decision_posture` — open → down_weighted → closed only when CI is green AND stress suite is clear
 
