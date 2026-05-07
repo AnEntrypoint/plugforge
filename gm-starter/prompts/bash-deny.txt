@@ -29,6 +29,25 @@ Bash tool only accepts these exact formats:
    exec:learn-status      (show rs-learn DB / HTTP / ACP status)
    exec:learn-debug       (dump observability subsystem; arg optional)
    exec:learn-build       (run label propagation + community summarize)
+   exec:discipline        (list | new <name> | info <name>) — manage isolated knowledge stores
+
+   Discipline sigil: any of recall|memorize|codesearch|forget|learn-status|learn-build accept
+   `@<name>` as the first space-token after the verb arg, scoping to that discipline's store.
+   Reads without the sigil fan across default + every enabled discipline; writes without it
+   go to the default store only. Examples:
+
+     exec:recall
+     @kilo retry budget
+
+     exec:memorize @hermes
+     project/inference-pipeline
+     hermes serves the lab corpus; default store stays clean of platform-specific facts.
+
+     exec:codesearch
+     @gm-core hook dispatch
+
+     exec:discipline
+     new hermes
 
 4. Git commands — git <args> directly (no exec: prefix needed):
    git status

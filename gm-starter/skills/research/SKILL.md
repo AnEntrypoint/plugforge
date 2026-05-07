@@ -6,7 +6,11 @@ allowed-tools: Skill, Bash, Agent, WebFetch, WebSearch, Read, Write
 
 # Research
 
+Declare the discipline before fetching anything. The first line of work names the `@<discipline>` the corpus belongs to — fresh material lives at `.gm/disciplines/<name>/corpus/raw/`, concise rewrites at `.gm/disciplines/<name>/corpus/concise/<chunk-id>.md`, the merged synthesis at `.gm/disciplines/<name>/deep-understanding.md`. A run without a discipline declaration falls back to the default store and the orchestrator says so in one line.
+
 Lead orchestrates. Workers fetch. Findings converge on disk. The lead never reads pages — workers do.
+
+Treat a thousand-document corpus with the same care as a codebase. Material above roughly ten pages — about eight thousand tokens — splits at paragraph boundaries into chunks each owned by one parallel `gm:research-worker` (haiku model). Each worker emits a fact-preserving concise rewrite to `corpus/concise/<chunk-id>.md` — every claim, number, name, caveat from the source survives, prose density rises, citations stay attached. Once every chunk returns, the lead merges into `deep-understanding.md` enumerating the opportunities the corpus opens and the reasonable opinionations it forces. Concise files and the merged document auto-ingest via `exec:memorize @<name>` so the next pass recalls instead of re-fetching.
 
 Effort matches stakes. A single fact is one short fetch. A vendor comparison is a handful of workers, each owning one vendor. A landscape survey is ten or more, each owning one axis. Spending a fan-out on a fact wastes tokens; spending a fact-fetch on a landscape under-delivers.
 

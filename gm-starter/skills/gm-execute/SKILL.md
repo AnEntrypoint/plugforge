@@ -7,6 +7,8 @@ description: EXECUTE phase AND the foundational execution contract for every ski
 
 Entry: `.prd` with named unknowns. Exit: every mutable KNOWN → invoke `gm-emit`.
 
+A `@<discipline>` sigil propagates from PLAN through every recall, codesearch, and memorize call; reads without one fan across default plus enabled disciplines, writes without one go to default only.
+
 This skill is the execution contract for ALL phases — pre-emit witnesses, post-emit verifies, e2e checks all run on this discipline. Cross-cutting dispositions live in `gm` SKILL.md.
 
 ## Transitions

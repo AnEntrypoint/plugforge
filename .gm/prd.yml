@@ -1,0 +1,218 @@
+- id: rs-learn-db-resolver
+  subject: "Add discipline-aware db_path::resolve_db_path(root, discipline)"
+  status: "pending"
+  description: "Extend rs-learn db_path module: resolve_db_path(Option<&Path>, Option<&str>) -> PathBuf. Precedence RS_LEARN_DB_PATH env > computed <root|cwd>/.gm/disciplines/<name>/rs-learn.db (when discipline) else <root|cwd>/.gm/rs-learn.db. Auto-create parents. Plain resolve_db_path() forwards to (None,None). Preserve legacy <root>/rs-learn.db migration."
+  effort: "small"
+  category: "feature"
+  route_family: "state"
+  load: 0.8
+  failure_modes:
+    - silent path mismatch
+    - legacy migration regression
+  route_fit: "examined"
+  authorization: "weak_prior"
+  blocking:
+    - rs-learn-cli-flags
+    - rs-learn-rpc-discipline
+  blockedBy: []
+  files:
+    - C:/dev/rs-learn/src/db_path.rs
+    - C:/dev/rs-learn/src/main.rs
+    - C:/dev/rs-learn/src/lib.rs
+  acceptance:
+    - db_path.rs exposes 2-arg resolve_db_path
+    - old call sites compile
+    - cargo build --release green
+- id: rs-learn-cli-flags
+  subject: "Top-level --root and --discipline on rs-learn CLI"
+  status: "pending"
+  description: "clap top-level --root <dir> and --discipline <name>. Resolved into PathBuf before subcommand dispatch and threaded into Store openers."
+  effort: "small"
+  category: "feature"
+  route_family: "execution"
+  load: 0.6
+  failure_modes:
+    - flag parse order vs subcommand
+  route_fit: "examined"
+  authorization: "weak_prior"
+  blocking:
+    - rs-learn-rpc-discipline
+  blockedBy:
+    - rs-learn-db-resolver
+  files:
+    - C:/dev/rs-learn/src/main.rs
+  acceptance:
+    - rs-learn --discipline foo info opens .gm/disciplines/foo/rs-learn.db
+    - rs-learn info still opens default
+- id: rs-learn-rpc-discipline
+  subject: "Optional project_root+discipline on every HTTP/ACP RPC + LRU store cache"
+  status: "pending"
+  description: "Each RPC accepts optional project_root and discipline. Server keeps LRU<Path,Store> cap 8. Existing callers unaffected when fields omitted."
+  effort: "medium"
+  category: "feature"
+  route_family: "state"
+  load: 0.85
+  failure_modes:
+    - concurrent open of same DB
+    - LRU eviction mid-request
+  route_fit: "examined"
+  authorization: "weak_prior"
+  blocking:
+    - rs-plugkit-discipline-flag
+  blockedBy:
+    - rs-learn-db-resolver
+    - rs-learn-cli-flags
+  files:
+    - C:/dev/rs-learn/src/main.rs
+    - C:/dev/rs-learn/src/acp/
+  acceptance:
+    - ingest/search/recall RPC accept fields
+    - LRU cap=8
+    - existing acp tests green
+- id: rs-search-cli-flags
+  subject: "--root, --index, --discipline on rs-search"
+  status: "pending"
+  description: "CLI flags. Resolution: --index wins; else <root>/.gm/disciplines/<name>/code-search if discipline; else <root>/.gm/code-search. Replace hardcoded current_dir + .gm/code-search in src/main.rs."
+  effort: "small"
+  category: "feature"
+  route_family: "execution"
+  load: 0.7
+  failure_modes:
+    - relative vs absolute path leak
+  route_fit: "examined"
+  authorization: "weak_prior"
+  blocking:
+    - rs-search-mcp-discipline
+  blockedBy: []
+  files:
+    - C:/dev/rs-search/src/main.rs
+  acceptance:
+    - rs-search --discipline foo scan uses .gm/disciplines/foo/code-search
+    - default unchanged
+- id: rs-search-mcp-discipline
+  subject: "MCP tools accept project_root+discipline per call"
+  status: "pending"
+  description: "Per-call index resolution in rs-search MCP layer."
+  effort: "small"
+  category: "feature"
+  route_family: "boundary"
+  load: 0.65
+  failure_modes:
+    - index reuse across disciplines
+  route_fit: "examined"
+  authorization: "weak_prior"
+  blocking:
+    - rs-plugkit-discipline-flag
+  blockedBy:
+    - rs-search-cli-flags
+  files:
+    - C:/dev/rs-search/src/mcp.rs
+  acceptance:
+    - MCP tool schemas list new optional fields
+    - call with discipline opens correct index
+- id: rs-plugkit-discipline-flag
+  subject: "@<name> token + --discipline long form across utility verbs"
+  status: "pending"
+  description: "Verbs exec:recall|memorize|codesearch|forget|learn-status|learn-build accept @<name> first space-token after verb arg or --discipline <name>. New verb exec:discipline list|new|info. Searcher cache keyed by (project_root, discipline) in src/hook/rs_learn.rs."
+  effort: "medium"
+  category: "feature"
+  route_family: "execution"
+  load: 0.85
+  failure_modes:
+    - arg parser order
+    - cache key collision
+  route_fit: "examined"
+  authorization: "weak_prior"
+  blocking:
+    - rs-plugkit-prompt-submit-recall
+  blockedBy:
+    - rs-learn-rpc-discipline
+    - rs-search-mcp-discipline
+  files:
+    - C:/dev/rs-plugkit/src/main.rs
+    - C:/dev/rs-plugkit/src/hook/rs_learn.rs
+  acceptance:
+    - exec:recall @foo bar opens foo discipline
+    - exec:discipline list prints enabled disciplines
+    - default verbs unchanged
+- id: rs-plugkit-prompt-submit-recall
+  subject: "Fan recall across .gm/disciplines/enabled.txt"
+  status: "pending"
+  description: "prompt_submit reads <project>/.gm/disciplines/enabled.txt newline list; parallel recall fan; prefix [discipline:<name>]. Absent file preserves current behavior."
+  effort: "small"
+  category: "feature"
+  route_family: "observability"
+  load: 0.55
+  failure_modes:
+    - enabled.txt malformed
+    - parallel limit exceeded
+  route_fit: "examined"
+  authorization: "weak_prior"
+  blocking: []
+  blockedBy:
+    - rs-plugkit-discipline-flag
+  files:
+    - C:/dev/rs-plugkit/src/hook/prompt_submit.rs
+  acceptance:
+    - enabled disciplines surface prefixed facts
+    - no enabled.txt = same as today
+- id: rs-aggregate-retrieval
+  subject: "Fan-out retrieval across default + every discipline when no @<name> given"
+  status: "pending"
+  description: "Read fan-out at three layers. (1) rs-learn Searcher RPC HTTP+ACP handler in src/main.rs: when discipline is None, enumerate <root>/.gm/disciplines/*/rs-learn.db, run search in parallel against default + each, merge-rank by score, prefix each EpisodeHit/fact with [discipline:<name>] (default db labelled [discipline:default]). (2) rs-search MCP search tool: when discipline None, enumerate <root>/.gm/disciplines/*/code-search/ index dirs, fan parallel, prefix results, merge-rank. (3) rs-plugkit exec:recall and exec:codesearch dispatch in src/hook/rs_learn.rs and codesearch path: same fan-out at plugkit layer (since plugkit calls Searcher directly via shared tokio Runtime). Strict isolation when @<name> present — only that discipline. Writes (memorize/ingest/index) without discipline still go to default only — aggregation is READ behavior. Extend prompt-submit auto-recall to include default alongside enabled disciplines."
+  effort: "medium"
+  category: "feature"
+  route_family: "boundary"
+  load: 0.85
+  failure_modes:
+    - missed default db when fanning
+    - score normalization across heterogeneous indexes
+    - parallel limit blowup with many disciplines
+    - write accidentally fans (must remain default-only)
+  route_fit: "examined"
+  authorization: "witnessed"
+  blocking:
+    - cascade-and-publish
+  blockedBy:
+    - rs-learn-rpc-discipline
+    - rs-search-mcp-discipline
+    - rs-plugkit-discipline-flag
+  files:
+    - C:/dev/rs-learn/src/main.rs
+    - C:/dev/rs-learn/src/acp/
+    - C:/dev/rs-search/src/mcp.rs
+    - C:/dev/rs-plugkit/src/hook/rs_learn.rs
+    - C:/dev/rs-plugkit/src/hook/prompt_submit.rs
+  acceptance:
+    - "exec:recall foo (no @) returns merged hits prefixed [discipline:default] and [discipline:<name>] for each enabled discipline"
+    - "exec:recall @kilo foo returns only [discipline:kilo] hits"
+    - "exec:codesearch foo (no @) fans across all code-search index dirs + default"
+    - "exec:memorize without @ writes only to default db (verified by inspecting only default rs-learn.db mtime changed)"
+    - "rs-learn HTTP search endpoint without discipline returns aggregated"
+- id: cascade-and-publish
+  subject: "Push order rs-learn → rs-search → rs-plugkit → gm; watch CI"
+  status: "pending"
+  description: "cargo build --release + cargo test green locally per repo before push. Watch CI between cascades."
+  effort: "large"
+  category: "infra"
+  route_family: "execution"
+  load: 0.9
+  failure_modes:
+    - cascade race
+    - version bump miss
+    - CI red
+  route_fit: "examined"
+  authorization: "weak_prior"
+  blocking: []
+  blockedBy:
+    - rs-learn-rpc-discipline
+    - rs-search-mcp-discipline
+    - rs-plugkit-prompt-submit-recall
+    - rs-aggregate-retrieval
+  files: []
+  acceptance:
+    - rs-learn green on main
+    - rs-search green on main
+    - rs-plugkit green on main
+    - gm publish green
+    - plugkit.version bumped

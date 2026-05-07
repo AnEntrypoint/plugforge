@@ -8,6 +8,8 @@ allowed-tools: Skill, Bash, Write, Read, Agent
 
 Translate the request into `.gm/prd.yml` and hand to `gm-execute`. Re-enter on any new unknown in any phase.
 
+A `@<discipline>` sigil in the request scopes recall, codesearch, and memorize calls during PLAN to that discipline's store. Without one, retrievals fan across default plus enabled disciplines and writes land in default only.
+
 Cross-cutting dispositions (autonomy, fix-on-sight, nothing-fake, browser-witness, scope, recall, memorize) live in `gm` SKILL.md; this skill only carries what is unique to PLAN.
 
 ## Transitions

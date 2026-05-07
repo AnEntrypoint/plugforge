@@ -51,6 +51,8 @@ exec:memorize
 
 Line 1 of the body is the source tag (e.g. `feedback/terse-responses`, `project/merge-freeze`). Lines 2+ are the fact itself. Use kebab-case slugs.
 
+A discipline sigil — `@<name>` as the first space-token in the invoking prompt, or a trailing `discipline=<name>` line — routes the write to that discipline's store. Without one, the write lands in the default store. Forward the sigil verbatim to `exec:memorize`; never invent or default a discipline name.
+
 To invalidate previously-memorized content (correction or retraction):
 
 ```
