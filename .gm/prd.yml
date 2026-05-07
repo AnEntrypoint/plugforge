@@ -1,28 +1,3 @@
-- id: rs-learn-db-resolver
-  subject: "Add discipline-aware db_path::resolve_db_path(root, discipline)"
-  status: "pending"
-  description: "Extend rs-learn db_path module: resolve_db_path(Option<&Path>, Option<&str>) -> PathBuf. Precedence RS_LEARN_DB_PATH env > computed <root|cwd>/.gm/disciplines/<name>/rs-learn.db (when discipline) else <root|cwd>/.gm/rs-learn.db. Auto-create parents. Plain resolve_db_path() forwards to (None,None). Preserve legacy <root>/rs-learn.db migration."
-  effort: "small"
-  category: "feature"
-  route_family: "state"
-  load: 0.8
-  failure_modes:
-    - silent path mismatch
-    - legacy migration regression
-  route_fit: "examined"
-  authorization: "weak_prior"
-  blocking:
-    - rs-learn-cli-flags
-    - rs-learn-rpc-discipline
-  blockedBy: []
-  files:
-    - C:/dev/rs-learn/src/db_path.rs
-    - C:/dev/rs-learn/src/main.rs
-    - C:/dev/rs-learn/src/lib.rs
-  acceptance:
-    - db_path.rs exposes 2-arg resolve_db_path
-    - old call sites compile
-    - cargo build --release green
 - id: rs-learn-cli-flags
   subject: "Top-level --root and --discipline on rs-learn CLI"
   status: "pending"
@@ -38,7 +13,6 @@
   blocking:
     - rs-learn-rpc-discipline
   blockedBy:
-    - rs-learn-db-resolver
   files:
     - C:/dev/rs-learn/src/main.rs
   acceptance:
@@ -60,7 +34,6 @@
   blocking:
     - rs-plugkit-discipline-flag
   blockedBy:
-    - rs-learn-db-resolver
     - rs-learn-cli-flags
   files:
     - C:/dev/rs-learn/src/main.rs
