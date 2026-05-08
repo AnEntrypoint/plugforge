@@ -1716,6 +1716,9 @@ const oc = factory('oc', 'OpenCode', 'opencode.json', 'GM.md', {
       envVar: 'OC_PLUGIN_ROOT',
       plugkitInvoker: 'node',
       events: [
+        { eventKey: 'tool.execute.before', commands: [
+          { kind: 'plugkit', subcommand: 'pre-tool-use', timeout: 3600 }
+        ]},
         { eventKey: 'message.updated', commands: [
           { kind: 'plugkit', subcommand: 'prompt-submit', timeout: 60000 }
         ]},
@@ -1787,6 +1790,9 @@ const kilo = factory('kilo', 'Kilo CLI', 'kilocode.json', 'KILO.md', {
       envVar: 'KILO_PLUGIN_ROOT',
       plugkitInvoker: 'node',
       events: [
+        { eventKey: 'tool.execute.before', commands: [
+          { kind: 'plugkit', subcommand: 'pre-tool-use', timeout: 3600 }
+        ]},
         { eventKey: 'message.updated', commands: [
           { kind: 'plugkit', subcommand: 'prompt-submit', timeout: 60000 }
         ]},
