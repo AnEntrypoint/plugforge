@@ -812,7 +812,7 @@ function pluginMjsSource(pluginFile) {
     "          throw new Error('Cannot create test/doc files. Use .prd for task notes, AGENTS.md for permanent notes.');",
     "        }",
     "      }",
-    "      if (input.tool !== 'bash' && input.tool !== 'Bash' && input.tool !== 'shell' && input.tool !== 'Shell') return;",
+    "      if (input.tool !== 'bash' && input.tool !== 'Bash' && input.tool !== 'shell' && input.tool !== 'Shell' && input.tool !== 'spawn/exec') return;",
     "      const cmd = (output.args && output.args.command) || '';",
     "      if (!cmd) return;",
     "      if (/^\\s*git(?:\\s|$)/.test(cmd)) return;",
