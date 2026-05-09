@@ -739,7 +739,7 @@ function pluginMjsSource(pluginFile) {
     "      const textPart = msg.parts && msg.parts.find(p => p.type === 'text' && p.text && p.text.trim());",
     "      const prompt = textPart ? textPart.text.trim() : '';",
     "      const parts = [];",
-    "      parts.push('Invoke the `gm` skill to begin. DO NOT use EnterPlanMode. Treat the `exec:` preamble as authoritative; host auto-detection is fallback only, and raw JIT code should go to `.gm/exec-spool/in/<task>.json` when you need execution without encapsulation.');",
+    "      parts.push('Invoke the `gm` skill to begin. DO NOT use EnterPlanMode. Treat the `exec:` preamble as authoritative; host auto-detection is fallback only, and raw JIT code should go to `.gm/exec-spool/in/<task>.json` when you need execution without encapsulation. Keep stale running tasks in view and prefer the latest task reminder over starting duplicate work.');",
     "      const insight = runPlugkit(['codeinsight', directory]);",
     "      if (insight && !insight.startsWith('Error')) parts.push('=== codeinsight ===\\n'+insight);",
     "      if (prompt) {",
