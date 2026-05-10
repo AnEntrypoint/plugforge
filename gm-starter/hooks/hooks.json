@@ -44,7 +44,7 @@
           {
             "type": "command",
             "command": "${CLAUDE_PLUGIN_ROOT}/bin/plugkit hook post-tool-use",
-            "timeout": 5000
+            "timeout": 35000
           }
         ]
       }
