@@ -40,7 +40,7 @@ Spend on `.prd` items in descending order of consequence-if-wrong × distance-fr
 
 ## Code execution
 
-`exec:<lang>` only via Bash. Languages: nodejs (default), bash, python, typescript, go, rust, c, cpp, java, deno, cmd. File I/O via `exec:nodejs` + `require('fs')`. Git directly in Bash. Never `Bash(node/npm/npx/bun)`.
+Code runs through the file-spool, not Bash. Write a file to `.gm/exec-spool/in/<lang>/<N>.<ext>` (e.g. `in/nodejs/42.js`, `in/python/43.py`, `in/bash/44.sh`); the spool watcher executes and writes `out/<N>.json`; the result returns as systemMessage. Languages: nodejs (default), bash, python, typescript, go, rust, c, cpp, java, deno. File I/O via a nodejs spool file + `require('fs')`. Git directly in Bash. Utility verbs (`exec:recall`, `exec:codesearch`, `exec:memorize`, `exec:wait`, `exec:sleep`, `exec:browser`, etc.) DO run via Bash with the verb on line 1 and arg on line 2. Never `Bash(node/npm/npx/bun)`.
 
 Pack runs: `Promise.allSettled`, each idea own try/catch, under 12s per call. Runner: `exec:runner\n{start|stop|status}`.
 
@@ -61,10 +61,10 @@ Start two words, change/add one per pass, minimum four attempts before concludin
 
 ## Import-based execution
 
-Hypotheses become real by importing actual modules from disk. Reimplemented behavior is UNKNOWN.
+Hypotheses become real by importing actual modules from disk. Reimplemented behavior is UNKNOWN. Write the import probe to the spool:
 
 ```
-exec:nodejs
+# write .gm/exec-spool/in/nodejs/42.js
 const { fn } = await import('/abs/path/to/module.js');
 console.log(await fn(realInput));
 ```

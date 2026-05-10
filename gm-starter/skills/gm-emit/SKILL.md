@@ -30,10 +30,9 @@ Any failure regresses to `gm-execute` to witness what was missing, or `planning`
 
 ## Pre-emit run
 
-Mandatory before writing any file.
+Mandatory before writing any file. Write the probe to the spool (`.gm/exec-spool/in/nodejs/<N>.js`):
 
 ```
-exec:nodejs
 const { fn } = await import('/abs/path/to/module.js');
 console.log(await fn(realInput));
 ```
@@ -42,7 +41,7 @@ Import the actual module from disk to witness current behavior as the baseline. 
 
 ## Writing
 
-`exec:nodejs` with `require('fs')`. Write only when every gate mutable resolves simultaneously.
+Use the Write tool, or a nodejs spool file with `require('fs')`. Write only when every gate mutable resolves simultaneously.
 
 ## Post-emit verification
 

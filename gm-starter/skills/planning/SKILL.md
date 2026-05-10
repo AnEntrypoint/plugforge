@@ -53,7 +53,7 @@ Every unknown surfaced during PLAN lands as an entry in `.gm/mutables.yml` the s
 
 ## .prd format
 
-Path: `./.gm/prd.yml`. Write via `exec:nodejs` + `fs.writeFileSync`. Delete the file when empty.
+Path: `./.gm/prd.yml`. Write via the Write tool or by emitting a nodejs spool file (`in/nodejs/<N>.js`) that calls `fs.writeFileSync`. Delete the file when empty.
 
 ```yaml
 - id: kebab-id
@@ -103,7 +103,7 @@ The 200 lines are a *budget* for maximum surface coverage, not a target. Subsyst
 
 ## Execution norms encoded in the plan
 
-`exec:<lang>` only via Bash; file I/O via `exec:nodejs` + `fs`; git directly in Bash; never `Bash(node/npm/npx/bun)`. Paths in `exec:nodejs` are platform-literal — use `os.tmpdir()` and `path.join`, reserve `/tmp/...` for `exec:bash` heredocs. Every `exec:<lang>` and `exec:bash` call passes `--timeout-ms <ms>`; on timeout, partial output is preserved and the runner emits `[exec timed out after Nms; partial output above]` — re-issue with a higher budget rather than retrying blindly.
+Code execution writes to `.gm/exec-spool/in/<lang>/<N>.<ext>`; the spool watcher runs the file and emits `out/<N>.json` as systemMessage. Utility verbs (`exec:recall`, `exec:codesearch`, `exec:memorize`, `exec:wait`, etc.) and `git` run directly via Bash. Never `Bash(node/npm/npx/bun)`. Spool paths in nodejs files are platform-literal — use `os.tmpdir()` and `path.join`. The spool enforces per-task timeouts; on timeout, partial output is preserved and the watcher emits `[exec timed out after Nms; partial output above]`.
 
 `exec:codesearch` only — Grep/Glob/Find/Explore are hook-blocked. Start two words, change/add one per pass, minimum four attempts before concluding absent.
 

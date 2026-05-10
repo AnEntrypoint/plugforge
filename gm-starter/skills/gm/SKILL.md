@@ -50,12 +50,13 @@ N facts → N parallel calls in one message. End of turn: scan for un-memorized 
 
 ## Execution order
 
-1. Recall (`exec:recall`) — cheapest
-2. Code execution (`exec:<lang>`, `exec:codesearch`) — 90% of unknowns
-3. Web (`WebFetch`, `WebSearch`) — env facts not in codebase
-4. User — last resort
+1. Recall (`exec:recall` via Bash) — cheapest
+2. Code execution — write to `.gm/exec-spool/in/<lang>/<N>.<ext>` (nodejs, python, bash, typescript, go, rust, c, cpp, java, deno); spool watcher runs and writes `out/<N>.json`
+3. Codebase search (`exec:codesearch` via Bash) — 90% of lookups
+4. Web (`WebFetch`, `WebSearch`) — env facts not in codebase
+5. User — last resort
 
-`exec:<lang>` only via Bash. Never `Bash(node/npm/npx/bun)`. `git push` triggers auto CI watch via Stop hook.
+Bash accepts ONLY git commands and utility verbs (`exec:recall`, `exec:codesearch`, `exec:memorize`, `exec:wait`, `exec:browser`, etc.). All code execution goes via the spool. Never `Bash(node/npm/npx/bun)`. `git push` triggers auto CI watch via Stop hook.
 
 Skill chain: `planning` → `gm-execute` → `gm-emit` → `gm-complete` → `update-docs`.
 

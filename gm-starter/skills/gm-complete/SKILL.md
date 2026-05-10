@@ -33,10 +33,9 @@ Failure triage: broken output to EMIT, wrong logic to EXECUTE, new unknown to PL
 
 ## End-to-end verification
 
-Real system, real data, witness actual output. Doc updates, "saying done", and screenshots alone are not verification.
+Real system, real data, witness actual output. Doc updates, "saying done", and screenshots alone are not verification. Write the e2e probe to the spool (`.gm/exec-spool/in/nodejs/<N>.js`):
 
 ```
-exec:nodejs
 const { fn } = await import('/abs/path/to/module.js');
 console.log(await fn(realInput));
 ```
@@ -59,8 +58,9 @@ Pre-flight: run `git diff --name-only origin/main..HEAD` and grep for `client/|d
 
 ## Integration test gate
 
+Write to `.gm/exec-spool/in/nodejs/<N>.js`:
+
 ```
-exec:nodejs
 const { execSync } = require('child_process');
 try { execSync('node test.js', { stdio: 'inherit', timeout: 30000 }); console.log('PASS'); }
 catch (e) { console.error('FAIL'); process.exit(1); }
@@ -70,8 +70,9 @@ Failure → `gm-execute`. No test.js in a repo with testable surface → `gm-exe
 
 ## Git enforcement
 
+Run directly via Bash:
+
 ```
-exec:bash
 git status --porcelain
 git log origin/main..HEAD --oneline
 ```

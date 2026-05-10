@@ -1,3 +1,9 @@
+## 2026-05-10 - verb-spool migration: Bash retains only git + utility verbs
+
+Code execution (nodejs, python, bash, typescript, go, rust, c, cpp, java, deno) routes through the file-spool exclusively. The Bash tool accepts git commands and utility verbs (`exec:recall`, `exec:codesearch`, `exec:memorize`, `exec:wait`, `exec:sleep`, `exec:browser`, `exec:runner`, `exec:type`, `exec:kill-port`, `exec:forget`, `exec:feedback`, `exec:learn-status`, `exec:learn-debug`, `exec:learn-build`, `exec:discipline`, `exec:pause`, `exec:status`, `exec:close`); everything else is a spool write to `.gm/exec-spool/in/<lang>/<N>.<ext>` and the watcher emits `out/<N>.json` as systemMessage.
+
+Updated: `gm-starter/prompts/bash-deny.txt` (canonical denial text), `gm-starter/skills/{gm,gm-execute,gm-emit,gm-complete,update-docs,planning}/SKILL.md` (replaced literal `exec:nodejs`/`exec:bash` code blocks with spool-form, kept utility-verb examples). Companion changes in rs-plugkit (BASH_DENY_MSG sync, memorize gate threshold 3→10, .gm/no-memorize-this-turn write always passes, mutables.yml/prd.yml writes excluded from counter) at rs-plugkit d8aa393, and in rs-exec (`UTILITY_LANGS` gains wait/pause/browser/feedback, ext fallback for root-level `in/<N>.<ext>` files) at rs-exec 1238e35.
+
 ## 2026-04-30 - memorize agent: scope guard against out-of-reach AGENTS.md edits
 
 `gm-starter/agents/memorize.md` now opens with a STEP 0 reach check. Before reading or editing `<cwd>/AGENTS.md` (Step 3) or running the AGENTS.md ↔ rs-learn migration audit (Step 4), the agent runs `gh api repos/<owner>/<repo> --jq .permissions.push` against the cwd's `git remote get-url origin`. If the answer is anything other than literal `true` (out-of-reach), the agent skips Step 3 and Step 4 entirely. rs-learn ingest (Step 2) still runs unconditionally — it's a per-user store, safe regardless of repo ownership.

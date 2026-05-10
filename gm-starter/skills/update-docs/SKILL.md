@@ -11,18 +11,16 @@ Every claim in docs is verifiable against disk. Phase names match frontmatter, p
 
 ## Sequence
 
-What changed:
+What changed — run directly via Bash:
 
 ```
-exec:bash
 git log -5 --oneline
 git diff HEAD~1 --stat
 ```
 
-Read current docs:
+Read current docs via Read tool, or via a nodejs spool file (`in/nodejs/<N>.js`):
 
 ```
-exec:nodejs
 const fs = require('fs');
 ['README.md', 'AGENTS.md', 'docs/index.html', 'gm-starter/agents/gm.md'].forEach(f => {
   try { console.log(`=== ${f} ===\n` + fs.readFileSync(f, 'utf8')); }
@@ -37,18 +35,16 @@ Write changed sections only:
 - **docs/index.html** — `PHASES` array, platform lists, state machine diagram
 - **gm-starter/agents/gm.md** — skill chain line if new skills added
 
-Verify from disk:
+Verify from disk (Read tool, or a nodejs spool file):
 
 ```
-exec:nodejs
 const content = require('fs').readFileSync('/abs/path/file.md', 'utf8');
 console.log(content.includes('expectedString'), content.length);
 ```
 
-Commit and push:
+Commit and push directly via Bash:
 
 ```
-exec:bash
 git add README.md docs/index.html gm-starter/agents/gm.md
 git commit -m "docs: update documentation to reflect session changes"
 git push -u origin HEAD
