@@ -338,6 +338,7 @@ async function bootstrap(opts) {
     log(`installed ${finalPath}`);
     obsEvent('bootstrap', 'install.done', { path: finalPath, version, kind: 'plugkit' });
     pruneOldVersions(root, version);
+    proactiveKillForNewInstall(version);
     // Best-effort rtk fetch: failures here never block plugkit usage
     try { await bootstrapRtk(verDir, version, wrapperDir, opts.silent); }
     catch (err) { log(`rtk fetch skipped: ${err.message}`); }
@@ -439,23 +440,67 @@ function writeDaemonVersion(v) {
   try { fs.writeFileSync(daemonVersionSentinel(), String(v)); } catch (_) {}
 }
 
+function killPid(pid) {
+  if (!Number.isFinite(pid) || pid === process.pid || !pidAlive(pid)) return false;
+  try { process.kill(pid, 'SIGTERM'); }
+  catch (_) { try { process.kill(pid); } catch (_) {} }
+  if (os.platform() === 'win32' && pidAlive(pid)) {
+    try {
+      const { spawnSync } = require('child_process');
+      spawnSync('taskkill', ['/F', '/PID', String(pid)], { stdio: 'ignore', windowsHide: true });
+    } catch (_) {}
+  }
+  return true;
+}
+
 function killRunningDaemons(reason) {
   const tmp = os.tmpdir();
-  let killed = 0;
+  const killedPids = [];
   for (const pidFile of ['glootie-runner.pid', 'plugkit-runner.pid']) {
     const pidPath = path.join(tmp, pidFile);
     if (!fs.existsSync(pidPath)) continue;
     try {
       const pid = parseInt(fs.readFileSync(pidPath, 'utf8').trim(), 10);
-      if (Number.isFinite(pid) && pid !== process.pid && pidAlive(pid)) {
-        try { process.kill(pid, 'SIGTERM'); killed++; }
-        catch (_) { try { process.kill(pid); killed++; } catch (_) {} }
+      if (killPid(pid)) {
+        killedPids.push(pid);
         obsEvent('bootstrap', 'daemon.killed', { pid, pidFile, reason });
       }
       try { fs.unlinkSync(pidPath); } catch (_) {}
     } catch (_) {}
   }
-  return killed;
+  return killedPids;
+}
+
+function killSpoolWatcherInCwd(reason) {
+  try {
+    const pidPath = path.join(process.cwd(), '.gm', 'exec-spool', '.watcher.pid');
+    if (!fs.existsSync(pidPath)) return null;
+    const pid = parseInt(fs.readFileSync(pidPath, 'utf8').trim(), 10);
+    if (killPid(pid)) {
+      obsEvent('bootstrap', 'watcher.killed', { pid, reason });
+      try { fs.unlinkSync(pidPath); } catch (_) {}
+      return pid;
+    }
+    try { fs.unlinkSync(pidPath); } catch (_) {}
+  } catch (_) {}
+  return null;
+}
+
+function proactiveKillForNewInstall(installedVersion) {
+  try {
+    const recorded = readDaemonVersion();
+    if (recorded === installedVersion) return;
+    const reason = `install:${recorded || 'none'}->${installedVersion}`;
+    const killed = killRunningDaemons(reason);
+    const watcherPid = killSpoolWatcherInCwd(reason);
+    if (killed.length || watcherPid) {
+      const parts = [];
+      if (killed.length) parts.push(`daemon pid=${killed.join(',')} v${recorded || '?'}`);
+      if (watcherPid) parts.push(`watcher pid=${watcherPid}`);
+      try { process.stderr.write(`[bootstrap] killed stale ${parts.join(' + ')}, new binary ${installedVersion} ready\n`); } catch (_) {}
+    }
+    writeDaemonVersion(installedVersion);
+  } catch (_) {}
 }
 
 // Compare wrapper-pinned version against last-recorded daemon version. If
@@ -469,7 +514,7 @@ function killStaleDaemonIfVersionChanged(wrapperDir) {
   writeDaemonVersion(currentVersion);
 }
 
-module.exports = { bootstrap, resolveCachedBinary, resolveCachedRtk, platformKey, binaryName, rtkBinaryName, cacheRoot, obsEvent, killRunningDaemons, killStaleDaemonIfVersionChanged };
+module.exports = { bootstrap, resolveCachedBinary, resolveCachedRtk, platformKey, binaryName, rtkBinaryName, cacheRoot, obsEvent, killRunningDaemons, killStaleDaemonIfVersionChanged, killSpoolWatcherInCwd, proactiveKillForNewInstall };
 
 if (require.main === module) {
   bootstrap({ silent: false })
