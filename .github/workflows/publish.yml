@@ -3,7 +3,12 @@ name: Build & Publish Plugins
 on:
   push:
     branches: [main]
+    paths-ignore: ['**.md', 'docs/**', 'LICENSE', '.gitignore', 'CHANGELOG.md', '.gm/**']
   workflow_dispatch:
+
+concurrency:
+  group: publish-${{ github.ref }}
+  cancel-in-progress: false
 
 permissions:
   contents: write
