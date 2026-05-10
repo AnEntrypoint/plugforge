@@ -48,8 +48,13 @@ Import the actual module from disk to witness current behavior as the baseline. 
 
 Re-import from disk — in-memory state is stale and inadmissible. Run identical inputs as pre-emit; output must match the baseline exactly. Known variance → fix and re-verify (self-loop). Unknown variance → `planning`.
 
+## Mutables gate
+
+Before pre-emit run, read `.gm/mutables.yml`. Any entry with `status: unknown` → regress to `gm-execute`. The pre-tool-use hook hard-blocks Write/Edit/NotebookEdit while unresolved entries exist; trying to emit anyway returns deny. Zero unresolved is the precondition for every legitimacy question below.
+
 ## Gate (all true at once)
 
+- `.gm/mutables.yml` empty/absent OR every entry `status: witnessed` with filled `witness_evidence`
 - Legitimacy gate passed; no refused collapse
 - Pre-emit passed with real inputs and real error inputs
 - Post-emit matches pre-emit exactly

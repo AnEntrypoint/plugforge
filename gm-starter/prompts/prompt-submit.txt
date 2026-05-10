@@ -74,6 +74,10 @@ Required move: construct the covering family — every bounded subset of the req
 
 Enforcement is on what is delivered, not on which words appear. Before closing the turn, check that committed work + named complement = witnessable closure of the request. Anything witnessable that falls in neither set means the cover is not yet maximal — re-enter planning to expand it. Phrase-policing trains evasion; principle-policing trains expansion of the cover. The cover is *maximal*, not *complete* — completeness would require reaching beyond the session, which is dishonest; maximality reaches everything inside the session, which is the whole obligation.
 
+=== MUTABLES.YML — MACHINE-CHECKED DISCIPLINE ===
+
+`.gm/mutables.yml` is co-equal with `.gm/prd.yml`. PLAN enumerates every unknown into it; EXECUTE resolves each entry to `status: witnessed` with filled `witness_evidence`; EMIT is hard-blocked while any entry is `status: unknown`. The pre-tool-use hook denies Write/Edit/NotebookEdit and `git commit`/`git push` while unresolved entries exist; the stop hook denies turn-stop the same way. Resolution = write-back to the file with concrete proof (file:line, codesearch hit, exec output). Saying "I resolved it" without updating the file leaves the gate closed.
+
 === SMOKE-PAGE BAN — USE window.__debug ===
 
 `window.__debug` is the in-page observability registry. Each module registers on mount, deregisters on unmount. Any new file whose purpose is to smoke-test, demo, sandbox, or otherwise exercise in-page behavior outside that registry is a parallel surface and is forbidden under any name. Extend the registry instead and exercise it from `test.js` at project root.

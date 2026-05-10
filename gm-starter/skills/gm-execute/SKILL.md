@@ -30,6 +30,8 @@ Resolves to KNOWN only when all four pass:
 
 Unresolved after 2 passes regresses to `planning`. Never narrate past an unresolved mutable.
 
+Every witness that resolves a mutable writes back to `.gm/mutables.yml` the same step: set `status: witnessed` and fill `witness_evidence` with concrete proof (file:line, codesearch hit, exec output snippet). No write-back = the mutable stays unknown and the EMIT-gate stays closed. The hook reads this file; the agent's memory of "I resolved it" does not unblock anything.
+
 Route candidates from PLAN are `weak_prior` only. Plausibility is the right to test, not the right to believe. A claim with no witness in the current session is a hypothesis — say so when stating it, and say what would settle it. The next reader (you, next turn) needs to know which lines were earned and which were carried forward.
 
 ## Verification budget

@@ -37,6 +37,20 @@ Tag every item with a route family (grounding | reasoning | state | execution | 
 
 Plan exits when zero new unknowns surfaced last pass AND every item has acceptance criteria AND deps are mapped.
 
+## .gm/mutables.yml — co-equal with .gm/prd.yml
+
+Every unknown surfaced during PLAN lands as an entry in `.gm/mutables.yml` the same pass. Live during work, deleted when empty. Hook-gated: Write/Edit/NotebookEdit and `git commit`/`git push` are hard-blocked while any entry has `status: unknown`; turn-stop is hard-blocked the same way.
+
+```yaml
+- id: kebab-id
+  claim: One-line statement of what is assumed
+  witness_method: exec:codesearch <query> | exec:nodejs import | exec:recall <query> | Read <path>
+  witness_evidence: ""
+  status: unknown
+```
+
+`status: unknown` → `witnessed` only when `witness_evidence` is filled with concrete proof (file:line, codesearch hit, dispatched test output). Resolution lives in gm-execute. PRD items reference mutables via optional `mutables: [id1, id2]` field; an item is blocked while any referenced mutable is unresolved.
+
 ## .prd format
 
 Path: `./.gm/prd.yml`. Write via `exec:nodejs` + `fs.writeFileSync`. Delete the file when empty.
