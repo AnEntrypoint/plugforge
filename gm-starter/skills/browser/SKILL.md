@@ -76,3 +76,4 @@ console.log(JSON.stringify(state.logs.slice(-20)))
 - `exec:browser` is plain JS, no shell quoting
 - Browser tasks drain automatically on every plugkit interaction
 - Sessions reap after 5–15 min idle; cleaned up on session end
+- Never write standalone `.mjs`/`.js` Playwright scripts as a fallback — `exec:browser` errors must be debugged through `exec:browser` retries, not by creating test files on disk
