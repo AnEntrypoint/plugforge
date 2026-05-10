@@ -1,0 +1,92 @@
+- id: rewrite-proactive-kill-process-path
+  subject: Rewrite proactiveKillForNewInstall to scan running plugkit processes by image path
+  status: pending
+  description: |
+    Replace the .daemon-version-file gate with a cross-platform process-listing scan.
+    Windows: child_process.spawnSync('tasklist', ['/FI','IMAGENAME eq plugkit*','/FO','CSV','/NH']) to enumerate PIDs, then for each PID, resolve image path via spawnSync('powershell','-NoProfile','-Command','(Get-Process -Id <pid>).Path').
+    Linux: read /proc/*/comm filtering plugkit*, then readlink /proc/<pid>/exe.
+    macOS: ps -axo pid=,comm= filter plugkit, then ps -p <pid> -o command=.
+    For each PID whose normalized image path is NOT path.resolve(finalPath), call killPid and log stderr.
+    Always write .daemon-version as defense-in-depth marker at end.
+    Invoke from ALL cache-resolution branches: cache hit, cache heal pre-lock, cache hit under lock, cache heal under lock, fresh install.
+    All scans wrapped in try/catch — failure of the scan must NEVER block bootstrap. Each kill logged via obsEvent.
+  effort: medium
+  category: bug
+  route_family: state
+  load: 0.85
+  failure_modes: [stale-state-served, observability-blind, cross-platform-divergence]
+  route_fit: examined
+  authorization: witnessed
+  blocking: []
+  blockedBy: []
+  mutables: [win-process-path-mechanism, nix-process-path-mechanism, pid-file-coverage-gap, call-sites-needing-proactive-kill, self-pid-skip, daemon-version-file-defense-in-depth]
+  acceptance:
+    - bootstrap.js implements tasklist/Get-Process on Windows, /proc on Linux, ps on macOS
+    - All cache-resolve branches in bootstrap() call proactiveKillForNewInstall(version, finalPath) before returning
+    - Stale daemon kill emits stderr line `[bootstrap] killed stale daemon pid=<pid> path=<path> (current install: v<version>)`
+    - .daemon-version written as defense-in-depth at end
+    - obsEvent emits daemon.killed with {pid, oldPath, installedVersion, mechanism}
+  edge_cases:
+    - no plugkit processes running → no-op
+    - tasklist/ps unavailable → catch, continue
+    - permission denied → skip that pid
+    - case-insensitive Win FS → normalize via path.resolve + toLowerCase
+
+- id: commit-push-cascade
+  subject: Commit gm change with lanmower identity, push, witness cascade
+  status: pending
+  description: |
+    git add gm-starter/bin/bootstrap.js .gm/prd.yml .gm/mutables.yml
+    git -c user.name=lanmower -c user.email=almagestfraternite@gmail.com commit
+    git push origin main
+    Witness cascade via gh run list / gh run watch.
+  effort: small
+  category: infra
+  route_family: execution
+  load: 0.5
+  failure_modes: [identity-leak, cascade-stall]
+  route_fit: examined
+  authorization: witnessed
+  blocking: []
+  blockedBy: [rewrite-proactive-kill-process-path]
+  acceptance:
+    - commit author shows lanmower / almagestfraternite@gmail.com
+    - git push origin main succeeds
+    - cascade run is in-flight or green
+
+- id: verify-end-to-end
+  subject: Manually invoke bootstrap and witness kill + clean spool log
+  status: pending
+  description: |
+    Run node on bootstrap.js (local or cascade-published copy). Witness kill stderr line for each stale v0.1.320 PID. Confirm Get-Process shows no v0.1.320 paths. Drop spool job 800.js, read out/800.json and log/800.log — must contain only CLEAN-800 marker.
+  effort: medium
+  category: infra
+  route_family: observability
+  load: 0.8
+  failure_modes: [silent-success, kill-fails-no-error]
+  route_fit: examined
+  authorization: weak_prior
+  blocking: []
+  blockedBy: [commit-push-cascade]
+  acceptance:
+    - stderr from bootstrap shows kill line(s) for each stale v0.1.320 pid
+    - Get-Process shows zero v0.1.320 plugkit-* processes after
+    - out/800.json + log/800.log contain only CLEAN-800-<ts>
+
+- id: memorize-and-report
+  subject: Memorize new mechanism and emit terse final report
+  status: pending
+  description: |
+    Invoke gm:memorize subagent. Emit final report: gm commit hash, cascade run id, kill log lines verbatim, post-kill log/800.log content, residuals.
+  effort: small
+  category: infra
+  route_family: observability
+  load: 0.4
+  failure_modes: [knowledge-lost]
+  route_fit: examined
+  authorization: weak_prior
+  blocking: []
+  blockedBy: [verify-end-to-end]
+  acceptance:
+    - memorize subagent invoked
+    - final report contains commit hash, cascade run id, kill log lines, spool 800 log

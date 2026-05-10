@@ -328,12 +328,14 @@ async function bootstrap(opts) {
   if (fs.existsSync(finalPath) && fs.existsSync(okSentinel)) {
     if (!opts.silent) log(`cache hit: ${finalPath}`);
     pruneOldVersions(root, version, readRtkVersion(wrapperDir));
+    proactiveKillForNewInstall(version, finalPath);
     return finalPath;
   }
 
   if (healIfShaMatches(finalPath, expectedSha, okSentinel, partialPath, 'plugkit')) {
     if (!opts.silent) log(`cache heal (sha match): ${finalPath}`);
     pruneOldVersions(root, version, readRtkVersion(wrapperDir));
+    proactiveKillForNewInstall(version, finalPath);
     try { await bootstrapRtk(verDir, version, wrapperDir, opts.silent, root); }
     catch (err) { log(`rtk fetch skipped: ${err.message}`); }
     return finalPath;
@@ -344,11 +346,13 @@ async function bootstrap(opts) {
   try {
     if (fs.existsSync(finalPath) && fs.existsSync(okSentinel)) {
       pruneOldVersions(root, version, readRtkVersion(wrapperDir));
+      proactiveKillForNewInstall(version, finalPath);
       return finalPath;
     }
     if (healIfShaMatches(finalPath, expectedSha, okSentinel, partialPath, 'plugkit')) {
       log(`cache heal (sha match) under lock: ${finalPath}`);
       pruneOldVersions(root, version, readRtkVersion(wrapperDir));
+      proactiveKillForNewInstall(version, finalPath);
       try { await bootstrapRtk(verDir, version, wrapperDir, opts.silent, root); }
       catch (err) { log(`rtk fetch skipped: ${err.message}`); }
       return finalPath;
@@ -393,7 +397,7 @@ async function bootstrap(opts) {
     log(`installed ${finalPath}`);
     obsEvent('bootstrap', 'install.done', { path: finalPath, version, kind: 'plugkit' });
     pruneOldVersions(root, version, readRtkVersion(wrapperDir));
-    proactiveKillForNewInstall(version);
+    proactiveKillForNewInstall(version, finalPath);
     try { await bootstrapRtk(verDir, version, wrapperDir, opts.silent, root); }
     catch (err) { log(`rtk fetch skipped: ${err.message}`); }
     return finalPath;
@@ -539,6 +543,60 @@ function killRunningDaemons(reason) {
   return killedPids;
 }
 
+function listRunningPlugkitImagePaths() {
+  const out = [];
+  try {
+    const { spawnSync } = require('child_process');
+    if (os.platform() === 'win32') {
+      const r = spawnSync('tasklist', ['/FI', 'IMAGENAME eq plugkit*', '/FO', 'CSV', '/NH'], { windowsHide: true, encoding: 'utf8' });
+      const text = (r && r.stdout) || '';
+      const seen = new Set();
+      for (const line of text.split(/\r?\n/)) {
+        const m = line.match(/^"([^"]+)","(\d+)"/);
+        if (!m) continue;
+        const pid = parseInt(m[2], 10);
+        if (!Number.isFinite(pid) || seen.has(pid)) continue;
+        seen.add(pid);
+        let imagePath = '';
+        try {
+          const p = spawnSync('powershell', ['-NoProfile', '-NonInteractive', '-Command', `(Get-Process -Id ${pid} -ErrorAction SilentlyContinue).Path`], { windowsHide: true, encoding: 'utf8' });
+          imagePath = ((p && p.stdout) || '').trim();
+        } catch (_) {}
+        out.push({ pid, path: imagePath });
+      }
+    } else if (os.platform() === 'linux') {
+      let entries = [];
+      try { entries = fs.readdirSync('/proc'); } catch (_) {}
+      for (const e of entries) {
+        if (!/^\d+$/.test(e)) continue;
+        const pid = parseInt(e, 10);
+        let comm = '';
+        try { comm = fs.readFileSync(`/proc/${pid}/comm`, 'utf8').trim(); } catch (_) { continue; }
+        if (!/^plugkit/i.test(comm)) continue;
+        let imagePath = '';
+        try { imagePath = fs.readlinkSync(`/proc/${pid}/exe`); } catch (_) {}
+        out.push({ pid, path: imagePath });
+      }
+    } else {
+      const r = spawnSync('ps', ['-axo', 'pid=,comm='], { encoding: 'utf8' });
+      const text = (r && r.stdout) || '';
+      for (const line of text.split(/\r?\n/)) {
+        const m = line.match(/^\s*(\d+)\s+(.+?)\s*$/);
+        if (!m) continue;
+        if (!/plugkit/i.test(m[2])) continue;
+        const pid = parseInt(m[1], 10);
+        let imagePath = '';
+        try {
+          const p = spawnSync('ps', ['-p', String(pid), '-o', 'command='], { encoding: 'utf8' });
+          imagePath = ((p && p.stdout) || '').trim().split(/\s+/)[0] || '';
+        } catch (_) {}
+        out.push({ pid, path: imagePath });
+      }
+    }
+  } catch (_) {}
+  return out;
+}
+
 function killSpoolWatcherInCwd(reason) {
   try {
     const pidPath = path.join(process.cwd(), '.gm', 'exec-spool', '.watcher.pid');
@@ -554,19 +612,27 @@ function killSpoolWatcherInCwd(reason) {
   return null;
 }
 
-function proactiveKillForNewInstall(installedVersion) {
+function proactiveKillForNewInstall(installedVersion, finalPath) {
   try {
-    const recorded = readDaemonVersion();
-    if (recorded === installedVersion) return;
-    const reason = `install:${recorded || 'none'}->${installedVersion}`;
-    const killed = killRunningDaemons(reason);
-    const watcherPid = killSpoolWatcherInCwd(reason);
-    if (killed.length || watcherPid) {
-      const parts = [];
-      if (killed.length) parts.push(`daemon pid=${killed.join(',')} v${recorded || '?'}`);
-      if (watcherPid) parts.push(`watcher pid=${watcherPid}`);
-      try { process.stderr.write(`[bootstrap] killed stale ${parts.join(' + ')}, new binary ${installedVersion} ready\n`); } catch (_) {}
+    const reason = `install:v${installedVersion}`;
+    const target = finalPath ? path.resolve(finalPath).toLowerCase() : null;
+    const cacheRootNorm = (() => {
+      try { return path.resolve(cacheRoot()).toLowerCase(); } catch (_) { return null; }
+    })();
+    const procs = listRunningPlugkitImagePaths();
+    for (const { pid, path: imagePath } of procs) {
+      if (!Number.isFinite(pid) || pid === process.pid) continue;
+      if (!imagePath) continue;
+      const norm = path.resolve(imagePath).toLowerCase();
+      if (target && norm === target) continue;
+      if (!cacheRootNorm || !norm.startsWith(cacheRootNorm + path.sep.toLowerCase())) continue;
+      if (killPid(pid)) {
+        try { process.stderr.write(`[bootstrap] killed stale daemon pid=${pid} path=${imagePath} (current install: v${installedVersion})\n`); } catch (_) {}
+        obsEvent('bootstrap', 'daemon.killed', { pid, oldPath: imagePath, installedVersion, mechanism: 'process-path' });
+      }
     }
+    killRunningDaemons(reason);
+    killSpoolWatcherInCwd(reason);
     writeDaemonVersion(installedVersion);
   } catch (_) {}
 }
@@ -576,6 +642,11 @@ function proactiveKillForNewInstall(installedVersion) {
 function killStaleDaemonIfVersionChanged(wrapperDir) {
   let currentVersion;
   try { currentVersion = readVersionFile(wrapperDir); } catch (_) { return; }
+  const cached = resolveCachedBinary({ wrapperDir, version: currentVersion });
+  if (cached) {
+    proactiveKillForNewInstall(currentVersion, cached);
+    return;
+  }
   const recorded = readDaemonVersion();
   if (recorded === currentVersion) return;
   if (recorded) killRunningDaemons(`version_change:${recorded}->${currentVersion}`);
