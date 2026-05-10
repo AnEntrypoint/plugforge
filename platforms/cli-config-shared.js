@@ -902,7 +902,7 @@ const cc = factory('cc', 'Claude Code', 'CLAUDE.md', 'CLAUDE.md', {
           { kind: 'plugkit', subcommand: 'pre-tool-use', timeout: 3600 }
         ]},
         { eventKey: 'PostToolUse', commands: [
-          { kind: 'plugkit', subcommand: 'post-tool-use', timeout: 5000 }
+          { kind: 'plugkit', subcommand: 'post-tool-use', timeout: 35000 }
         ]},
         { eventKey: 'SessionStart', commands: [
           { kind: 'plugkit', subcommand: 'session-start', timeout: 180000 }
@@ -1652,7 +1652,7 @@ MIT
           { kind: 'plugkit', subcommand: 'pre-tool-use', timeout: 3600 }
         ]},
         { eventKey: 'PostToolUse', commands: [
-          { kind: 'plugkit', subcommand: 'post-tool-use', timeout: 5000 }
+          { kind: 'plugkit', subcommand: 'post-tool-use', timeout: 35000 }
         ]},
         { eventKey: 'SessionStart', commands: [
           { kind: 'plugkit', subcommand: 'session-start', timeout: 180000 }
