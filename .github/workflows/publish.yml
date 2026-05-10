@@ -93,6 +93,7 @@ jobs:
           - {platform: copilot-cli, name: "GitHub Copilot CLI"}
           - {platform: hermes, name: "Hermes Agent"}
           - {platform: antigravity, name: "Antigravity"}
+          - {platform: windsurf, name: "Windsurf"}
 
     steps:
       - uses: actions/checkout@v4

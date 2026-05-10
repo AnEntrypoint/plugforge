@@ -129,10 +129,29 @@ const antigravityManifest = (pluginSpec) => JSON.stringify({
   files: ['extension.js', 'agents/', 'README.md']
 }, null, 2);
 
+const windsurfManifest = (pluginSpec) => JSON.stringify({
+  name: 'gm-windsurf',
+  version: pluginSpec.version,
+  publisher: 'gm',
+  displayName: 'GM - GM State Machine',
+  description: pluginSpec.description || 'AI-powered state machine for Windsurf with autonomous decision-making',
+  author: pluginSpec.author || 'GM',
+  license: pluginSpec.license || 'MIT',
+  repository: { type: 'git', url: 'https://github.com/AnEntrypoint/gm-windsurf.git' },
+  bugs: { url: 'https://github.com/AnEntrypoint/gm-windsurf/issues' },
+  engines: { vscode: '^1.85.0' },
+  categories: ['AI', 'Other'],
+  activationEvents: ['*'],
+  keywords: ['ai', 'state-machine', 'gm', 'windsurf', 'codeium'],
+  main: './extension.js',
+  files: ['.windsurf/', 'extension.js', 'agents/', 'skills/', '.github/', 'README.md']
+}, null, 2);
+
 module.exports = {
   vscodeManifest,
   cursorManifest,
   zedManifest,
   jetbrainsPluginXml,
-  antigravityManifest
+  antigravityManifest,
+  windsurfManifest
 };
