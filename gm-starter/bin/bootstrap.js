@@ -88,6 +88,43 @@ function readVersionFile(wrapperDir) {
   return fs.readFileSync(p, 'utf8').trim();
 }
 
+function readRtkVersion(wrapperDir) {
+  const p = path.join(wrapperDir, 'rtk.version');
+  if (!fs.existsSync(p)) return null;
+  const v = fs.readFileSync(p, 'utf8').trim();
+  return v || null;
+}
+
+function sha256OfFileSync(filePath) {
+  const h = crypto.createHash('sha256');
+  const fd = fs.openSync(filePath, 'r');
+  try {
+    const buf = Buffer.alloc(1024 * 1024);
+    for (;;) {
+      const n = fs.readSync(fd, buf, 0, buf.length, null);
+      if (n <= 0) break;
+      h.update(buf.subarray(0, n));
+    }
+  } finally { try { fs.closeSync(fd); } catch (_) {} }
+  return h.digest('hex');
+}
+
+function healIfShaMatches(binPath, expectedSha, sentinelPath, partialPath, kind) {
+  if (!fs.existsSync(binPath)) return false;
+  if (partialPath) { try { if (fs.existsSync(partialPath)) fs.unlinkSync(partialPath); } catch (_) {} }
+  if (!expectedSha) return false;
+  let got;
+  try { got = sha256OfFileSync(binPath); }
+  catch (_) { return false; }
+  if (got !== expectedSha) {
+    try { fs.unlinkSync(binPath); } catch (_) {}
+    return false;
+  }
+  try { fs.writeFileSync(sentinelPath, new Date().toISOString()); } catch (_) { return false; }
+  obsEvent('bootstrap', 'cache.heal', { path: binPath, kind });
+  return true;
+}
+
 function readShaManifest(wrapperDir, manifestName) {
   const p = path.join(wrapperDir, manifestName || 'plugkit.sha256');
   if (!fs.existsSync(p)) return null;
@@ -248,12 +285,15 @@ function isLockStale(lockPath) {
   return false;
 }
 
-function pruneOldVersions(root, keepVersion) {
+function pruneOldVersions(root, keepVersion, keepRtkVersion) {
   try {
     const entries = fs.readdirSync(root);
     for (const e of entries) {
-      if (!e.startsWith('v')) continue;
-      if (e === `v${keepVersion}`) continue;
+      const isPlugkit = e.startsWith('v') && !e.startsWith('rtk-');
+      const isRtk = e.startsWith('rtk-v');
+      if (!isPlugkit && !isRtk) continue;
+      if (isPlugkit && e === `v${keepVersion}`) continue;
+      if (isRtk && keepRtkVersion && e === `rtk-v${keepRtkVersion}`) continue;
       const dir = path.join(root, e);
       const lock = path.join(dir, '.lock');
       if (fs.existsSync(lock) && !isLockStale(lock)) continue;
@@ -283,10 +323,19 @@ async function bootstrap(opts) {
 
   const finalPath = path.join(verDir, binName);
   const okSentinel = path.join(verDir, '.ok');
+  const partialPath = `${finalPath}.partial`;
 
   if (fs.existsSync(finalPath) && fs.existsSync(okSentinel)) {
     if (!opts.silent) log(`cache hit: ${finalPath}`);
-    pruneOldVersions(root, version);
+    pruneOldVersions(root, version, readRtkVersion(wrapperDir));
+    return finalPath;
+  }
+
+  if (healIfShaMatches(finalPath, expectedSha, okSentinel, partialPath, 'plugkit')) {
+    if (!opts.silent) log(`cache heal (sha match): ${finalPath}`);
+    pruneOldVersions(root, version, readRtkVersion(wrapperDir));
+    try { await bootstrapRtk(verDir, version, wrapperDir, opts.silent, root); }
+    catch (err) { log(`rtk fetch skipped: ${err.message}`); }
     return finalPath;
   }
 
@@ -294,27 +343,33 @@ async function bootstrap(opts) {
   acquireLock(lockPath);
   try {
     if (fs.existsSync(finalPath) && fs.existsSync(okSentinel)) {
-      pruneOldVersions(root, version);
+      pruneOldVersions(root, version, readRtkVersion(wrapperDir));
+      return finalPath;
+    }
+    if (healIfShaMatches(finalPath, expectedSha, okSentinel, partialPath, 'plugkit')) {
+      log(`cache heal (sha match) under lock: ${finalPath}`);
+      pruneOldVersions(root, version, readRtkVersion(wrapperDir));
+      try { await bootstrapRtk(verDir, version, wrapperDir, opts.silent, root); }
+      catch (err) { log(`rtk fetch skipped: ${err.message}`); }
       return finalPath;
     }
 
-    const tmpPath = `${finalPath}.partial`;
-    if (fs.existsSync(tmpPath)) {
+    if (fs.existsSync(partialPath)) {
       try {
-        const st = fs.statSync(tmpPath);
+        const st = fs.statSync(partialPath);
         if (Date.now() - st.mtimeMs > LOCK_STALE_MS) {
-          fs.unlinkSync(tmpPath);
-          log(`cleared stale partial: ${tmpPath}`);
+          fs.unlinkSync(partialPath);
+          log(`cleared stale partial: ${partialPath}`);
         }
       } catch (_) {}
     }
     const url = `https://github.com/${RELEASE_REPO}/releases/download/v${version}/${binName}`;
-    await downloadWithRetry(url, tmpPath);
+    await downloadWithRetry(url, partialPath);
 
     if (expectedSha) {
-      const got = await sha256OfFile(tmpPath);
+      const got = await sha256OfFile(partialPath);
       if (got !== expectedSha) {
-        try { fs.unlinkSync(tmpPath); } catch (_) {}
+        try { fs.unlinkSync(partialPath); } catch (_) {}
         throw new Error(`sha256 mismatch for ${binName}: expected ${expectedSha}, got ${got}`);
       }
       log('sha256 verified');
@@ -322,11 +377,11 @@ async function bootstrap(opts) {
       log('no sha256 manifest — skipping verify');
     }
 
-    try { fs.renameSync(tmpPath, finalPath); }
+    try { fs.renameSync(partialPath, finalPath); }
     catch (err) {
       if (err.code === 'EEXIST' || err.code === 'EPERM') {
         try { fs.unlinkSync(finalPath); } catch (_) {}
-        fs.renameSync(tmpPath, finalPath);
+        fs.renameSync(partialPath, finalPath);
       } else throw err;
     }
 
@@ -337,10 +392,9 @@ async function bootstrap(opts) {
     fs.writeFileSync(okSentinel, new Date().toISOString());
     log(`installed ${finalPath}`);
     obsEvent('bootstrap', 'install.done', { path: finalPath, version, kind: 'plugkit' });
-    pruneOldVersions(root, version);
+    pruneOldVersions(root, version, readRtkVersion(wrapperDir));
     proactiveKillForNewInstall(version);
-    // Best-effort rtk fetch: failures here never block plugkit usage
-    try { await bootstrapRtk(verDir, version, wrapperDir, opts.silent); }
+    try { await bootstrapRtk(verDir, version, wrapperDir, opts.silent, root); }
     catch (err) { log(`rtk fetch skipped: ${err.message}`); }
     return finalPath;
   } finally {
@@ -348,10 +402,19 @@ async function bootstrap(opts) {
   }
 }
 
-async function bootstrapRtk(verDir, version, wrapperDir, silent) {
+function rtkCacheDir(root, wrapperDir, plugkitVerDir) {
+  const rtkVer = readRtkVersion(wrapperDir);
+  if (!rtkVer) return plugkitVerDir;
+  const dir = path.join(root, `rtk-v${rtkVer}`);
+  ensureDir(dir);
+  return dir;
+}
+
+async function bootstrapRtk(plugkitVerDir, plugkitVersion, wrapperDir, silent, root) {
   const rtkName = rtkBinaryName();
-  const rtkPath = path.join(verDir, rtkName);
-  const rtkOk = path.join(verDir, '.rtk-ok');
+  const cacheDir = rtkCacheDir(root || cacheRoot(), wrapperDir, plugkitVerDir);
+  const rtkPath = path.join(cacheDir, rtkName);
+  const rtkOk = path.join(cacheDir, '.rtk-ok');
   if (fs.existsSync(rtkPath) && fs.existsSync(rtkOk)) {
     if (!silent) log(`rtk cache hit: ${rtkPath}`);
     return rtkPath;
@@ -359,7 +422,11 @@ async function bootstrapRtk(verDir, version, wrapperDir, silent) {
   const rtkSha = readShaManifest(wrapperDir, 'rtk.sha256');
   const expected = rtkSha ? rtkSha[rtkName] : null;
   const tmp = `${rtkPath}.partial`;
-  const url = `https://github.com/${RELEASE_REPO}/releases/download/v${version}/${rtkName}`;
+  if (healIfShaMatches(rtkPath, expected, rtkOk, tmp, 'rtk')) {
+    if (!silent) log(`rtk cache heal (sha match): ${rtkPath}`);
+    return rtkPath;
+  }
+  const url = `https://github.com/${RELEASE_REPO}/releases/download/v${plugkitVersion}/${rtkName}`;
   await downloadWithRetry(url, tmp);
   if (expected) {
     const got = await sha256OfFile(tmp);
@@ -378,7 +445,7 @@ async function bootstrapRtk(verDir, version, wrapperDir, silent) {
   if (os.platform() !== 'win32') { try { fs.chmodSync(rtkPath, 0o755); } catch (_) {} }
   fs.writeFileSync(rtkOk, new Date().toISOString());
   log(`installed ${rtkPath}`);
-  obsEvent('bootstrap', 'install.done', { path: rtkPath, version, kind: 'rtk' });
+  obsEvent('bootstrap', 'install.done', { path: rtkPath, plugkit_version: plugkitVersion, rtk_version: readRtkVersion(wrapperDir) || plugkitVersion, kind: 'rtk' });
   return rtkPath;
 }
 
@@ -390,9 +457,10 @@ function resolveCachedRtk(opts) {
     try { const r = cacheRoot(); ensureDir(r); return r; }
     catch (_) { const r = fallbackCacheRoot(); ensureDir(r); return r; }
   })();
-  const verDir = path.join(root, `v${version}`);
-  const rtkPath = path.join(verDir, rtkBinaryName());
-  const rtkOk = path.join(verDir, '.rtk-ok');
+  const plugkitVerDir = path.join(root, `v${version}`);
+  const cacheDir = rtkCacheDir(root, wrapperDir, plugkitVerDir);
+  const rtkPath = path.join(cacheDir, rtkBinaryName());
+  const rtkOk = path.join(cacheDir, '.rtk-ok');
   if (fs.existsSync(rtkPath) && fs.existsSync(rtkOk)) return rtkPath;
   return null;
 }

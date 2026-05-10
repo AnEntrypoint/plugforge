@@ -1849,13 +1849,13 @@ Kilo uses the OpenCode configuration format. Create or update \`~/.config/kilo/o
   "mcp": {
     "dev": {
       "type": "local",
-      "command": ["bun x", "mcp-gm@latest"],
+      "command": ["bun x", "mcp-gm"],
       "timeout": 360000,
       "enabled": true
     },
     "code-search": {
       "type": "local",
-      "command": ["bun x", "codebasesearch@latest"],
+      "command": ["bun x", "codebasesearch"],
       "timeout": 360000,
       "enabled": true
     }
