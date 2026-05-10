@@ -24,6 +24,27 @@ function log(msg) {
   try { process.stderr.write(`[plugkit-bootstrap] ${msg}\n`); } catch (_) {}
 }
 
+function probeBinaryVersion(binPath) {
+  try {
+    const { spawnSync } = require('child_process');
+    const r = spawnSync(binPath, ['--version'], { timeout: 3000, encoding: 'utf8' });
+    if (r.error) return null;
+    const text = `${r.stdout || ''} ${r.stderr || ''}`.trim();
+    const m = text.match(/(\d+\.\d+\.\d+)/);
+    return m ? m[1] : null;
+  } catch (_) { return null; }
+}
+
+function writeBootstrapError(spec) {
+  try {
+    const projectDir = process.env.CLAUDE_PROJECT_DIR || process.cwd();
+    const spoolDir = path.join(projectDir, '.gm', 'exec-spool');
+    fs.mkdirSync(spoolDir, { recursive: true });
+    const out = path.join(spoolDir, '.bootstrap-error.json');
+    fs.writeFileSync(out, JSON.stringify({ ts: new Date().toISOString(), ...spec }, null, 2));
+  } catch (_) {}
+}
+
 function obsEvent(subsystem, event, fields) {
   if (process.env.GM_LOG_DISABLE) return;
   try {
@@ -326,19 +347,45 @@ async function bootstrap(opts) {
   const partialPath = `${finalPath}.partial`;
 
   if (fs.existsSync(finalPath) && fs.existsSync(okSentinel)) {
-    if (!opts.silent) log(`cache hit: ${finalPath}`);
-    proactiveKillForNewInstall(version, finalPath);
-    pruneOldVersions(root, version, readRtkVersion(wrapperDir));
-    return finalPath;
+    const actualVersion = probeBinaryVersion(finalPath);
+    if (actualVersion && actualVersion !== version) {
+      log(`cache version mismatch: dir=v${version} contains binary ${actualVersion} → re-fetching v${version}`);
+      writeBootstrapError({
+        expected_version: version,
+        cached_version: actualVersion,
+        error_phase: 'cache-hit-pin-mismatch',
+        error_message: `cached binary at ${finalPath} reports --version=${actualVersion} but cache dir pins v${version}`,
+      });
+      try { fs.unlinkSync(finalPath); } catch (_) {}
+      try { fs.unlinkSync(okSentinel); } catch (_) {}
+    } else {
+      if (!opts.silent) log(`cache hit: ${finalPath}${actualVersion ? ` (matches pin v${version})` : ''}`);
+      proactiveKillForNewInstall(version, finalPath);
+      pruneOldVersions(root, version, readRtkVersion(wrapperDir));
+      return finalPath;
+    }
   }
 
   if (healIfShaMatches(finalPath, expectedSha, okSentinel, partialPath, 'plugkit')) {
-    if (!opts.silent) log(`cache heal (sha match): ${finalPath}`);
-    proactiveKillForNewInstall(version, finalPath);
-    pruneOldVersions(root, version, readRtkVersion(wrapperDir));
-    try { await bootstrapRtk(verDir, version, wrapperDir, opts.silent, root); }
-    catch (err) { log(`rtk fetch skipped: ${err.message}`); }
-    return finalPath;
+    const actualVersion = probeBinaryVersion(finalPath);
+    if (actualVersion && actualVersion !== version) {
+      log(`cache heal version mismatch: dir=v${version} contains binary ${actualVersion} → re-fetching`);
+      writeBootstrapError({
+        expected_version: version,
+        cached_version: actualVersion,
+        error_phase: 'cache-heal-pin-mismatch',
+        error_message: `healed binary at ${finalPath} reports --version=${actualVersion} but cache dir pins v${version}`,
+      });
+      try { fs.unlinkSync(finalPath); } catch (_) {}
+      try { fs.unlinkSync(okSentinel); } catch (_) {}
+    } else {
+      if (!opts.silent) log(`cache heal (sha match): ${finalPath}${actualVersion ? ` (matches pin v${version})` : ''}`);
+      proactiveKillForNewInstall(version, finalPath);
+      pruneOldVersions(root, version, readRtkVersion(wrapperDir));
+      try { await bootstrapRtk(verDir, version, wrapperDir, opts.silent, root); }
+      catch (err) { log(`rtk fetch skipped: ${err.message}`); }
+      return finalPath;
+    }
   }
 
   const lockPath = path.join(verDir, '.lock');
@@ -368,12 +415,28 @@ async function bootstrap(opts) {
       } catch (_) {}
     }
     const url = `https://github.com/${RELEASE_REPO}/releases/download/v${version}/${binName}`;
-    await downloadWithRetry(url, partialPath);
+    try {
+      await downloadWithRetry(url, partialPath);
+    } catch (fetchErr) {
+      writeBootstrapError({
+        expected_version: version,
+        cached_version: null,
+        error_phase: 'download',
+        error_message: fetchErr && fetchErr.message ? fetchErr.message : String(fetchErr),
+      });
+      throw fetchErr;
+    }
 
     if (expectedSha) {
       const got = await sha256OfFile(partialPath);
       if (got !== expectedSha) {
         try { fs.unlinkSync(partialPath); } catch (_) {}
+        writeBootstrapError({
+          expected_version: version,
+          cached_version: null,
+          error_phase: 'sha256-mismatch',
+          error_message: `sha256 mismatch for ${binName}: expected ${expectedSha}, got ${got}`,
+        });
         throw new Error(`sha256 mismatch for ${binName}: expected ${expectedSha}, got ${got}`);
       }
       log('sha256 verified');
