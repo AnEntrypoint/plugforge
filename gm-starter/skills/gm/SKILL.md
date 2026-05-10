@@ -40,13 +40,13 @@ exec:recall
 
 Hits arrive as `weak_prior` — they earn the right to be tested, not believed. Empty results confirm the unknown is fresh.
 
-Every unknown→known transition memorizes the same turn it resolves, in the background, in parallel.
+A witness that flips an unknown to known is incomplete until the fact lives outside this context window. Memorize is the back-half of the same act, not a later chore — it fires alongside the witness, in the background, in haiku, never blocking the next probe. Resolutions hand off as they happen.
 
 ```
 Agent(subagent_type='gm:memorize', model='haiku', run_in_background=true, prompt='## CONTEXT TO MEMORIZE\n<fact>')
 ```
 
-N facts → N parallel calls in one message. End of turn: scan for un-memorized resolutions, spawn now.
+One subagent per fact, fan out in parallel — batching dilutes the signal. The mutables file is the receipt: every entry that flips to `status: witnessed` carries a matching haiku in flight. A status change without a memorize is unfinished work the next turn cannot see.
 
 ## Execution order
 
