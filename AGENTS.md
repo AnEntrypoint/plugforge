@@ -70,6 +70,8 @@ node cli.js gm-starter ./build
 
 **rs-exec RPC session isolation**: Every RPC handler touching per-task or per-session resources must require non-empty `sessionId` in params and verify the task's stored `session_id` matches before read/mutate. Empty sessionId always returns forbidden—never falls through. Applies to: tail, watch, getTask, deleteTask, appendOutput, getAndClearOutput, waitForOutput, sendStdin (task-scoped RPCs) and listSessionTasks, drainSessionOutput, killSessionTasks, deleteSessionTasks (session-scoped RPCs). Task-creating RPCs (spawn, execute) require non-empty sessionId to avoid orphaned tasks. Known gap: startTask/completeTask/failTask spawned-child callbacks lack sessionId verification. Browser sessions separately scoped via `browser_session_map_file()` keyed by `claude_session_id`.
 
+**Windows: kill before rmSync**: `fs.rmSync` of a directory hangs (does not error) when any process holds open handles to binaries inside it. Code that removes a versioned cache dir (bootstrap.js `pruneOldVersions` and similar) MUST terminate processes whose image paths live under that dir FIRST, then rmSync with `{maxRetries:1, retryDelay:50}` so residual EBUSY fails fast. Past bug: bootstrap startup-hang when stale `plugkit-win32-x64.exe` processes held v<old>/ handles — fixed by reordering all 5 cache-resolve branches to kill-first, prune-second.
+
 ## Rust Binary Update Pipeline
 
 Every change to any Rust library auto-cascades all the way to the installed binary:
