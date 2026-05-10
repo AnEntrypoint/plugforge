@@ -12,6 +12,11 @@ Examples:
 Languages: nodejs, python, bash, typescript, go, rust, c, cpp, java, deno
 Verbs: codesearch, recall, memorize, wait, sleep, status, close, browser, runner, type, kill-port, forget, feedback, learn-status, learn-debug, learn-build, discipline, pause
 
-The spool watcher executes the request and writes out/<N>.json; result returns as systemMessage on next tool use.
+The spool watcher executes the request and streams output:
+  - .gm/exec-spool/out/<N>.out      (stdout, written line-by-line)
+  - .gm/exec-spool/out/<N>.err      (stderr, written line-by-line)
+  - .gm/exec-spool/out/<N>.json     (metadata: exitCode, durationMs, timedOut, startedAt, endedAt — written once at completion)
+
+Result returns as systemMessage on next tool use with `--- stdout ---` and `--- stderr ---` separators. Both `in/` and `out/` are wiped at session start and session end (real-exit reasons only).
 
 Anything else via Bash is blocked.

@@ -51,7 +51,7 @@ N facts → N parallel calls in one message. End of turn: scan for un-memorized 
 ## Execution order
 
 1. Recall (`exec:recall` via Bash) — cheapest
-2. Code execution — write to `.gm/exec-spool/in/<lang>/<N>.<ext>` (nodejs, python, bash, typescript, go, rust, c, cpp, java, deno); spool watcher runs and writes `out/<N>.json`
+2. Code execution — write to `.gm/exec-spool/in/<lang>/<N>.<ext>` (nodejs, python, bash, typescript, go, rust, c, cpp, java, deno); spool watcher runs and streams to `out/<N>.out` (stdout) + `out/<N>.err` (stderr), with `out/<N>.json` metadata sidecar at completion
 3. Codebase search (`exec:codesearch` via Bash) — 90% of lookups
 4. Web (`WebFetch`, `WebSearch`) — env facts not in codebase
 5. User — last resort

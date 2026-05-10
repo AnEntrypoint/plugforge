@@ -103,7 +103,7 @@ The 200 lines are a *budget* for maximum surface coverage, not a target. Subsyst
 
 ## Execution norms encoded in the plan
 
-Code execution writes to `.gm/exec-spool/in/<lang>/<N>.<ext>`; the spool watcher runs the file and emits `out/<N>.json` as systemMessage. Utility verbs (`exec:recall`, `exec:codesearch`, `exec:memorize`, `exec:wait`, etc.) and `git` run directly via Bash. Never `Bash(node/npm/npx/bun)`. Spool paths in nodejs files are platform-literal — use `os.tmpdir()` and `path.join`. The spool enforces per-task timeouts; on timeout, partial output is preserved and the watcher emits `[exec timed out after Nms; partial output above]`.
+Code execution writes to `.gm/exec-spool/in/<lang>/<N>.<ext>`; the spool watcher runs the file and streams to `out/<N>.out` (stdout) + `out/<N>.err` (stderr) line-by-line, then writes `out/<N>.json` metadata (exitCode, durationMs, timedOut, startedAt, endedAt) at completion. Both streams return as systemMessage with `--- stdout ---` / `--- stderr ---` separators. `in/` and `out/` are wiped at session start and at real-exit session end. Utility verbs (`exec:recall`, `exec:codesearch`, `exec:memorize`, `exec:wait`, etc.) and `git` run directly via Bash. Never `Bash(node/npm/npx/bun)`. Spool paths in nodejs files are platform-literal — use `os.tmpdir()` and `path.join`. The spool enforces per-task timeouts; on timeout, partial output is preserved and the watcher emits `[exec timed out after Nms; partial output above]`.
 
 `exec:codesearch` only — Grep/Glob/Find/Explore are hook-blocked. Start two words, change/add one per pass, minimum four attempts before concluding absent.
 

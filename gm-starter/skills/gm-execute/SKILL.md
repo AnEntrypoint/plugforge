@@ -40,7 +40,7 @@ Spend on `.prd` items in descending order of consequence-if-wrong × distance-fr
 
 ## Code execution
 
-Code runs through the file-spool, not Bash. Write a file to `.gm/exec-spool/in/<lang>/<N>.<ext>` (e.g. `in/nodejs/42.js`, `in/python/43.py`, `in/bash/44.sh`); the spool watcher executes and writes `out/<N>.json`; the result returns as systemMessage. Languages: nodejs (default), bash, python, typescript, go, rust, c, cpp, java, deno. File I/O via a nodejs spool file + `require('fs')`. Git directly in Bash. Utility verbs (`exec:recall`, `exec:codesearch`, `exec:memorize`, `exec:wait`, `exec:sleep`, `exec:browser`, etc.) DO run via Bash with the verb on line 1 and arg on line 2. Never `Bash(node/npm/npx/bun)`.
+Code runs through the file-spool, not Bash. Write a file to `.gm/exec-spool/in/<lang>/<N>.<ext>` (e.g. `in/nodejs/42.js`, `in/python/43.py`, `in/bash/44.sh`); the spool watcher executes and streams stdout to `out/<N>.out`, stderr to `out/<N>.err`, then writes `out/<N>.json` metadata sidecar at completion (taskId, lang, ok, exitCode, durationMs, timedOut, startedAt, endedAt). Both streams return as systemMessage with `--- stdout ---` / `--- stderr ---` separators. Languages: nodejs (default), bash, python, typescript, go, rust, c, cpp, java, deno. File I/O via a nodejs spool file + `require('fs')`. Git directly in Bash. Utility verbs (`exec:recall`, `exec:codesearch`, `exec:memorize`, `exec:wait`, `exec:sleep`, `exec:browser`, etc.) DO run via Bash with the verb on line 1 and arg on line 2. Never `Bash(node/npm/npx/bun)`.
 
 Pack runs: `Promise.allSettled`, each idea own try/catch, under 12s per call. Runner: `exec:runner\n{start|stop|status}`.
 
