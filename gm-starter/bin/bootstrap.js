@@ -299,7 +299,7 @@ function pruneOldVersions(root, keepVersion, keepRtkVersion) {
       if (fs.existsSync(lock) && !isLockStale(lock)) continue;
       if (fs.existsSync(lock)) { try { fs.unlinkSync(lock); } catch (_) {} }
       try {
-        fs.rmSync(dir, { recursive: true, force: true });
+        fs.rmSync(dir, { recursive: true, force: true, maxRetries: 1, retryDelay: 50 });
         log(`pruned ${dir}`);
       } catch (err) { log(`prune skip ${dir}: ${err.message}`); }
     }
@@ -327,15 +327,15 @@ async function bootstrap(opts) {
 
   if (fs.existsSync(finalPath) && fs.existsSync(okSentinel)) {
     if (!opts.silent) log(`cache hit: ${finalPath}`);
-    pruneOldVersions(root, version, readRtkVersion(wrapperDir));
     proactiveKillForNewInstall(version, finalPath);
+    pruneOldVersions(root, version, readRtkVersion(wrapperDir));
     return finalPath;
   }
 
   if (healIfShaMatches(finalPath, expectedSha, okSentinel, partialPath, 'plugkit')) {
     if (!opts.silent) log(`cache heal (sha match): ${finalPath}`);
-    pruneOldVersions(root, version, readRtkVersion(wrapperDir));
     proactiveKillForNewInstall(version, finalPath);
+    pruneOldVersions(root, version, readRtkVersion(wrapperDir));
     try { await bootstrapRtk(verDir, version, wrapperDir, opts.silent, root); }
     catch (err) { log(`rtk fetch skipped: ${err.message}`); }
     return finalPath;
@@ -345,14 +345,14 @@ async function bootstrap(opts) {
   acquireLock(lockPath);
   try {
     if (fs.existsSync(finalPath) && fs.existsSync(okSentinel)) {
-      pruneOldVersions(root, version, readRtkVersion(wrapperDir));
       proactiveKillForNewInstall(version, finalPath);
+      pruneOldVersions(root, version, readRtkVersion(wrapperDir));
       return finalPath;
     }
     if (healIfShaMatches(finalPath, expectedSha, okSentinel, partialPath, 'plugkit')) {
       log(`cache heal (sha match) under lock: ${finalPath}`);
-      pruneOldVersions(root, version, readRtkVersion(wrapperDir));
       proactiveKillForNewInstall(version, finalPath);
+      pruneOldVersions(root, version, readRtkVersion(wrapperDir));
       try { await bootstrapRtk(verDir, version, wrapperDir, opts.silent, root); }
       catch (err) { log(`rtk fetch skipped: ${err.message}`); }
       return finalPath;
@@ -396,8 +396,8 @@ async function bootstrap(opts) {
     fs.writeFileSync(okSentinel, new Date().toISOString());
     log(`installed ${finalPath}`);
     obsEvent('bootstrap', 'install.done', { path: finalPath, version, kind: 'plugkit' });
-    pruneOldVersions(root, version, readRtkVersion(wrapperDir));
     proactiveKillForNewInstall(version, finalPath);
+    pruneOldVersions(root, version, readRtkVersion(wrapperDir));
     try { await bootstrapRtk(verDir, version, wrapperDir, opts.silent, root); }
     catch (err) { log(`rtk fetch skipped: ${err.message}`); }
     return finalPath;
@@ -519,7 +519,7 @@ function killPid(pid) {
   if (os.platform() === 'win32' && pidAlive(pid)) {
     try {
       const { spawnSync } = require('child_process');
-      spawnSync('taskkill', ['/F', '/PID', String(pid)], { stdio: 'ignore', windowsHide: true });
+      spawnSync('taskkill', ['/F', '/PID', String(pid)], { stdio: 'ignore', windowsHide: true, timeout: 3000, killSignal: 'SIGKILL' });
     } catch (_) {}
   }
   return true;
@@ -548,21 +548,34 @@ function listRunningPlugkitImagePaths() {
   try {
     const { spawnSync } = require('child_process');
     if (os.platform() === 'win32') {
-      const r = spawnSync('tasklist', ['/FI', 'IMAGENAME eq plugkit*', '/FO', 'CSV', '/NH'], { windowsHide: true, encoding: 'utf8' });
-      const text = (r && r.stdout) || '';
-      const seen = new Set();
-      for (const line of text.split(/\r?\n/)) {
-        const m = line.match(/^"([^"]+)","(\d+)"/);
-        if (!m) continue;
-        const pid = parseInt(m[2], 10);
-        if (!Number.isFinite(pid) || seen.has(pid)) continue;
-        seen.add(pid);
-        let imagePath = '';
-        try {
-          const p = spawnSync('powershell', ['-NoProfile', '-NonInteractive', '-Command', `(Get-Process -Id ${pid} -ErrorAction SilentlyContinue).Path`], { windowsHide: true, encoding: 'utf8' });
-          imagePath = ((p && p.stdout) || '').trim();
-        } catch (_) {}
-        out.push({ pid, path: imagePath });
+      let parsed = null;
+      try {
+        const p = spawnSync('powershell', ['-NoProfile', '-NonInteractive', '-Command', "Get-Process plugkit* -ErrorAction SilentlyContinue | Select-Object Id,Path | ConvertTo-Json -Compress"], { windowsHide: true, encoding: 'utf8', timeout: 5000, killSignal: 'SIGKILL' });
+        const text = ((p && p.stdout) || '').trim();
+        if (text) {
+          const j = JSON.parse(text);
+          parsed = Array.isArray(j) ? j : [j];
+        }
+      } catch (_) {}
+      if (parsed) {
+        for (const item of parsed) {
+          if (!item) continue;
+          const pid = parseInt(item.Id, 10);
+          if (!Number.isFinite(pid)) continue;
+          out.push({ pid, path: (item.Path || '').trim() });
+        }
+      } else {
+        const r = spawnSync('tasklist', ['/FI', 'IMAGENAME eq plugkit*', '/FO', 'CSV', '/NH'], { windowsHide: true, encoding: 'utf8', timeout: 5000, killSignal: 'SIGKILL' });
+        const text = (r && r.stdout) || '';
+        const seen = new Set();
+        for (const line of text.split(/\r?\n/)) {
+          const m = line.match(/^"([^"]+)","(\d+)"/);
+          if (!m) continue;
+          const pid = parseInt(m[2], 10);
+          if (!Number.isFinite(pid) || seen.has(pid)) continue;
+          seen.add(pid);
+          out.push({ pid, path: '' });
+        }
       }
     } else if (os.platform() === 'linux') {
       let entries = [];
