@@ -47,6 +47,13 @@ async function resolveBinary() {
 
 async function main() {
   const args = process.argv.slice(2);
+  // Detached bootstrap entry: just run bootstrap() and exit. Used by session-start
+  // to avoid blocking CC startup on a slow GitHub download.
+  if (args[0] === '__rtk_only__') {
+    try { await bootstrap({ wrapperDir: dir, silent: false }); }
+    catch (e) { try { process.stderr.write(`[plugkit-bootstrap-detached] ${e.message}\n`); } catch (_) {} }
+    process.exit(0);
+  }
   const isHook = args[0] === 'hook';
   const startedAt = Date.now();
   obsEvent('plugkit_wrapper', 'invoke', { argv: args.slice(0, 4), is_hook: isHook });
@@ -63,15 +70,30 @@ async function main() {
     // currently has — the hook itself isn't blocking, just refreshing.
     if (isHook && hookSubcmd === 'session-start') {
       obsEvent('plugkit_wrapper', 'hook_bootstrap_session_start', { argv: args.slice(0, 4) });
+      // Bootstrap can stall 60s+ on a slow GitHub mirror — never block CC startup
+      // on it. Detach into a background child; this hook returns immediately
+      // with whatever cached binary exists. Subsequent hooks pick up the new
+      // binary once the detached bootstrap completes.
+      bin = resolveCachedBinary({ wrapperDir: dir }) || legacyFallback();
       try {
-        bin = await bootstrap({ wrapperDir: dir, silent: true });
+        const child = spawn(process.execPath, [__filename, '__rtk_only__'], {
+          detached: true,
+          stdio: 'ignore',
+          windowsHide: true,
+          env: { ...process.env, PLUGKIT_BOOTSTRAP_DETACHED: '1' },
+        });
+        child.unref();
+        obsEvent('plugkit_wrapper', 'session_start_bootstrap_detached', { pid: child.pid });
       } catch (e) {
-        process.stderr.write(`[plugkit] session-start bootstrap failed: ${e.message}\n`);
-        bin = resolveCachedBinary({ wrapperDir: dir }) || legacyFallback();
+        process.stderr.write(`[plugkit] detached bootstrap spawn failed: ${e.message}\n`);
       }
-      // session-start hook itself runs in the freshly-bootstrapped binary
-      // below — fall through to the spawn path so the actual handler runs.
-      if (!bin) process.exit(0);
+      // If no cached binary yet (fresh install with bootstrap still downloading),
+      // skip running the session-start handler this turn — it will fire next
+      // session-start once binary is in place.
+      if (!bin) {
+        process.stderr.write(`[plugkit] session-start skipped: binary not yet installed (bootstrap running in background).\n`);
+        process.exit(0);
+      }
     } else if (isHook) {
       bin = (await resolveBinaryWithPinCheck()) || legacyFallback();
       if (!bin) {

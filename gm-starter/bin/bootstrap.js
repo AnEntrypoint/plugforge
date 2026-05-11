@@ -10,7 +10,7 @@ const { URL } = require('url');
 
 const RELEASE_REPO = 'AnEntrypoint/plugkit-bin';
 const ATTEMPT_TIMEOUT_MS = 5 * 60 * 1000;
-const STALL_TIMEOUT_MS = 60 * 1000;
+const STALL_TIMEOUT_MS = 15 * 1000;
 const MAX_ATTEMPTS = 5;
 const BACKOFF_MS = [2000, 5000, 15000, 30000];
 // Worst case: a slow link downloading 140MB at 1MB/s = ~140s. Allow 30 minutes
