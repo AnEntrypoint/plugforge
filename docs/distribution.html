@@ -16,8 +16,11 @@
 
 <style>
 body { display: flex; flex-direction: column; min-height: 100vh; }
-body > header:not(.app-topbar), body > nav:not(.app-topbar), body > main > header, body > main > nav { display: none !important; }
-body > .title-block, body > .abstract-block, body > article, body > main, article, .prose-wrap { max-width: 78ch; margin: 0 auto; padding: 0 32px; font-family: 'Inter','Segoe UI',sans-serif; color: var(--panel-text); }
+body > header:not(.app-topbar), body > nav:not(.app-topbar), body > main > header:not(.app-topbar), body > main > nav:not(.app-topbar), body > .ds-topbar, body > [data-flatspace-topbar], body > .anentrypoint-topbar, body > .ds-247420-topbar, body > .ae-topbar, body > [data-ds-topbar] { display: none !important; }
+body > header.app-topbar ~ header, body > header.gm-topbar ~ header, body > header.app-topbar ~ nav, body > .app-topbar ~ .app-topbar, body > .gm-topbar ~ .gm-topbar { display: none !important; }
+body > .title-block, body > .abstract-block, body > article, body > main, article, .prose-wrap { max-width: min(92ch, 94vw); margin: 0 auto; padding: 0 32px; font-family: 'Inter','Segoe UI',sans-serif; color: var(--panel-text); }
+@media (min-width: 1400px) { body > .title-block, body > .abstract-block, body > article, body > main, article, .prose-wrap { max-width: min(110ch, 90vw); } }
+@media (min-width: 1800px) { body > .title-block, body > .abstract-block, body > article, body > main, article, .prose-wrap { max-width: 128ch; } }
 body > .title-block { padding-top: 48px; padding-bottom: 8px; }
 body > .title-block h1 { font-size: 36px; font-weight: 600; letter-spacing: -0.01em; line-height: 1.15; color: var(--panel-text); margin: 0 0 8px 0; }
 body > .title-block .author, body > .title-block .date { font-family: var(--ff-mono); font-size: 12px; color: var(--panel-text-2); margin-top: 4px; text-transform: lowercase; }
@@ -71,7 +74,6 @@ article th { font-family: var(--ff-mono); font-size: 11px; text-transform: upper
     <a href="./index.html">home</a>
     <a href="./paper.html">paper</a>
     <details class="gm-dd"><summary>docs</summary><div class="gm-dd-menu">
-      <a href="./mascot.html">glootie</a>
       <a href="./crates.html">crates</a>
       <a href="./skills.html">skills</a>
       <a href="./distribution.html">distribution</a>

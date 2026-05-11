@@ -4,7 +4,7 @@
 
 gm is a claude code plugin that convinces your coding agent it already is a deterministic state machine — PLAN → EXECUTE → EMIT → VERIFY → COMPLETE — and then enforces that conviction with rust-backed hooks, witnessed execution, and a covering family of bounded subsets that refuses to let "follow-up" become a synonym for "I gave up."
 
-it is named after **glootius maximus**, the muscle that holds you in the chair while you finish the work. our mascot is **Glootie** — yes, *that* Glootie, from Rick and Morty, but buff, with a slightly larger forehead tattoo, and an approval rate of 17%. read the [mascot lore](./site/content/pages/mascot.yaml) (or any deployed gm site at `/mascot/`) for why this matters.
+it is named after **glootius maximus**, the muscle that holds you in the chair while you finish the work. the name is the joke and the discipline at once: the agent that sits down through PLAN → EXECUTE → EMIT → VERIFY → COMPLETE actually ships. the agent that stands up early ships a stub with a green check on it.
 
 built over ~200 commits of daily use. free, open source, maintained by one person.
 
@@ -115,7 +115,7 @@ all gm metadata lives in `.gm/` at project root (auto-gitignored by postinstall)
 
 **security enforcement is hook-based.** `pre-tool-use-hook.js` blocks dangerous tool patterns (find, glob, test file creation, unauthorized .md writes). the rust plugkit binary (`rs-plugkit`) enforces command blocklists at the binary level. hooks fail loud — silent degradation is a bug, not a feature.
 
-**naming is frozen.** the project is "gm" (glootius maximus). previous names (mcp-repl, mcp-glootie, glootie-cc) are archived. all redirects point here.
+**naming is frozen.** the project is "gm" (glootius maximus). previous names are archived. all redirects point here.
 
 ## what doesn't work yet
 

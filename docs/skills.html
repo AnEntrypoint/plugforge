@@ -8,7 +8,9 @@
 <link rel="icon" type="image/svg+xml" href="./favicon.svg">
 <style>
 body { display:flex; flex-direction:column; min-height:100vh; }
-body > .title-block, body > .abstract-block, body > article { max-width: 78ch; margin: 0 auto; padding: 0 32px; font-family: 'Inter','Segoe UI',sans-serif; color: var(--panel-text); }
+body > .title-block, body > .abstract-block, body > article { max-width: min(92ch, 94vw); margin: 0 auto; padding: 0 32px; font-family: 'Inter','Segoe UI',sans-serif; color: var(--panel-text); }
+@media (min-width: 1400px) { body > .title-block, body > .abstract-block, body > article { max-width: min(110ch, 90vw); } }
+@media (min-width: 1800px) { body > .title-block, body > .abstract-block, body > article { max-width: 128ch; } }
 body > .title-block { padding-top: 48px; padding-bottom: 8px; }
 body > .title-block h1 { font-size: 36px; font-weight: 600; letter-spacing: -0.01em; line-height: 1.15; margin: 0 0 8px 0; }
 body > .title-block .author, body > .title-block .date { font-family: var(--ff-mono); font-size: 12px; color: var(--panel-text-2); margin-top: 4px; text-transform: lowercase; }
@@ -41,9 +43,8 @@ mermaid.initialize({ startOnLoad: true, theme: dark ? 'dark' : 'default', securi
 <style>
 .mermaid{margin:18px 0;padding:14px;background:var(--panel-1);border-radius:8px;box-shadow:var(--panel-shadow);text-align:center;overflow-x:auto}
 .mermaid svg{max-width:100%;height:auto}
-.glootie-callout{margin:18px 0;padding:14px 18px 14px 56px;background:linear-gradient(90deg, var(--panel-1), var(--panel-2));border-left:4px solid var(--panel-accent);border-radius:8px;position:relative;font-style:italic;color:var(--panel-text)}
-.glootie-callout::before{content:'🦴';position:absolute;left:14px;top:14px;font-size:24px;font-style:normal}
-.glootie-callout .who{display:block;font-family:var(--ff-mono);font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--panel-text-2);font-style:normal;margin-bottom:4px}
+.gm-callout{margin:18px 0;padding:14px 18px;background:linear-gradient(90deg, var(--panel-1), var(--panel-2));border-left:4px solid var(--panel-accent);border-radius:8px;font-style:italic;color:var(--panel-text)}
+.gm-callout .who{display:block;font-family:var(--ff-mono);font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--panel-text-2);font-style:normal;margin-bottom:4px}
 .cross-footer{margin:32px 0 12px 0;padding:18px;background:var(--panel-1);border-radius:8px;display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;font-family:var(--ff-mono);font-size:12px}
 .cross-footer a{display:block;padding:10px 12px;background:var(--panel-2);border-radius:6px;text-decoration:none;color:var(--panel-text);transition:background .15s}
 .cross-footer a:hover{background:var(--panel-3);color:var(--panel-accent)}
@@ -88,7 +89,7 @@ stateDiagram-v2
   gm_complete --> gm_execute: logic wrong
 </pre>
 
-<div class="glootie-callout"><span class="who">Glootie says:</span>"There is no skip button. There is no &lsquo;just this once.&rsquo; The arrows are arrows. The cushion is the cushion. Sit."</div>
+<div class="gm-callout"><span class="who">from the gm field guide</span>"There is no skip button. There is no &lsquo;just this once.&rsquo; The arrows are arrows. The cushion is the cushion. Sit."</div>
 
 <!-- =========== gm =========== -->
 <div class="skill">
@@ -178,7 +179,7 @@ stateDiagram-v2
   <div class="row"><span class="k">role</span><span>Encodes the 7 route families (grounding, reasoning, state, execution, observability, boundary, representation), the 16-failure taxonomy, the 4 state planes, the ΔS/λ/ε/Coverage metrics, and the 8-case stress suite.</span></div>
   <div class="row"><span class="k">fires when</span><span>Loaded once at session start as a reference. Consulted by PLAN (route tagging), EXECUTE (weak-prior bridge), EMIT (legitimacy gate), VERIFY (stress suite).</span></div>
   <div class="row"><span class="k">forbids</span><span>Emission without route_fit examined. Crossing the remote-execution boundary (git push, deploy, message-send) without authorization tier upgrade.</span></div>
-  <div class="row"><span class="k">why it exists</span><span>Paper III's contribution: separates route discovery from emission legitimacy. Without it, "plausible plan" silently authorizes "unearned conclusion."</span></div>
+  <div class="row"><span class="k">why it exists</span><span>Separates route discovery from emission legitimacy. Without it, "plausible plan" silently authorizes "unearned conclusion."</span></div>
 </div>
 
 <!-- =========== code-search =========== -->
@@ -271,16 +272,15 @@ stateDiagram-v2
   <div class="row"><span class="k">why it exists</span><span>Without same-turn memorize, every fact dies on context compaction. Without it, every session re-discovers what the previous session already learned. Memory is the difference between an agent and a goldfish with a keyboard.</span></div>
 </div>
 
-<h2>Glootie's notes on the skill chain</h2>
+<h2>notes on the skill chain</h2>
 
 <blockquote>
-  "The chain is thirteen skills because the work has thirteen shapes. You will be tempted to merge planning into execute, or emit into complete, or browser into execute, or textprocessing into something that calls a regex. Don't. Each skill is a different posture on the cushion. Merging them is how you end up <em>standing</em> again." — Glootie, on cushion #7
+  "The chain is thirteen skills because the work has thirteen shapes. You will be tempted to merge planning into execute, or emit into complete, or browser into execute, or textprocessing into something that calls a regex. Don't. Each skill is a different posture on the cushion. Merging them is how you end up <em>standing</em> again." — from the gm field guide
 </blockquote>
 
 </article>
 
 <div class="cross-footer">
-  <a href="./mascot.html"><strong>meet Glootie</strong><span>mascot, cushion theory, four commandments</span></a>
   <a href="./crates.html"><strong>rust crates</strong><span>rs-exec · rs-codeinsight · rs-search · rs-learn · rs-plugkit</span></a>
   <a href="./skills.html"><strong>skills</strong><span>13 skills, one chain, no skipping</span></a>
   </div>

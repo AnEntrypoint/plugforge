@@ -16,8 +16,9 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
 body { display: flex; flex-direction: column; min-height: 100vh; }
-body > header:not(.app-topbar), body > nav:not(.app-topbar) { display: none !important; }
-body > main, main.stats-main { max-width: 1100px; margin: 0 auto; padding: 24px 32px 64px 32px; width: 100%; font-family: 'Inter','Segoe UI',sans-serif; color: var(--panel-text); }
+body > header:not(.app-topbar), body > nav:not(.app-topbar), body > main > header:not(.app-topbar), body > main > nav:not(.app-topbar), body > .ds-topbar, body > [data-flatspace-topbar], body > .anentrypoint-topbar, body > .ds-247420-topbar, body > .ae-topbar, body > [data-ds-topbar] { display: none !important; }
+body > header.app-topbar ~ header, body > header.gm-topbar ~ header, body > header.app-topbar ~ nav, body > .app-topbar ~ .app-topbar, body > .gm-topbar ~ .gm-topbar { display: none !important; }
+body > main, main.stats-main { max-width: min(1400px, 94vw); margin: 0 auto; padding: 24px 32px 64px 32px; width: 100%; font-family: 'Inter','Segoe UI',sans-serif; color: var(--panel-text); }
 main section { background: var(--panel-1); border-radius: 8px; margin: 12px 0; padding: 16px 20px; box-shadow: var(--panel-shadow); }
 main section h2 { font-size: 18px; font-weight: 600; margin: 0 0 12px 0; color: var(--panel-text); letter-spacing: -0.005em; }
 main canvas { background: var(--panel-1); max-width: 100%; }
@@ -51,7 +52,6 @@ main table td { text-align: left; padding: 6px 12px; color: var(--panel-text); b
     <a href="./index.html">home</a>
     <a href="./paper.html">paper</a>
     <details class="gm-dd"><summary>docs</summary><div class="gm-dd-menu">
-      <a href="./mascot.html">glootie</a>
       <a href="./crates.html">crates</a>
       <a href="./skills.html">skills</a>
       <a href="./distribution.html">distribution</a>

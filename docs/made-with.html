@@ -16,8 +16,9 @@
 
 <style>
 body { display: flex; flex-direction: column; min-height: 100vh; }
-body > header:not(.app-topbar), body > nav:not(.app-topbar) { display: none !important; }
-body > main, main.showcase-main { max-width: 1100px; margin: 0 auto; padding: 24px 32px 64px 32px; width: 100%; font-family: 'Inter','Segoe UI',sans-serif; color: var(--panel-text); display: flex; flex-direction: column; gap: 6px; }
+body > header:not(.app-topbar), body > nav:not(.app-topbar), body > main > header:not(.app-topbar), body > main > nav:not(.app-topbar), body > .ds-topbar, body > [data-flatspace-topbar], body > .anentrypoint-topbar, body > .ds-247420-topbar, body > .ae-topbar, body > [data-ds-topbar] { display: none !important; }
+body > header.app-topbar ~ header, body > header.gm-topbar ~ header, body > header.app-topbar ~ nav, body > .app-topbar ~ .app-topbar, body > .gm-topbar ~ .gm-topbar { display: none !important; }
+body > main, main.showcase-main { max-width: min(1400px, 94vw); margin: 0 auto; padding: 24px 32px 64px 32px; width: 100%; font-family: 'Inter','Segoe UI',sans-serif; color: var(--panel-text); display: flex; flex-direction: column; gap: 6px; }
 main > a { display: grid; grid-template-columns: 180px 1fr auto; gap: 16px; padding: 12px 16px; background: var(--panel-1); border-radius: 6px; color: var(--panel-text); text-decoration: none; align-items: baseline; font-size: 13px; box-shadow: var(--panel-shadow); }
 main > a:hover { background: var(--panel-hover); text-decoration: none; }
 main > a h2, main > a h3 { font-size: 14px; font-weight: 600; margin: 0; color: var(--panel-text); }
@@ -49,7 +50,6 @@ main > a p { font-size: 12px; color: var(--panel-text-2); margin: 0; line-height
     <a href="./index.html">home</a>
     <a href="./paper.html">paper</a>
     <details class="gm-dd"><summary>docs</summary><div class="gm-dd-menu">
-      <a href="./mascot.html">glootie</a>
       <a href="./crates.html">crates</a>
       <a href="./skills.html">skills</a>
       <a href="./distribution.html">distribution</a>

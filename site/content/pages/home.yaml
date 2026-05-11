@@ -3,7 +3,7 @@ title: gm
 hero:
   heading: "glootius maximus"
   subheading: "more coushin' for the puhin'"
-  body: "gm convinces your coding agent that it already is a deterministic state machine. PLAN → EXECUTE → EMIT → VERIFY → COMPLETE. it cushions the seat your agent has to sit on to actually finish the job. Glootie himself approves — and Glootie does not approve of much."
+  body: "gm convinces your coding agent that it already is a deterministic state machine. PLAN → EXECUTE → EMIT → VERIFY → COMPLETE. it cushions the seat your agent has to sit on to actually finish the job. named after glootius maximus — the muscle that holds you in the chair while you finish the work."
   badges:
     - { label: "PLAN→EXECUTE→EMIT→VERIFY" }
     - { label: "13 platforms, one source" }
@@ -15,7 +15,6 @@ hero:
     - { label: "⭐ Star on GitHub", href: "https://github.com/AnEntrypoint/gm", primary: true }
     - { label: "Install", href: "https://github.com/AnEntrypoint/gm#install" }
     - { label: "live stats", href: "./stats/" }
-    - { label: "meet Glootie", href: "./mascot/" }
     - { label: "rust crates", href: "./crates/" }
     - { label: "skills", href: "./skills/" }
 features:
@@ -53,9 +52,7 @@ quickstart:
 examples:
   heading: read further
   items:
-    - { name: "meet Glootie", desc: "the mascot, the lore, the cushion theory of agent productivity", cta: "open lore", href: "./mascot/" }
+    - { name: "the complete discipline", desc: "lifecycle control, governance, and operational hard rules — one paper, every rule the agent runs under", cta: "open paper", href: "./paper/" }
     - { name: "every rust crate", desc: "rs-exec, rs-codeinsight, rs-search, rs-learn, rs-plugkit — what each does, why it exists, what it kills if it misbehaves", cta: "open crates", href: "./crates/" }
-    - { name: "every skill", desc: "12 skills in the chain — gm, planning, gm-execute, gm-emit, gm-complete, update-docs, governance, code-search, browser, ssh, pages, create-lang-plugin, plus the memorize sub-agent", cta: "open skills", href: "./skills/" }
-    - { name: "paper IV", desc: "lawful downgrade as covering family, bounded autonomy, the recall+memorize loop, mandatory exec budgets", cta: "open paper IV", href: "./paper4/" }
-    - { name: "paper III", desc: "governance, earned emission, the remote-execution boundary", cta: "open paper III", href: "./paper3/" }
+    - { name: "every skill", desc: "thirteen skills in the chain — gm, planning, gm-execute, gm-emit, gm-complete, update-docs, governance, code-search, browser, ssh, pages, create-lang-plugin, plus the memorize and textprocessing sub-agents", cta: "open skills", href: "./skills/" }
     - { name: "distribution", desc: "the cascade pipeline that puts a fresh binary in your plugin every time anyone touches a rust crate", cta: "open distribution", href: "./distribution/" }

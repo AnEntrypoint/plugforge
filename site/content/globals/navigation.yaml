@@ -5,7 +5,6 @@ links:
     href: ./paper/
   - label: docs
     group:
-      - { label: glootie,      href: "./mascot/" }
       - { label: crates,       href: "./crates/" }
       - { label: skills,       href: "./skills/" }
       - { label: distribution, href: "./distribution/" }

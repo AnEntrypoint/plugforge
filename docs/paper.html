@@ -15,8 +15,16 @@
 </script>
 <style>
 body { display: flex; flex-direction: column; min-height: 100vh; }
-body > header:not(.app-topbar), body > nav:not(.app-topbar), body > main > header, body > main > nav { display: none !important; }
-body > .title-block, body > .abstract-block, body > article, body > main, article, .prose-wrap { max-width: 72ch; margin: 0 auto; padding: 0 32px; font-family: 'Inter','Segoe UI',sans-serif; color: var(--panel-text); }
+body > header:not(.app-topbar), body > nav:not(.app-topbar), body > main > header:not(.app-topbar), body > main > nav:not(.app-topbar), body > .ds-topbar, body > [data-flatspace-topbar], body > .anentrypoint-topbar, body > .ds-247420-topbar, body > .ae-topbar, body > [data-ds-topbar] { display: none !important; }
+body > header.app-topbar ~ header, body > header.gm-topbar ~ header, body > header.app-topbar ~ nav, body > .app-topbar ~ .app-topbar, body > .gm-topbar ~ .gm-topbar { display: none !important; }
+body > .title-block, body > .abstract-block, body > article, body > main, article, .prose-wrap { max-width: min(92ch, 94vw); margin: 0 auto; padding: 0 32px; font-family: 'Inter','Segoe UI',sans-serif; color: var(--panel-text); }
+.toc { max-width: min(92ch, 94vw) !important; }
+@media (min-width: 1400px) {
+  body > .title-block, body > .abstract-block, body > article, body > main, article, .prose-wrap, .toc { max-width: min(110ch, 90vw); }
+}
+@media (min-width: 1800px) {
+  body > .title-block, body > .abstract-block, body > article, body > main, article, .prose-wrap, .toc { max-width: 128ch; }
+}
 body > .title-block { padding-top: 48px; padding-bottom: 8px; }
 body > .title-block h1 { font-size: 36px; font-weight: 600; letter-spacing: -0.01em; line-height: 1.15; color: var(--panel-text); margin: 0 0 8px 0; }
 body > .title-block .author, body > .title-block .date { font-family: var(--ff-mono); font-size: 12px; color: var(--panel-text-2); margin-top: 4px; text-transform: lowercase; }
@@ -62,9 +70,8 @@ mermaid.initialize({ startOnLoad: true, theme: dark ? 'dark' : 'default', securi
 <style>
 .mermaid{margin:18px 0;padding:14px;background:var(--panel-1);border-radius:8px;box-shadow:var(--panel-shadow);text-align:center;overflow-x:auto}
 .mermaid svg{max-width:100%;height:auto}
-.glootie-callout{margin:18px 0;padding:14px 18px 14px 56px;background:linear-gradient(90deg, var(--panel-1), var(--panel-2));border-left:4px solid var(--panel-accent);border-radius:8px;position:relative;font-style:italic;color:var(--panel-text)}
-.glootie-callout::before{content:'🦴';position:absolute;left:14px;top:14px;font-size:24px;font-style:normal}
-.glootie-callout .who{display:block;font-family:var(--ff-mono);font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--panel-text-2);font-style:normal;margin-bottom:4px}
+.gm-callout{margin:18px 0;padding:14px 18px;background:linear-gradient(90deg, var(--panel-1), var(--panel-2));border-left:4px solid var(--panel-accent);border-radius:8px;font-style:italic;color:var(--panel-text)}
+.gm-callout .who{display:block;font-family:var(--ff-mono);font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--panel-text-2);font-style:normal;margin-bottom:4px}
 .cross-footer{margin:32px 0 12px 0;padding:18px;background:var(--panel-1);border-radius:8px;display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;font-family:var(--ff-mono);font-size:12px}
 .cross-footer a{display:block;padding:10px 12px;background:var(--panel-2);border-radius:6px;text-decoration:none;color:var(--panel-text);transition:background .15s}
 .cross-footer a:hover{background:var(--panel-3);color:var(--panel-accent)}
@@ -89,7 +96,6 @@ mermaid.initialize({ startOnLoad: true, theme: dark ? 'dark' : 'default', securi
     <a href="./index.html">home</a>
     <a href="./paper.html">paper</a>
     <details class="gm-dd"><summary>docs</summary><div class="gm-dd-menu">
-      <a href="./mascot.html">glootie</a>
       <a href="./crates.html">crates</a>
       <a href="./skills.html">skills</a>
       <a href="./distribution.html">distribution</a>
@@ -106,7 +112,7 @@ mermaid.initialize({ startOnLoad: true, theme: dark ? 'dark' : 'default', securi
 <div class="title-block">
   <h1>The Complete Discipline: Lifecycle Control,<br>Governance, and Operational Hard Rules<br>for LLM Coding Agents</h1>
   <div class="author">AnEntrypoint</div>
-  <div class="date">May 2026 · consolidation of papers I–IV with operational and dispatch-boundary rules</div>
+  <div class="date">May 2026 · the complete discipline, in one document</div>
 </div>
 
 <div class="abstract-block">
@@ -175,7 +181,7 @@ mermaid.initialize({ startOnLoad: true, theme: dark ? 'dark' : 'default', securi
 
 <p>Self-regulation fails against these patterns because the same model that reasons through a problem also reasons through the justification for shortcuts. External behavioral enforcement&mdash;hooks below the agent&rsquo;s decision layer, stop barriers, phase gates, and hard rules encoded in the skill chain&mdash;is the only reliable mitigation.</p>
 
-<p>This paper is a complete reference for the gm discipline as it stands in production. Sections 2&ndash;8 cover the original lifecycle model (Phase I). Sections 9&ndash;12 cover the in-phase quality discipline (Phase II). Sections 13&ndash;16 cover the governance layer (Phase III). Sections 17&ndash;20 cover second-generation rules for autonomy and scale (Phase IV). Sections 21&ndash;29 cover operational hard rules that emerged from production and are absent from earlier papers.</p>
+<p>This paper is the complete reference for the gm discipline as it stands in production. Sections 2&ndash;8 cover the lifecycle model. Sections 9&ndash;12 cover the in-phase quality discipline. Sections 13&ndash;16 cover the governance layer. Sections 17&ndash;20 cover the autonomy and scope rules. Sections 21&ndash;29 cover operational hard rules. Sections 30&ndash;37 cover the dispatch-boundary rules that move the discipline out of the agent's context window and onto disk and into hooks.</p>
 
 <hr>
 
@@ -198,7 +204,7 @@ stateDiagram-v2
   VERIFY --> EXECUTE: logic wrong
 </pre>
 
-<div class="glootie-callout"><span class="who">Glootie says:</span>"Forward transitions are conjunctive ladders. Backward transitions are snakes. The board is rigged in favour of finishing &mdash; but only if you climb every rung."</div>
+<div class="gm-callout"><span class="who">from the gm field guide</span>"Forward transitions are conjunctive ladders. Backward transitions are snakes. The board is rigged in favour of finishing &mdash; but only if you climb every rung."</div>
 
 <h3>2.1 Phases</h3>
 <p>The framework defines five phases with forward-only progression under normal conditions. <strong>PLAN</strong> discovers all unknowns (exits when a full pass adds zero new unknowns). <strong>EXECUTE</strong> resolves unknowns via witnessed execution (exits when all mutables are KNOWN). <strong>EMIT</strong> writes files to disk (exits when post-emit matches pre-emit exactly). <strong>VERIFY</strong> performs end-to-end witnessed validation (exits when .prd is empty, git is clean and pushed, and CI is green). <strong>COMPLETE</strong> updates documentation and closes the session.</p>
@@ -698,8 +704,8 @@ stateDiagram-v2
 
 <p>The boundary is enforced at the Bash hook. An agent that tries to run <code>node script.js</code> or <code>exec:nodejs ...</code> directly through Bash receives a denial that <em>throws</em> rather than mutates&mdash;the error names the spool path the agent should have written to. This is the only execution surface the discipline recognizes; everything else is a guess about whether the call happened.</p>
 
-<div class="glootie-callout">
-  <span class="who">Glootie</span>
+<div class="gm-callout">
+  <span class="who">from the gm field guide</span>
   One folder. One contract. Watcher reads, agent writes, output lands in three files. The agent who tries to skip the folder discovers very quickly that the folder is not optional.
 </div>
 
@@ -851,7 +857,6 @@ stateDiagram-v2
 </article>
 
 <div class="cross-footer">
-  <a href="./mascot.html"><strong>meet Glootie</strong><span>mascot, cushion theory, four commandments</span></a>
   <a href="./crates.html"><strong>rust crates</strong><span>rs-exec · rs-codeinsight · rs-search · rs-learn · rs-plugkit</span></a>
   <a href="./skills.html"><strong>skills</strong><span>13 skills, one chain, no skipping</span></a>
   <a href="./distribution.html"><strong>distribution</strong><span>the SQLite model</span></a>
