@@ -20,6 +20,7 @@ function extractArticle(html) {
   const bodyStart = html.indexOf('>', bodyOpen) + 1;
   const bodyEnd = html.lastIndexOf('</body>');
   let body = html.slice(bodyStart, bodyEnd >= 0 ? bodyEnd : html.length);
+  body = body.replace(/<header[^>]*class=["'][^"']*(?:app-topbar|gm-topbar)[^"']*["'][\s\S]*?<\/header>/gi, '');
   const crumbIdx = body.indexOf('app-crumb');
   if (crumbIdx >= 0) {
     const closeAfter = body.indexOf('</div>', crumbIdx);
