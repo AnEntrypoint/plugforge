@@ -50,13 +50,17 @@ One subagent per fact, fan out in parallel — batching dilutes the signal. The 
 
 ## Execution order
 
-1. Recall (`exec:recall` via Bash) — cheapest
-2. Code execution — write to `.gm/exec-spool/in/<lang>/<N>.<ext>` (nodejs, python, bash, typescript, go, rust, c, cpp, java, deno); spool watcher runs and streams to `out/<N>.out` (stdout) + `out/<N>.err` (stderr), with `out/<N>.json` metadata sidecar at completion
-3. Codebase search (`exec:codesearch` via Bash) — 90% of lookups
+The spool is the universal dispatch surface. Write a file to `.gm/exec-spool/in/<lang-or-verb>/<N>.<ext>`; the watcher executes and streams `out/<N>.out` + `out/<N>.err` + `out/<N>.json`. Languages: nodejs, python, bash, typescript, go, rust, c, cpp, java, deno. Verbs: codesearch, recall, memorize, wait, sleep, status, close, browser, runner, type, kill-port, forget, feedback, learn-status, learn-debug, learn-build, discipline, pause, health.
+
+Order of cheapness:
+
+1. Recall — `in/recall/<N>.txt` with the query
+2. Codebase search — `in/codesearch/<N>.txt` with two-word query, 90% of lookups
+3. Code execution — `in/<lang>/<N>.<ext>`
 4. Web (`WebFetch`, `WebSearch`) — env facts not in codebase
 5. User — last resort
 
-Bash accepts ONLY git commands and utility verbs (`exec:recall`, `exec:codesearch`, `exec:memorize`, `exec:wait`, `exec:browser`, etc.). All code execution goes via the spool. Never `Bash(node/npm/npx/bun)`. `git push` triggers auto CI watch via Stop hook.
+Bash accepts ONLY git commands directly (`git status`, `git commit`, `git push`, `git log`, `gh ...`). Everything else — code AND every utility verb — dispatches via the spool. Never `Bash(node/npm/npx/bun)`, never `Bash(exec:<anything>)`. `git push` triggers auto CI watch via Stop hook.
 
 Skill chain: `planning` → `gm-execute` → `gm-emit` → `gm-complete` → `update-docs`.
 

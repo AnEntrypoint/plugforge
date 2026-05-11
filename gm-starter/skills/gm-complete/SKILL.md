@@ -54,7 +54,7 @@ Long-running probes split into navigate-call → `exec:wait N` → probe-call to
 
 Exempt only when: change is server-only with zero browser-facing surface, OR the repository has no browser surface at all (pure CLI / library). Exemption requires explicit tag in the response: `BROWSER EXEMPT: <reason — must reference diff paths showing zero browser-facing surface>`. Default posture is NOT exempt — burden is on the agent to prove exemption with diff evidence.
 
-Pre-flight: run `git diff --name-only origin/main..HEAD` and grep for `client/|docs/|\.html$|\.glsl$|\.frag$|\.vert$`. Any hit AND no `exec:browser` block in this session → mandatory regression to `gm-execute`.
+Pre-flight: run `git diff --name-only origin/main..HEAD` directly via Bash, then dispatch a nodejs spool file that reads the diff list and filters lines matching `client/|docs/|\.html$|\.glsl$|\.frag$|\.vert$`. Any hit AND no `exec:browser` block in this session → mandatory regression to `gm-execute`.
 
 ## Integration test gate
 
