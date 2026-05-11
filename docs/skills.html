@@ -54,7 +54,7 @@ mermaid.initialize({ startOnLoad: true, theme: dark ? 'dark' : 'default', securi
 <body>
 <div class="title-block">
   <h1>Every skill in the gm chain</h1>
-  <div class="author">twelve skills, one chair, no skipping</div>
+  <div class="author">thirteen skills, one chair, no skipping</div>
   <div class="date">cushion-certified · 2026</div>
 </div>
 
@@ -249,6 +249,18 @@ stateDiagram-v2
 <!-- =========== memorize =========== -->
 <div class="skill">
   <div class="skill-header">
+    <h2>textprocessing <span class="tag special">sub-agent</span></h2>
+    <span class="role">semantic routing layer</span>
+    <span class="phase">PLAN · EXECUTE · EMIT — wherever meaning is involved</span>
+  </div>
+  <div class="row"><span class="k">role</span><span>Any task whose correctness depends on understanding language — summarize, classify, extract intent, rewrite, translate, semantic dedup, score, label, decide-if-two-texts-mean-the-same — routes here via <code>Agent(subagent_type='gm:textprocessing', model='haiku', ...)</code>. One subagent per item, N items in N parallel calls in one message.</span></div>
+  <div class="row"><span class="k">fires when</span><span>The agent is about to write a keyword list, regex, or hand-rolled scoring loop to answer a semantic question. That code path is the stub; the haiku call is the real surface.</span></div>
+  <div class="row"><span class="k">forbids</span><span><span class="tag danger">batching</span> multiple items into one call (dilutes signal). <span class="tag danger">keyword-list semantics</span> dressed as deterministic logic. Code path that "looks like classification" but never asks the model.</span></div>
+  <div class="row"><span class="k">why it exists</span><span>Code does mechanics well and meaning badly. A keyword-list loop deciding semantic questions ships a green check that lies — the value terminates and looks right but is unrelated to what the user asked. The split between mechanics and meaning is the boundary this skill enforces.</span></div>
+</div>
+
+<div class="skill">
+  <div class="skill-header">
     <h2>memorize <span class="tag special">sub-agent</span></h2>
     <span class="role">background memory writer</span>
     <span class="phase">always — every turn</span>
@@ -262,7 +274,7 @@ stateDiagram-v2
 <h2>Glootie's notes on the skill chain</h2>
 
 <blockquote>
-  "The chain is twelve skills because the work has twelve shapes. You will be tempted to merge planning into execute, or emit into complete, or browser into execute. Don't. Each skill is a different posture on the cushion. Merging them is how you end up <em>standing</em> again." — Glootie, on cushion #7
+  "The chain is thirteen skills because the work has thirteen shapes. You will be tempted to merge planning into execute, or emit into complete, or browser into execute, or textprocessing into something that calls a regex. Don't. Each skill is a different posture on the cushion. Merging them is how you end up <em>standing</em> again." — Glootie, on cushion #7
 </blockquote>
 
 </article>

@@ -143,7 +143,7 @@ claude plugin install -s user gm@gm</code></pre>
 
 <div class="repo-card"><span class="repo-name">rs-learn</span><span class="repo-role">The memory layer. SQLite-backed graph of episodes, embeddings, and structured facts. Backs <code>exec:recall</code> on the read path and the <code>memorize</code> sub-agent on the write path. Per-project store under <code>.gm/rs-learn.db</code>; tracked in git so memory follows the project across machines.</span></div>
 
-<div class="repo-card"><span class="repo-name">gm</span><span class="repo-role">This repository. The orchestrator. Generates the twelve downstream plugins from a single convention-driven source (<code>gm-starter/</code>). Owns the skill bundle, the prompts, the hooks, the bootstrap script, and the publish workflow that fans out to every platform.</span></div>
+<div class="repo-card"><span class="repo-name">gm</span><span class="repo-role">This repository. The orchestrator. Generates the thirteen downstream plugins from a single convention-driven source (<code>gm-starter/</code>). Owns the skill bundle, the prompts, the hooks, the bootstrap script, and the publish workflow that fans out to every platform.</span></div>
 
 <h2>4. The Cascade</h2>
 
@@ -163,7 +163,7 @@ rs-plugkit
 
 gm
   &mdash; that commit triggers gm publish.yml
-  &mdash; 12-platform matrix:
+  &mdash; 13-platform matrix:
        node cli.js gm-starter ./build           (regenerates configs)
        copies plugkit.version + plugkit.sha256  into bin/
        git init fresh empty dir + rsync + git add -A + git add -f bin/
@@ -173,15 +173,15 @@ gm
 downstream
   &mdash; gm-cc / gm-gc / gm-oc / gm-kilo / gm-codex / gm-qwen
   &mdash; gm-copilot-cli / gm-hermes
-  &mdash; gm-vscode / gm-cursor / gm-zed / gm-jetbrains
+  &mdash; gm-vscode / gm-cursor / gm-zed / gm-jetbrains / gm-windsurf
   &mdash; each is one orphan commit, ~&lt;1 MB
   &mdash; /plugin notices new HEAD &rarr; bootstrap.js fetches new binary</div>
 
-<p>No human edits a version string. No human runs <code>cargo build</code>. No human syncs a downstream branch. The cascade is the publishing pipeline. The phrase &ldquo;to update anything, push to the relevant repo&rdquo; is literal: a one-line fix in <code>rs-codeinsight</code> propagates to twelve plugin repos within one CI cycle.</p>
+<p>No human edits a version string. No human runs <code>cargo build</code>. No human syncs a downstream branch. The cascade is the publishing pipeline. The phrase &ldquo;to update anything, push to the relevant repo&rdquo; is literal: a one-line fix in <code>rs-codeinsight</code> propagates to thirteen plugin repos within one CI cycle.</p>
 
 <h2>5. Why The Downstreams Are Orphan-Committed</h2>
 
-<p class="first">Each of the twelve downstream repos is reset to a single orphan commit on every publish. This is unusual; the more common pattern is to append commits and let downstream repos grow. We chose orphan commits because:</p>
+<p class="first">Each of the thirteen downstream repos is reset to a single orphan commit on every publish. This is unusual; the more common pattern is to append commits and let downstream repos grow. We chose orphan commits because:</p>
 
 <ul>
   <li><strong>Each downstream is a build artifact, not a project.</strong> Its history is the orchestrator&rsquo;s history, not its own. Letting it accumulate per-publish commits would conflate build output with development.</li>
@@ -206,9 +206,9 @@ downstream
 
 <p>The fetch path is hardened against the failure modes encountered during early production: a 60-second per-attempt socket timeout, a 20-second stall watchdog that fires when the response stream stops producing bytes (a TCP connection can stay open and idle indefinitely otherwise), five attempts with backoff, a 5-minute lock TTL so a stale lockfile from a crashed install does not block forever, and HTTP <code>Range</code>-resumable downloads so a partially complete fetch survives a retry. These details are not user-visible; the user sees a small progress line on first run and never sees it again.</p>
 
-<h2>7. The 12-Platform Matrix</h2>
+<h2>7. The 13-Platform Matrix</h2>
 
-<p class="first">The same core (Rust binary, skills, prompts, hooks, lang plugins) ships to twelve hosts. Each host has a different conception of what a &ldquo;plugin&rdquo; is &mdash; a Claude Code plugin is a marketplace package, a VS Code extension is a VSIX, a JetBrains plugin is a ZIP, OpenCode wants a directory, Codex wants a config block. The <code>cli.js gm-starter ./build</code> step is a code generator that emits twelve different shapes of the same payload.</p>
+<p class="first">The same core (Rust binary, skills, prompts, hooks, lang plugins) ships to thirteen hosts. Each host has a different conception of what a &ldquo;plugin&rdquo; is &mdash; a Claude Code plugin is a marketplace package, a VS Code extension is a VSIX, a JetBrains plugin is a ZIP, OpenCode wants a directory, Codex wants a config block. The <code>cli.js gm-starter ./build</code> step is a code generator that emits thirteen different shapes of the same payload.</p>
 
 <table>
 <thead><tr><th>id</th><th>host</th><th>shape</th></tr></thead>
@@ -225,10 +225,11 @@ downstream
 <tr><td>gm-cursor</td><td>Cursor</td><td>extension</td></tr>
 <tr><td>gm-zed</td><td>Zed</td><td>extension</td></tr>
 <tr><td>gm-jetbrains</td><td>IntelliJ family</td><td>plugin ZIP</td></tr>
+<tr><td>gm-windsurf</td><td>Windsurf</td><td>extension</td></tr>
 </tbody>
 </table>
 
-<p>Adding a thirteenth host is a single registration in <code>lib/page-generator.js::PLATFORM_META</code> plus an adapter class under <code>platforms/</code>. The build matrix picks it up automatically; the cascade fans out to it on the next publish.</p>
+<p>Adding a fourteenth host is a single registration in <code>lib/page-generator.js::PLATFORM_META</code> plus an adapter class under <code>platforms/</code>. The build matrix picks it up automatically; the cascade fans out to it on the next publish.</p>
 
 <h2>8. Comparison To Alternative Distribution Models</h2>
 
@@ -263,7 +264,7 @@ downstream
 <ol>
   <li><strong>Multiple language ecosystems.</strong> The agent has to live inside Claude Code (a Node.js host), Gemini CLI (Node.js), OpenCode (Node.js), VS Code (Node.js / VS Code API), and JetBrains (JVM / IntelliJ API), among others. There is no single registry that delivers to all of them. Every platform has its own plugin shape; the cascade builds each shape from one source.</li>
   <li><strong>Toolchain absence at install.</strong> Many users install Claude Code with no Node toolchain, no Rust toolchain, no Python. <code>npm install</code> at agent install time would fail; <code>cargo install</code> would require <code>rustup</code>. The bootstrap-fetch model assumes only that the host can <code>fetch()</code> over HTTPS, which is universally true.</li>
-  <li><strong>Binary size.</strong> The plugkit binary is ~104 MB. Pushing that into npm, much less twelve plugin repos, would inflate clone times and registry storage out of proportion to the install benefit. The Releases-bucket model keeps binaries out of git history while keeping them addressable by version.</li>
+  <li><strong>Binary size.</strong> The plugkit binary is ~104 MB. Pushing that into npm, much less thirteen plugin repos, would inflate clone times and registry storage out of proportion to the install benefit. The Releases-bucket model keeps binaries out of git history while keeping them addressable by version.</li>
 </ol>
 
 <h2>11. Operational Lessons</h2>

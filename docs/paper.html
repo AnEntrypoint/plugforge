@@ -106,13 +106,13 @@ mermaid.initialize({ startOnLoad: true, theme: dark ? 'dark' : 'default', securi
 <div class="title-block">
   <h1>The Complete Discipline: Lifecycle Control,<br>Governance, and Operational Hard Rules<br>for LLM Coding Agents</h1>
   <div class="author">AnEntrypoint</div>
-  <div class="date">May 2026 · consolidation of papers I–IV with additional operational rules</div>
+  <div class="date">May 2026 · consolidation of papers I–IV with operational and dispatch-boundary rules</div>
 </div>
 
 <div class="abstract-block">
   <div class="abstract-title">Abstract</div>
   <div class="abstract-text">
-    LLM-based coding agents exhibit failure modes that self-regulation cannot fix: silent assumption propagation, state drift, memory loss, premature closure, and fabricated outputs presented as results. This paper consolidates the gm discipline into a single document. We describe the phase-gated state machine (PLAN&rarr;EXECUTE&rarr;EMIT&rarr;VERIFY&rarr;COMPLETE), the named-mutable and witnessed-execution framework, the in-phase quality discipline, the governance layer with its route families and quality metrics, and the second-generation rules that emerged from two months of production use: Maximal Cover, bounded autonomy, the learning loop, and the execution budget model. We also document operational hard rules absent from earlier papers: Fix-on-Sight, Browser Witness, Nothing Fake, web-search-before-pause, the ORIENT discipline, and the single integration test policy. Together these form a complete behavioral envelope for coding agents deployed across 12 platforms.
+    LLM-based coding agents exhibit failure modes that self-regulation cannot fix: silent assumption propagation, state drift, memory loss, premature closure, and fabricated outputs presented as results. This paper consolidates the gm discipline into a single document. We describe the phase-gated state machine (PLAN&rarr;EXECUTE&rarr;EMIT&rarr;VERIFY&rarr;COMPLETE), the named-mutable and witnessed-execution framework, the in-phase quality discipline, the governance layer with its route families and quality metrics, and the second-generation rules that emerged from production use: Maximal Cover, bounded autonomy, the learning loop, and the execution budget model. We also document operational hard rules absent from earlier papers: Fix-on-Sight, Browser Witness, Nothing Fake, web-search-before-pause, the ORIENT discipline, and the single integration test policy. A third generation of rules covers the dispatch boundary itself: the spool surface as universal execution channel, the mutables file as externally-enforced unknown-tracking, discipline isolation via the <code>@</code>sigil, daemonize-by-default exec semantics, throw-not-mutate hook denials, CI-as-build for cross-platform witness, the residual-scan stop gate, and semantic routing through a haiku-backed text-processing agent. Together these form a complete behavioral envelope for coding agents deployed across 13 platforms.
   </div>
 </div>
 
@@ -148,8 +148,16 @@ mermaid.initialize({ startOnLoad: true, theme: dark ? 'dark' : 'default', securi
     <li><a href="#s27">Sync-Before-Emit</a></li>
     <li><a href="#s28">Auto-Recall on Prompt-Submit</a></li>
     <li><a href="#s29">Implicit Skill Prose</a></li>
-    <li><a href="#s30">Discussion</a></li>
-    <li><a href="#s31">Conclusion</a></li>
+    <li><a href="#s30">The Spool Dispatch Surface</a></li>
+    <li><a href="#s31">The Mutables File as Co-Equal Hook Gate</a></li>
+    <li><a href="#s32">Discipline Isolation via @sigil</a></li>
+    <li><a href="#s33">Daemonize-by-Default Execution Contract</a></li>
+    <li><a href="#s34">Hook Denials Throw, Never Mutate</a></li>
+    <li><a href="#s35">CI Is the Build</a></li>
+    <li><a href="#s36">The Residual-Scan Stop Gate</a></li>
+    <li><a href="#s37">Meaning Through Haiku, Mechanics Through Code</a></li>
+    <li><a href="#s38">Discussion</a></li>
+    <li><a href="#s39">Conclusion</a></li>
   </ol>
 </div>
 
@@ -301,7 +309,7 @@ stateDiagram-v2
 <p>All code execution passes through <code>exec:&lt;lang&gt;</code> dispatch. The pre-tool-use hook intercepts shell calls, detects the prefix, routes to the appropriate runtime, and manages background tasks. Supported languages: Node.js, Python, Go, Rust, TypeScript, browser (managed Chromium), and extensible language plugins via a project-local <code>lang/</code> directory.</p>
 
 <h3>6.4 Cross-Platform Deployment</h3>
-<p>The gm orchestrator deploys across 12 platforms via a single convention-driven source generating platform-specific implementations: 8 CLI platforms (Claude Code, Gemini CLI, OpenCode, Kilo, Codex, Copilot CLI, Qwen Code, Hermes) and 4 IDE platforms (VS Code, Cursor, Zed, JetBrains). A fully automated cascade pipeline links all five Rust repositories; a push to any rs-* repo triggers binary builds for all 6 targets and downstream publication with no manual steps.</p>
+<p>The gm orchestrator deploys across 13 platforms via a single convention-driven source generating platform-specific implementations: 8 CLI platforms (Claude Code, Gemini CLI, OpenCode, Kilo, Codex, Copilot CLI, Qwen Code, Hermes) and 5 IDE platforms (VS Code, Cursor, Zed, JetBrains, Windsurf). A fully automated cascade pipeline links all five Rust repositories; a push to any rs-* repo triggers binary builds for all 6 targets and downstream publication with no manual steps.</p>
 
 <hr>
 
@@ -676,21 +684,140 @@ stateDiagram-v2
 
 <hr>
 
-<h2 id="s30">30. Discussion</h2>
+<h2 id="s30">30. The Spool Dispatch Surface</h2>
 
-<h3>30.1 Relationship to Formal Methods</h3>
+<div class="hard-rule">
+  <div class="rule-title">Hard Rule: Every Dispatch Through The Spool <span style="font-weight:400;font-size:11px;opacity:0.6;">[PLAN · EXECUTE · EMIT · VERIFY]</span></div>
+  <p>Code execution and every utility verb both write a file to <code>.gm/exec-spool/in/&lt;lang-or-verb&gt;/&lt;N&gt;.&lt;ext&gt;</code>. Languages live under <code>in/nodejs/</code>, <code>in/python/</code>, <code>in/bash/</code>, plus typescript, go, rust, c, cpp, java, deno. Verbs live under <code>in/codesearch/</code>, <code>in/recall/</code>, <code>in/memorize/</code>, plus wait, sleep, status, close, browser, runner, type, kill-port, forget, feedback, learn-status, learn-debug, learn-build, discipline, pause, health.</p>
+  <p>Only <code>git</code> and <code>gh</code> run directly via the Bash tool. Inline tool args, JSON-form dispatch, and <code>Bash(exec:&lt;anything&gt;)</code> are all denied at the hook layer.</p>
+</div>
+
+<p>The spool exists because tool args are ephemeral and inline. They live for the duration of one call, do not survive compaction, are not replayable, and cannot be inspected without re-running the agent. A file-based surface inverts every one of these properties: the request lives on disk before the watcher reads it, the watcher is detached from the agent process, and the output triplet (<code>.out</code>, <code>.err</code>, <code>.json</code>) is auditable after the fact by any tool that can read a directory.</p>
+
+<p>The three-file output shape maps to the agent&rsquo;s three needs. <code>.out</code> is the live stdout stream, written line-by-line as the task runs. <code>.err</code> is the separate stderr channel&mdash;mixing them collapses the distinction between &ldquo;result&rdquo; and &ldquo;diagnostic,&rdquo; which leads to ambiguous downstream parsing. <code>.json</code> is the metadata sidecar written once at completion: <code>exitCode</code>, <code>durationMs</code>, <code>timedOut</code>, <code>startedAt</code>, <code>endedAt</code>. The metadata file is what tells the agent whether the task ended cleanly, was killed for budget, or is still running; the streams alone cannot answer that.</p>
+
+<p>The boundary is enforced at the Bash hook. An agent that tries to run <code>node script.js</code> or <code>exec:nodejs ...</code> directly through Bash receives a denial that <em>throws</em> rather than mutates&mdash;the error names the spool path the agent should have written to. This is the only execution surface the discipline recognizes; everything else is a guess about whether the call happened.</p>
+
+<div class="glootie-callout">
+  <span class="who">Glootie</span>
+  One folder. One contract. Watcher reads, agent writes, output lands in three files. The agent who tries to skip the folder discovers very quickly that the folder is not optional.
+</div>
+
+<hr>
+
+<h2 id="s31">31. The Mutables File as Co-Equal Hook Gate</h2>
+
+<div class="hard-rule">
+  <div class="rule-title">Hard Rule: Mutables File Co-Equal With PRD <span style="font-weight:400;font-size:11px;opacity:0.6;">[PLAN · EXECUTE · EMIT]</span></div>
+  <p><code>.gm/mutables.yml</code> lives alongside <code>.gm/prd.yml</code>. Every unknown surfaced during PLAN lands as a row with <code>status: unknown</code>. Write, Edit, NotebookEdit, <code>git commit</code>, <code>git push</code>, and the stop hook are all hard-blocked while any row has <code>status: unknown</code>. Rows flip to <code>witnessed</code> only when <code>witness_evidence</code> is filled with concrete proof (file:line, codesearch hit, exec output snippet).</p>
+</div>
+
+<p>The named-mutable principle in §3 lived inside the agent&rsquo;s context window. A mutable that is &ldquo;tracked&rdquo; only in the agent&rsquo;s reasoning evaporates the moment the context compacts, the agent is restarted, or a subagent is spawned. The mutables file is the externally-enforced version of the same idea: a row on disk that the hook layer reads independently of the agent&rsquo;s memory.</p>
+
+<p>The split between <code>mutables.yml</code> and <code>prd.yml</code> mirrors a deeper split. The PRD is what-to-do: ordered work items, each with acceptance criteria. The mutables file is what-must-be-true: assumptions whose violation would invalidate the work regardless of whether the items themselves are completed. A PRD item can be done while a referenced mutable remains unknown&mdash;the gate is on the mutable, not the item. This is why the hook reads both files separately: completion is necessary but not sufficient, and verified-state is the second leg.</p>
+
+<p>The witness-evidence requirement is what prevents the agent from flipping a row to <code>witnessed</code> by narrative alone. A status change with no evidence string is rejected on read; the row stays unknown and the EMIT gate stays closed. This closes the gap §3 left open&mdash;a discipline the agent can talk past becomes a discipline a file refuses to talk past.</p>
+
+<hr>
+
+<h2 id="s32">32. Discipline Isolation via @sigil</h2>
+
+<p>A <em>discipline</em> is a per-project knowledge store at <code>&lt;project&gt;/.gm/disciplines/&lt;name&gt;/</code>. Each discipline owns its own rs-learn database and code-search index. Disciplines exist because cross-project memory bleed produces a specific failure mode: the agent recalls a fact from a prior project as a <code>weak_prior</code> for the current one, and that prior either contradicts the current code or refers to a function name that never existed here. The hallucinated prior is worse than no prior&mdash;it earns the right to be tested when it should not have earned the right to exist.</p>
+
+<p>The <code>@&lt;name&gt;</code> sigil in a request is the agent&rsquo;s authorization to read from one discipline. Recall, codesearch, and memorize all parse the sigil from the originating request and scope their stores accordingly. Without a sigil, the read-write behavior is asymmetric on purpose: reads fan across <code>default</code> plus every enabled discipline (one per line in <code>&lt;project&gt;/.gm/disciplines/enabled.txt</code>) and merge-rank results with <code>[discipline:&lt;name&gt;]</code> prefixes; writes go to <code>default</code> only.</p>
+
+<p>The asymmetry encodes a safety principle. Reading broadly is recoverable&mdash;if a prior is wrong, the witness step catches it. Writing broadly is not&mdash;a fact written to the wrong discipline pollutes future reads in projects it has no business affecting. Read-broad, write-narrow is the same principle that motivates least-privilege in filesystem permissions, adapted to a memory store.</p>
+
+<hr>
+
+<h2 id="s33">33. Daemonize-by-Default Execution Contract</h2>
+
+<div class="hard-rule">
+  <div class="rule-title">Hard Rule: Every Exec Daemonizes <span style="font-weight:400;font-size:11px;opacity:0.6;">[EXECUTE · EMIT]</span></div>
+  <p>The spool watcher returns a task_id immediately and the hook tails the task logfile up to 30 seconds of wall-clock time before returning. Short tasks complete inside the window and look synchronous; long tasks return the task_id with partial output and continue running. The agent never re-spawns a long task to check on it&mdash;that orphans the first one.</p>
+</div>
+
+<p>The 30-second window sits where it does because it is the boundary between &ldquo;the agent waits for an answer&rdquo; and &ldquo;the agent moves on with what it has.&rdquo; A pure synchronous-with-timeout contract would either truncate output for tasks that need longer (the timeout fires, the task is killed, partial work is lost) or freeze the agent for tasks that need shorter (the timeout is generous, the agent stares at a completed task for 25 seconds before noticing). Daemonize-by-default decouples completion from return: the task keeps running, the agent gets whatever was streamed in the window, and the task_id is the handle for everything that comes after.</p>
+
+<p>After the window, the agent rejoins via a small grammar of resumption verbs. <code>tail</code> drains additional output without blocking. <code>watch</code> blocks until a regex matches in the logfile or a timeout elapses&mdash;the match-or-timeout primitive. <code>wait</code> is a pure timer. <code>sleep</code> blocks on a specific task&rsquo;s output stream. <code>close</code> terminates the task. The grammar exists because the agent&rsquo;s questions after spawn are not all the same shape: sometimes the question is &ldquo;is it done yet,&rdquo; sometimes &ldquo;did it print this string,&rdquo; sometimes &ldquo;forget it, kill it.&rdquo; One verb per question keeps the hook&rsquo;s response cheap.</p>
+
+<p>Session-task accounting is what keeps background spawns from leaking. Every RPC response carries a top-level <code>running_task_ids</code> field for the calling session; the hook surfaces this in the system message so the agent sees its outstanding work on every turn. Session-end (clear, logout, prompt_input_exit) kills the session&rsquo;s tasks; compaction and handoff preserve them, because the agent expects to resume from where it left off.</p>
+
+<hr>
+
+<h2 id="s34">34. Hook Denials Throw, Never Mutate</h2>
+
+<div class="hard-rule">
+  <div class="rule-title">Hard Rule: Throw on Denial <span style="font-weight:400;font-size:11px;opacity:0.6;">[PLAN · EXECUTE · EMIT · VERIFY]</span></div>
+  <p>A hook that blocks a tool call <em>throws</em> an error with an imperative instruction string. It does not rewrite the call&rsquo;s arguments into a self-failing form&mdash;not a shell command that exits 1, not a Node one-liner that writes to stderr and process.exit. The thrown error is the entire denial surface.</p>
+</div>
+
+<p>The distinction is about how the host model reads the failure. A thrown error is read as policy: the model registers that the surface refused this kind of call and adjusts its behavior on the next attempt&mdash;for example, switching from <code>Bash(node script.js)</code> to <code>exec:nodejs</code> dispatched through the spool. An args-mutation that rewrites the Bash call into <code>node -e "process.stderr.write('blocked'); process.exit(1)"</code> produces the same exit code, but the model reads it as &ldquo;the Bash tool is broken&rdquo; and retries with simpler commands. The wrong adaptation reinforces the wrong mental model and turns a one-shot denial into a retry loop.</p>
+
+<p>The discipline generalizes. Any future hook whose purpose is to <em>change the agent&rsquo;s behavior</em> in response to a denied call must throw, not mutate. The throw form is for &ldquo;use a different tool;&rdquo; the mutate form is for &ldquo;run this corrected version of your own call,&rdquo; which is a much rarer need and almost never what a guardrail wants.</p>
+
+<hr>
+
+<h2 id="s35">35. CI Is the Build</h2>
+
+<div class="hard-rule">
+  <div class="rule-title">Hard Rule: Push, Watch, Fix On Red <span style="font-weight:400;font-size:11px;opacity:0.6;">[EXECUTE · EMIT · VERIFY]</span></div>
+  <p>For the Rust crates in this org (<code>rs-exec</code>, <code>rs-codeinsight</code>, <code>rs-search</code>, <code>rs-learn</code>, <code>rs-plugkit</code>) and the gm publish chain, <code>git push</code> triggers the build matrix. <code>cargo build</code> and <code>cargo test</code> are not run locally. Toolchain mismatches, rustc version skew, and missing system dependencies never block a push&mdash;push, watch CI via the stop hook, fix on red.</p>
+</div>
+
+<p>The principle is that the witness for a Rust crate is the green CI run on the pushed HEAD, not the green local build. CI runs across the matrix of target platforms (Linux x64, Linux arm64, macOS x64, macOS arm64, Windows x64, Windows arm64) that the binary actually has to work on; a local build covers exactly one of them and proves nothing about the other five. Pausing for a local build wall on a single platform is forced closure dressed as caution&mdash;the agent has stopped to verify a thing the verification cannot establish.</p>
+
+<p>The cascade is the witnessing infrastructure. A push to any crate triggers <code>release.yml</code> in <code>rs-plugkit</code>, which rebuilds all six platform binaries, signs them, and publishes them to the <code>plugkit-bin</code> Releases page. The same job bumps <code>plugkitVersion</code> in <code>gm-starter/gm.json</code>, which triggers the <code>publish.yml</code> matrix in <code>gm</code>, which fans the generated configs to all 13 downstream platform repos as single-commit orphan histories. The witness lands at the leaf of that tree, not the root.</p>
+
+<p>This pairs with §23 Browser Witness: same witnessing principle, different execution boundary. The browser witness uses <code>exec:browser</code> to assert a behavior in a real Chromium; the CI witness uses GitHub Actions to assert a binary builds on real machines across the matrix. In both cases, the witness lives outside the agent&rsquo;s local environment because the agent&rsquo;s local environment cannot answer the question.</p>
+
+<hr>
+
+<h2 id="s36">36. The Residual-Scan Stop Gate</h2>
+
+<div class="hard-rule">
+  <div class="rule-title">Hard Rule: Stop-Hook Residual Challenge <span style="font-weight:400;font-size:11px;opacity:0.6;">[COMPLETE]</span></div>
+  <p>When <code>.gm/prd.yml</code> is empty or missing AND no open browser sessions, the stop hook fires one residual-scan challenge before allowing stop. The agent either re-enters planning, appends to the PRD, and executes&mdash;or explicitly states &ldquo;residual scan: none reachable in-spirit.&rdquo; A marker file <code>.gm/residual-check-fired</code> makes the challenge one-shot per stopping window; the marker clears at the next prompt-submit.</p>
+</div>
+
+<p>The gate exists because empty-PRD is a necessary but not sufficient condition for done. The PRD records what the agent decided to do; the gate asks what the agent should have decided to do but did not. In production, the gap between those two sets is where forced closure hides&mdash;the agent finishes its enumerated items and stops, leaving obvious reachable in-spirit residuals (a pre-existing build break surfaced this turn, a neighboring lint failure, an obvious refactor win, an observability gap, doc drift, follow-on work the user clearly implied) for the user to discover.</p>
+
+<p>The challenge is one-shot per stopping window so it does not become noise. A second stop attempt in the same window allows: the agent has already answered the challenge, and a hook that refused the second stop would loop without termination. The marker clears at the next prompt-submit because the next user turn defines a new stopping window with new in-spirit boundaries.</p>
+
+<p>The rule pairs with §17 Maximal Cover and §22 Fix on Sight. Maximal Cover defines the in-spirit boundary at PLAN time; Fix on Sight folds discovered issues into the PRD during EXECUTE; the residual-scan gate is the COMPLETE-phase backstop that catches what both earlier disciplines missed.</p>
+
+<hr>
+
+<h2 id="s37">37. Meaning Through Haiku, Mechanics Through Code</h2>
+
+<div class="hard-rule">
+  <div class="rule-title">Hard Rule: Semantic Work Routes to textprocessing <span style="font-weight:400;font-size:11px;opacity:0.6;">[PLAN · EXECUTE · EMIT]</span></div>
+  <p>Any task whose correctness depends on understanding&mdash;summarize, classify, extract intent, rewrite, translate, semantic dedup, score, label, decide-if-two-texts-mean-the-same&mdash;routes through <code>Agent(subagent_type='gm:textprocessing', model='haiku', ...)</code>. One subagent per item, N items in N parallel calls in one message.</p>
+</div>
+
+<p>The split is between mechanics and meaning. Mechanics are operations whose correctness can be decided by a deterministic procedure: parse this JSON, sort these strings, hash this file, count occurrences of a regex. Meaning is operations whose correctness depends on the model&rsquo;s understanding of language: does this commit message describe a bug fix or a feature, does this docstring contradict its function&rsquo;s behavior, are these two error messages saying the same thing in different words.</p>
+
+<p>Code does mechanics well and meaning badly. A keyword-list or regex-on-meaning-phrases loop deciding semantic questions is a stub of the textprocessing skill&mdash;it ships a green check that lies, in the same way §24 Nothing Fake ships a green check that lies. The deterministic procedure looks right because it terminates and returns a value; the value is unrelated to the question the user actually asked.</p>
+
+<p>Parallelism is the second half of the discipline. N items go to N parallel calls in one message; batching them into a single call dilutes the signal because the model averages over the batch instead of attending to each item. The cost difference is negligible&mdash;haiku calls are cheap&mdash;and the quality difference is large. This pairs with §12 Memorize Sub-Agent, which uses the same fan-out shape for the same reason: one fact per call, parallel by default.</p>
+
+<hr>
+
+<h2 id="s38">38. Discussion</h2>
+
+<h3>38.1 Relationship to Formal Methods</h3>
 <p>The approach shares surface similarities with model checking (named state variables, explicit transitions) and design-by-contract (pre/post-conditions on advancement). It operates at a coarser abstraction level: the &ldquo;states&rdquo; are task phases, not program states, and the &ldquo;contracts&rdquo; concern what the agent knows rather than program correctness. The governance layer (§13) adds route families that function like typing domains: they partition the space of valid operations rather than verifying program properties.</p>
 
-<h3>30.2 Relationship to Test-Driven Development</h3>
+<h3>38.2 Relationship to Test-Driven Development</h3>
 <p>There is a loose analogy to TDD: both emphasize verification before completion. The difference is that verifications in this system are not persisted as a test suite during EXECUTE&mdash;they exist as witnessed execution. The single integration test (§26) is the COMPLETE-phase residual of this witnessing. The 200-line budget trades regression depth for context-window economy.</p>
 
-<h3>30.3 External vs. Self-Regulation</h3>
-<p>A recurring design choice is external enforcement over self-regulation. Hooks enforce phase gates because the same model that reasons through a problem also reasons through the justification for shortcuts. The agent cannot bypass a stop hook by deciding it has already verified; the hook runs independently of the agent&rsquo;s judgment. The hard rules in §§21&ndash;29 are externally enforced in the same sense: they are in the skill chain, not in the agent&rsquo;s in-context reasoning.</p>
+<h3>38.3 External vs. Self-Regulation</h3>
+<p>A recurring design choice is external enforcement over self-regulation. Hooks enforce phase gates because the same model that reasons through a problem also reasons through the justification for shortcuts. The agent cannot bypass a stop hook by deciding it has already verified; the hook runs independently of the agent&rsquo;s judgment. The hard rules in §§21&ndash;37 are externally enforced in the same sense: they are in the skill chain, not in the agent&rsquo;s in-context reasoning.</p>
 
-<h3>30.4 Overhead vs. Benefit</h3>
+<h3>38.4 Overhead vs. Benefit</h3>
 <p>Every backward transition introduces overhead: discovering a new unknown during EMIT discards partial work and requires re-planning and re-executing. In production, this cost is offset by reduced late-stage rework. The snake-back mechanism surfaces problems early when their scope is still bounded; problems discovered at COMPLETE have compounded across all subsequent work.</p>
 
-<h3>30.5 Limitations</h3>
+<h3>38.5 Limitations</h3>
 <ol>
   <li><strong>Finite unknown assumption:</strong> Termination requires discoverable unknowns to be finite. In adversarial or chaotic environments this may not hold. Specifically, the two-pass reclassification allowance (§9.2) does not prevent an unknown from persisting across both passes if the underlying blocker is structural rather than transient. If an unknown persists after the second pass, the prescribed behavior is <code>exec:pause</code> with the blocker recorded in the PRD header&mdash;not reclassification to a third pass. Without this termination condition, persistent blockers could produce unbounded reclassification cycles.</li>
   <li><strong>Witnessed execution cost:</strong> Real execution against expensive external APIs may be prohibitive for some resolution paths.</li>
@@ -701,13 +828,13 @@ stateDiagram-v2
 
 <hr>
 
-<h2 id="s31">31. Conclusion</h2>
+<h2 id="s39">39. Conclusion</h2>
 
-<p>We have described the complete gm discipline: a phase-gated lifecycle model, a mutable-naming and witnessed-execution framework, an in-phase quality discipline, a governance layer with seven route families and four state planes, second-generation rules for autonomy and scope, and operational hard rules that close gaps the earlier model left open.</p>
+<p>We have described the complete gm discipline: a phase-gated lifecycle model, a mutable-naming and witnessed-execution framework, an in-phase quality discipline, a governance layer with seven route families and four state planes, second-generation rules for autonomy and scope, operational hard rules that close gaps the earlier model left open, and a third generation of dispatch-boundary rules that move the discipline out of the agent&rsquo;s context window and onto disk and into hooks.</p>
 
-<p>The discipline is not a set of aspirational guidelines. Every rule in this document is enforced either by hooks running below the agent&rsquo;s decision layer, or by hard-rule encoding in the skill chain that the agent cannot reason its way around. The agent&rsquo;s job is to execute within the envelope; the envelope&rsquo;s job is to prevent the agent from collapsing the discipline under the pressure of local optimality.</p>
+<p>The discipline is not a set of aspirational guidelines. Every rule in this document is enforced either by hooks running below the agent&rsquo;s decision layer, by file-based state the hooks read independently of the agent, or by hard-rule encoding in the skill chain that the agent cannot reason its way around. The agent&rsquo;s job is to execute within the envelope; the envelope&rsquo;s job is to prevent the agent from collapsing the discipline under the pressure of local optimality.</p>
 
-<p>Our experience across 12 platforms and two months of production use suggests that agent reliability depends substantially on lifecycle control&mdash;not just model capability. We offer this discipline as a practical engineering artifact rather than a theoretical claim.</p>
+<p>Our experience across 13 platforms suggests that agent reliability depends substantially on lifecycle control&mdash;not just model capability. The third-generation rules in particular suggest that reliability also depends on moving discipline-state out of the agent&rsquo;s memory and into externally-readable artifacts: a spool file, a mutables row, a stop-hook marker, a CI run. The agent is a participant in the discipline, not the keeper of it. We offer this body of work as a practical engineering artifact rather than a theoretical claim.</p>
 
 <div class="references">
   <h2>References</h2>
