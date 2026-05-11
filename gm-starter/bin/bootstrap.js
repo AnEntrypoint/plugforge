@@ -27,7 +27,7 @@ function log(msg) {
 function probeBinaryVersion(binPath) {
   try {
     const { spawnSync } = require('child_process');
-    const r = spawnSync(binPath, ['--version'], { timeout: 3000, encoding: 'utf8' });
+    const r = spawnSync(binPath, ['--version'], { timeout: 3000, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true });
     if (r.error) return null;
     const text = `${r.stdout || ''} ${r.stderr || ''}`.trim();
     const m = text.match(/(\d+\.\d+\.\d+)/);
@@ -183,7 +183,7 @@ function acquireLock(lockPath) {
         continue;
       }
       if (Date.now() - start > ATTEMPT_TIMEOUT_MS) throw new Error(`lock wait timeout: ${lockPath}`);
-      try { const { spawnSync } = require('child_process'); spawnSync(process.execPath, ['-e', 'setTimeout(()=>{}, 2000)'], { timeout: 2500, killSignal: 'SIGKILL' }); } catch (_) {}
+      try { const { spawnSync } = require('child_process'); spawnSync(process.execPath, ['-e', 'setTimeout(()=>{}, 2000)'], { timeout: 2500, killSignal: 'SIGKILL', stdio: 'ignore', windowsHide: true }); } catch (_) {}
     }
   }
 }
@@ -380,7 +380,7 @@ async function bootstrap(opts) {
       if (!opts.silent) log(`cache heal (sha match): ${finalPath}${actualVersion ? ` (matches pin v${version})` : ''}`);
       proactiveKillForNewInstall(version, finalPath);
       pruneOldVersions(root, version, readRtkVersion(wrapperDir));
-      bootstrapRtk(verDir, version, wrapperDir, opts.silent, root).catch(err => log(`rtk fetch skipped: ${err.message}`));
+      spawnDetachedRtkFetch(wrapperDir);
       return finalPath;
     }
   }
@@ -397,7 +397,7 @@ async function bootstrap(opts) {
       log(`cache heal (sha match) under lock: ${finalPath}`);
       proactiveKillForNewInstall(version, finalPath);
       pruneOldVersions(root, version, readRtkVersion(wrapperDir));
-      bootstrapRtk(verDir, version, wrapperDir, opts.silent, root).catch(err => log(`rtk fetch skipped: ${err.message}`));
+      spawnDetachedRtkFetch(wrapperDir);
       return finalPath;
     }
 
@@ -457,11 +457,25 @@ async function bootstrap(opts) {
     obsEvent('bootstrap', 'install.done', { path: finalPath, version, kind: 'plugkit' });
     proactiveKillForNewInstall(version, finalPath);
     pruneOldVersions(root, version, readRtkVersion(wrapperDir));
-    try { await bootstrapRtk(verDir, version, wrapperDir, opts.silent, root); }
-    catch (err) { log(`rtk fetch skipped: ${err.message}`); }
+    spawnDetachedRtkFetch(wrapperDir);
     return finalPath;
   } finally {
     releaseLock(lockPath);
+  }
+}
+
+function spawnDetachedRtkFetch(wrapperDir) {
+  try {
+    const { spawn } = require('child_process');
+    const child = spawn(process.execPath, [__filename, '--rtk-only', '--wrapper-dir', wrapperDir], {
+      detached: true,
+      stdio: 'ignore',
+      windowsHide: true,
+    });
+    child.unref();
+    obsEvent('bootstrap', 'rtk.detached.spawned', { pid: child.pid, wrapperDir });
+  } catch (err) {
+    log(`rtk detach spawn failed: ${err.message}`);
   }
 }
 
@@ -609,7 +623,7 @@ function listRunningPlugkitImagePaths() {
     if (os.platform() === 'win32') {
       let parsed = null;
       try {
-        const p = spawnSync('powershell', ['-NoProfile', '-NonInteractive', '-Command', "Get-Process plugkit* -ErrorAction SilentlyContinue | Select-Object Id,Path | ConvertTo-Json -Compress"], { windowsHide: true, encoding: 'utf8', timeout: 5000, killSignal: 'SIGKILL' });
+        const p = spawnSync('powershell', ['-NoProfile', '-NonInteractive', '-Command', "Get-Process plugkit* -ErrorAction SilentlyContinue | Select-Object Id,Path | ConvertTo-Json -Compress"], { windowsHide: true, encoding: 'utf8', timeout: 5000, killSignal: 'SIGKILL', stdio: ['ignore', 'pipe', 'pipe'] });
         const text = ((p && p.stdout) || '').trim();
         if (text) {
           const j = JSON.parse(text);
@@ -624,7 +638,7 @@ function listRunningPlugkitImagePaths() {
           out.push({ pid, path: (item.Path || '').trim() });
         }
       } else {
-        const r = spawnSync('tasklist', ['/FI', 'IMAGENAME eq plugkit*', '/FO', 'CSV', '/NH'], { windowsHide: true, encoding: 'utf8', timeout: 5000, killSignal: 'SIGKILL' });
+        const r = spawnSync('tasklist', ['/FI', 'IMAGENAME eq plugkit*', '/FO', 'CSV', '/NH'], { windowsHide: true, encoding: 'utf8', timeout: 5000, killSignal: 'SIGKILL', stdio: ['ignore', 'pipe', 'pipe'] });
         const text = (r && r.stdout) || '';
         const seen = new Set();
         for (const line of text.split(/\r?\n/)) {
@@ -650,7 +664,7 @@ function listRunningPlugkitImagePaths() {
         out.push({ pid, path: imagePath });
       }
     } else {
-      const r = spawnSync('ps', ['-axo', 'pid=,comm='], { encoding: 'utf8', timeout: 5000, killSignal: 'SIGKILL' });
+      const r = spawnSync('ps', ['-axo', 'pid=,comm='], { encoding: 'utf8', timeout: 5000, killSignal: 'SIGKILL', stdio: ['ignore', 'pipe', 'pipe'] });
       const text = (r && r.stdout) || '';
       for (const line of text.split(/\r?\n/)) {
         const m = line.match(/^\s*(\d+)\s+(.+?)\s*$/);
@@ -659,7 +673,7 @@ function listRunningPlugkitImagePaths() {
         const pid = parseInt(m[1], 10);
         let imagePath = '';
         try {
-          const p = spawnSync('ps', ['-p', String(pid), '-o', 'command='], { encoding: 'utf8', timeout: 3000, killSignal: 'SIGKILL' });
+          const p = spawnSync('ps', ['-p', String(pid), '-o', 'command='], { encoding: 'utf8', timeout: 3000, killSignal: 'SIGKILL', stdio: ['ignore', 'pipe', 'pipe'] });
           imagePath = ((p && p.stdout) || '').trim().split(/\s+/)[0] || '';
         } catch (_) {}
         out.push({ pid, path: imagePath });
@@ -728,7 +742,28 @@ function killStaleDaemonIfVersionChanged(wrapperDir) {
 module.exports = { bootstrap, resolveCachedBinary, resolveCachedRtk, platformKey, binaryName, rtkBinaryName, cacheRoot, obsEvent, killRunningDaemons, killStaleDaemonIfVersionChanged, killSpoolWatcherInCwd, proactiveKillForNewInstall };
 
 if (require.main === module) {
-  bootstrap({ silent: false })
-    .then(p => { process.stdout.write(p + '\n'); process.exit(0); })
-    .catch(err => { log(`FATAL: ${err.message}`); obsEvent('bootstrap', 'fatal', { err: String(err.message || err) }); process.exit(1); });
+  const argv = process.argv.slice(2);
+  if (argv.includes('--rtk-only')) {
+    const wIdx = argv.indexOf('--wrapper-dir');
+    const wrapperDir = wIdx >= 0 ? argv[wIdx + 1] : __dirname;
+    (async () => {
+      try {
+        const version = readVersionFile(wrapperDir);
+        let root = cacheRoot();
+        try { ensureDir(root); }
+        catch (_) { root = fallbackCacheRoot(); ensureDir(root); }
+        const verDir = path.join(root, `v${version}`);
+        ensureDir(verDir);
+        await bootstrapRtk(verDir, version, wrapperDir, true, root);
+        process.exit(0);
+      } catch (err) {
+        obsEvent('bootstrap', 'rtk.detached.failed', { err: String(err.message || err) });
+        process.exit(1);
+      }
+    })();
+  } else {
+    bootstrap({ silent: false })
+      .then(p => { process.stdout.write(p + '\n'); process.exit(0); })
+      .catch(err => { log(`FATAL: ${err.message}`); obsEvent('bootstrap', 'fatal', { err: String(err.message || err) }); process.exit(1); });
+  }
 }
