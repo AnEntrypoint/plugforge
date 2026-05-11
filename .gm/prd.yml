@@ -1,0 +1,83 @@
+- id: session-start-detach-codeinsight
+  subject: Make session-start hook non-blocking — detach codeinsight + recall warm-up
+  status: pending
+  description: |
+    rs-plugkit/src/hook/session_start.rs::run blocks synchronously on
+    run_self(["codeinsight", ..., "--read-cache"]), then conditionally
+    run_self(["codeinsight", ..., "--cache"]) (full rebuild), then
+    rs_learn::recall(). Each is bounded but aggregate cost ~38s of
+    blocked CC startup. User has reported the resulting hang 4 times.
+
+    Fix: separate the systemMessage emission (must be synchronous —
+    CC reads stdout) from the warm-up work (must be detached). The
+    systemMessage gets emitted immediately with only fast/already-cached
+    context; codeinsight --cache (full rebuild) becomes a detached
+    spawn. recall stays inline but with a hard 1.5s timeout
+    (already 6s — too long for a startup hook).
+
+    Also: run_self_inner uses .kill() on timeout but never reaps via
+    drop; on Windows, killed children with piped stdout/stderr can
+    leave handles. Switch to detach-and-forget on timeout (drop the
+    Child without wait) since we already have the timeout escape.
+  effort: medium
+  category: bug
+  route_family: execution
+  load: 0.9
+  failure_modes: [blocking-IO, child-process-leak]
+  acceptance:
+    - session_start.rs::run emits systemMessage within 2s wall clock on cold cache
+    - codeinsight --cache full rebuild dispatched via std::thread::spawn, not awaited
+    - recall timeout reduced to 1500ms for session-start path
+    - run_self_inner on timeout drops Child instead of kill+wait
+
+- id: bootstrap-suppress-redundant-kill
+  subject: Stop killing running plugkit on every cache-hit
+  status: pending
+  description: |
+    bootstrap.js calls proactiveKillForNewInstall(version, finalPath)
+    unconditionally on every cache-hit return path. This kills the
+    previous session's running plugkit/watcher even when version
+    matches and no new install happened. User perceives this as
+    "redownloading on every resume" because the kill+respawn cycle
+    is visible at startup.
+
+    Fix: track install-this-run via a local flag; only call the kill
+    helper after a real install or version-mismatch eviction.
+    pruneOldVersions also only runs after a real install.
+    Add explicit decision logging: [bootstrap] decision: <hit|heal|fetch> reason: <why>
+  effort: small
+  category: bug
+  route_family: state
+  load: 0.7
+  failure_modes: [unnecessary-process-kill, perceived-redownload]
+  acceptance:
+    - proactiveKillForNewInstall called only on real install or pin-mismatch eviction paths
+    - pruneOldVersions same gating
+    - log line "[bootstrap] decision: hit|heal|fetch reason: ..." emitted exactly once per bootstrap
+    - existing cache-hit paths return finalPath without killing running daemons
+
+- id: push-and-cascade
+  subject: Push rs-plugkit and gm; let cascade roll
+  status: pending
+  description: Commit + push both repos. Cascade auto-bumps plugkit, propagates to gm-cc.
+  effort: small
+  category: infra
+  route_family: execution
+  load: 0.5
+  failure_modes: [cascade-failure]
+  acceptance:
+    - rs-plugkit commit pushed to main
+    - gm commit pushed to main
+    - cascade workflow visible (gh run list)
+
+- id: memorize-rootcause
+  subject: Memorize the root cause for future sessions
+  status: pending
+  description: Background memorize subagent records the four-strikes-in session-start blocking-IO finding.
+  effort: small
+  category: infra
+  route_family: observability
+  load: 0.3
+  failure_modes: []
+  acceptance:
+    - memorize subagent dispatched in background

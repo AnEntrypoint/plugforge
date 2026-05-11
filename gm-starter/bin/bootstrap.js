@@ -347,7 +347,7 @@ async function bootstrap(opts) {
   if (fs.existsSync(finalPath) && fs.existsSync(okSentinel)) {
     const actualVersion = probeBinaryVersion(finalPath);
     if (actualVersion && actualVersion !== version) {
-      log(`cache version mismatch: dir=v${version} contains binary ${actualVersion} → re-fetching v${version}`);
+      log(`decision: fetch reason: cache-hit-pin-mismatch (dir=v${version} bin=${actualVersion})`);
       writeBootstrapError({
         expected_version: version,
         cached_version: actualVersion,
@@ -357,9 +357,7 @@ async function bootstrap(opts) {
       try { fs.unlinkSync(finalPath); } catch (_) {}
       try { fs.unlinkSync(okSentinel); } catch (_) {}
     } else {
-      if (!opts.silent) log(`cache hit: ${finalPath}${actualVersion ? ` (matches pin v${version})` : ''}`);
-      proactiveKillForNewInstall(version, finalPath);
-      pruneOldVersions(root, version, readRtkVersion(wrapperDir));
+      if (!opts.silent) log(`decision: hit reason: sentinel+${actualVersion ? 'pin-match' : 'no-probe'} (${finalPath})`);
       return finalPath;
     }
   }
@@ -367,7 +365,7 @@ async function bootstrap(opts) {
   if (healIfShaMatches(finalPath, expectedSha, okSentinel, partialPath, 'plugkit')) {
     const actualVersion = probeBinaryVersion(finalPath);
     if (actualVersion && actualVersion !== version) {
-      log(`cache heal version mismatch: dir=v${version} contains binary ${actualVersion} → re-fetching`);
+      log(`decision: fetch reason: cache-heal-pin-mismatch (dir=v${version} bin=${actualVersion})`);
       writeBootstrapError({
         expected_version: version,
         cached_version: actualVersion,
@@ -377,9 +375,7 @@ async function bootstrap(opts) {
       try { fs.unlinkSync(finalPath); } catch (_) {}
       try { fs.unlinkSync(okSentinel); } catch (_) {}
     } else {
-      if (!opts.silent) log(`cache heal (sha match): ${finalPath}${actualVersion ? ` (matches pin v${version})` : ''}`);
-      proactiveKillForNewInstall(version, finalPath);
-      pruneOldVersions(root, version, readRtkVersion(wrapperDir));
+      if (!opts.silent) log(`decision: heal reason: sha-match (${finalPath})`);
       spawnDetachedRtkFetch(wrapperDir);
       return finalPath;
     }
@@ -389,14 +385,11 @@ async function bootstrap(opts) {
   acquireLock(lockPath);
   try {
     if (fs.existsSync(finalPath) && fs.existsSync(okSentinel)) {
-      proactiveKillForNewInstall(version, finalPath);
-      pruneOldVersions(root, version, readRtkVersion(wrapperDir));
+      log(`decision: hit reason: lock-race-resolved (${finalPath})`);
       return finalPath;
     }
     if (healIfShaMatches(finalPath, expectedSha, okSentinel, partialPath, 'plugkit')) {
-      log(`cache heal (sha match) under lock: ${finalPath}`);
-      proactiveKillForNewInstall(version, finalPath);
-      pruneOldVersions(root, version, readRtkVersion(wrapperDir));
+      log(`decision: heal reason: sha-match-under-lock (${finalPath})`);
       spawnDetachedRtkFetch(wrapperDir);
       return finalPath;
     }
@@ -453,7 +446,7 @@ async function bootstrap(opts) {
     }
 
     fs.writeFileSync(okSentinel, new Date().toISOString());
-    log(`installed ${finalPath}`);
+    log(`decision: fetch reason: install-complete (${finalPath})`);
     obsEvent('bootstrap', 'install.done', { path: finalPath, version, kind: 'plugkit' });
     proactiveKillForNewInstall(version, finalPath);
     pruneOldVersions(root, version, readRtkVersion(wrapperDir));
