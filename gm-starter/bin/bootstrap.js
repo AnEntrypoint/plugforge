@@ -99,6 +99,42 @@ function fallbackCacheRoot() {
   return path.join(os.tmpdir(), 'plugkit-cache', 'bin');
 }
 
+function gmToolsDir() {
+  const home = process.env.USERPROFILE || process.env.HOME || os.homedir();
+  return path.join(home, '.claude', 'gm-tools');
+}
+
+// Copy the freshly-resolved plugkit binary + its version+sha manifests to
+// ~/.claude/gm-tools so hooks.json can invoke plugkit directly without going
+// through node. Self-update inside the Rust binary keeps gm-tools fresh from
+// here on. Skipped silently on any error — the next session-start hook will
+// retry via ensure_tools_current.
+function copyToGmTools(finalPath, wrapperDir, version) {
+  try {
+    const dst = gmToolsDir();
+    fs.mkdirSync(dst, { recursive: true });
+    const exeName = process.platform === 'win32' ? 'plugkit.exe' : 'plugkit';
+    const target = path.join(dst, exeName);
+    const targetTmp = target + '.new';
+    fs.copyFileSync(finalPath, targetTmp);
+    try { fs.renameSync(targetTmp, target); }
+    catch (err) {
+      if (err.code === 'EEXIST' || err.code === 'EPERM' || err.code === 'EBUSY') {
+        // target may be locked by a running plugkit; the .new file persists
+        // and the in-Rust self-update will eventually swap it. Leave it.
+      } else { throw err; }
+    }
+    if (process.platform !== 'win32') {
+      try { fs.chmodSync(target, 0o755); } catch (_) {}
+    }
+    fs.writeFileSync(path.join(dst, 'plugkit.version'), version);
+    try {
+      const srcSha = path.join(wrapperDir, 'plugkit.sha256');
+      if (fs.existsSync(srcSha)) fs.copyFileSync(srcSha, path.join(dst, 'plugkit.sha256'));
+    } catch (_) {}
+  } catch (_) {}
+}
+
 function ensureDir(dir) {
   fs.mkdirSync(dir, { recursive: true });
 }
@@ -349,6 +385,7 @@ async function bootstrap(opts) {
       const actualSha = sha256OfFileSync(finalPath);
       if (actualSha === expectedSha) {
         if (!opts.silent) log(`decision: hit reason: sha-match v${version} (${finalPath})`);
+        copyToGmTools(finalPath, wrapperDir, version);
         return finalPath;
       }
       log(`decision: fetch reason: cache-hit-sha-mismatch (dir=v${version} expected ${expectedSha.slice(0,12)}… got ${(actualSha||'').slice(0,12)}…)`);
@@ -362,6 +399,7 @@ async function bootstrap(opts) {
       try { fs.unlinkSync(okSentinel); } catch (_) {}
     } else {
       if (!opts.silent) log(`decision: hit reason: sentinel+no-sha-manifest (${finalPath})`);
+      copyToGmTools(finalPath, wrapperDir, version);
       return finalPath;
     }
   }
@@ -369,6 +407,7 @@ async function bootstrap(opts) {
   if (healIfShaMatches(finalPath, expectedSha, okSentinel, partialPath, 'plugkit')) {
     if (!opts.silent) log(`decision: heal reason: sha-match (${finalPath})`);
     spawnDetachedRtkFetch(wrapperDir);
+    copyToGmTools(finalPath, wrapperDir, version);
     return finalPath;
   }
 
@@ -377,11 +416,13 @@ async function bootstrap(opts) {
   try {
     if (fs.existsSync(finalPath) && fs.existsSync(okSentinel)) {
       log(`decision: hit reason: lock-race-resolved (${finalPath})`);
+      copyToGmTools(finalPath, wrapperDir, version);
       return finalPath;
     }
     if (healIfShaMatches(finalPath, expectedSha, okSentinel, partialPath, 'plugkit')) {
       log(`decision: heal reason: sha-match-under-lock (${finalPath})`);
       spawnDetachedRtkFetch(wrapperDir);
+      copyToGmTools(finalPath, wrapperDir, version);
       return finalPath;
     }
 
@@ -442,6 +483,7 @@ async function bootstrap(opts) {
     proactiveKillForNewInstall(version, finalPath);
     pruneOldVersions(root, version, readRtkVersion(wrapperDir));
     spawnDetachedRtkFetch(wrapperDir);
+    copyToGmTools(finalPath, wrapperDir, version);
     return finalPath;
   } finally {
     releaseLock(lockPath);
