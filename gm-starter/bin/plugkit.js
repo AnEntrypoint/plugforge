@@ -7,6 +7,30 @@ const { bootstrap, resolveCachedBinary, resolveCachedRtk, obsEvent, killStaleDae
 
 const dir = __dirname;
 
+function readPinnedVersion() {
+  try { return fs.readFileSync(path.join(dir, 'plugkit.version'), 'utf8').trim(); } catch (_) { return null; }
+}
+
+function probeCachedVersion(binPath) {
+  try {
+    const r = spawnSync(binPath, ['--version'], { timeout: 3000, encoding: 'utf8', windowsHide: true });
+    if (r.error) return null;
+    const text = `${r.stdout || ''} ${r.stderr || ''}`.trim();
+    const m = text.match(/(\d+\.\d+\.\d+)/);
+    return m ? m[1] : null;
+  } catch (_) { return null; }
+}
+
+async function resolveBinaryWithPinCheck() {
+  const cached = resolveCachedBinary({ wrapperDir: dir });
+  if (!cached) return null;
+  const pin = readPinnedVersion();
+  if (!pin) return cached;
+  const got = probeCachedVersion(cached);
+  if (got && got === pin) return cached;
+  try { return await bootstrap({ wrapperDir: dir, silent: true }); } catch (_) { return cached; }
+}
+
 function envWithRtkOnPath() {
   const rtkPath = resolveCachedRtk({ wrapperDir: dir });
   if (!rtkPath) return process.env;
@@ -49,7 +73,7 @@ async function main() {
       // below — fall through to the spawn path so the actual handler runs.
       if (!bin) process.exit(0);
     } else if (isHook) {
-      bin = resolveCachedBinary({ wrapperDir: dir }) || legacyFallback();
+      bin = (await resolveBinaryWithPinCheck()) || legacyFallback();
       if (!bin) {
         process.stderr.write(`[plugkit] hook ${hookSubcmd} skipped: binary not yet installed. Bootstrap will run on session-start.\n`);
         obsEvent('plugkit_wrapper', 'hook_skip_uncached', { argv: args.slice(0, 4), dur_ms: Date.now() - startedAt });

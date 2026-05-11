@@ -183,9 +183,7 @@ function acquireLock(lockPath) {
         continue;
       }
       if (Date.now() - start > ATTEMPT_TIMEOUT_MS) throw new Error(`lock wait timeout: ${lockPath}`);
-      const waitMs = 2000;
-      const deadline = Date.now() + waitMs;
-      while (Date.now() < deadline) {}
+      try { const { spawnSync } = require('child_process'); spawnSync(process.execPath, ['-e', 'setTimeout(()=>{}, 2000)'], { timeout: 2500, killSignal: 'SIGKILL' }); } catch (_) {}
     }
   }
 }
@@ -382,8 +380,7 @@ async function bootstrap(opts) {
       if (!opts.silent) log(`cache heal (sha match): ${finalPath}${actualVersion ? ` (matches pin v${version})` : ''}`);
       proactiveKillForNewInstall(version, finalPath);
       pruneOldVersions(root, version, readRtkVersion(wrapperDir));
-      try { await bootstrapRtk(verDir, version, wrapperDir, opts.silent, root); }
-      catch (err) { log(`rtk fetch skipped: ${err.message}`); }
+      bootstrapRtk(verDir, version, wrapperDir, opts.silent, root).catch(err => log(`rtk fetch skipped: ${err.message}`));
       return finalPath;
     }
   }
@@ -400,8 +397,7 @@ async function bootstrap(opts) {
       log(`cache heal (sha match) under lock: ${finalPath}`);
       proactiveKillForNewInstall(version, finalPath);
       pruneOldVersions(root, version, readRtkVersion(wrapperDir));
-      try { await bootstrapRtk(verDir, version, wrapperDir, opts.silent, root); }
-      catch (err) { log(`rtk fetch skipped: ${err.message}`); }
+      bootstrapRtk(verDir, version, wrapperDir, opts.silent, root).catch(err => log(`rtk fetch skipped: ${err.message}`));
       return finalPath;
     }
 
@@ -654,7 +650,7 @@ function listRunningPlugkitImagePaths() {
         out.push({ pid, path: imagePath });
       }
     } else {
-      const r = spawnSync('ps', ['-axo', 'pid=,comm='], { encoding: 'utf8' });
+      const r = spawnSync('ps', ['-axo', 'pid=,comm='], { encoding: 'utf8', timeout: 5000, killSignal: 'SIGKILL' });
       const text = (r && r.stdout) || '';
       for (const line of text.split(/\r?\n/)) {
         const m = line.match(/^\s*(\d+)\s+(.+?)\s*$/);
@@ -663,7 +659,7 @@ function listRunningPlugkitImagePaths() {
         const pid = parseInt(m[1], 10);
         let imagePath = '';
         try {
-          const p = spawnSync('ps', ['-p', String(pid), '-o', 'command='], { encoding: 'utf8' });
+          const p = spawnSync('ps', ['-p', String(pid), '-o', 'command='], { encoding: 'utf8', timeout: 3000, killSignal: 'SIGKILL' });
           imagePath = ((p && p.stdout) || '').trim().split(/\s+/)[0] || '';
         } catch (_) {}
         out.push({ pid, path: imagePath });
