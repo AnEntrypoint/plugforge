@@ -345,40 +345,31 @@ async function bootstrap(opts) {
   const partialPath = `${finalPath}.partial`;
 
   if (fs.existsSync(finalPath) && fs.existsSync(okSentinel)) {
-    const actualVersion = probeBinaryVersion(finalPath);
-    if (actualVersion && actualVersion !== version) {
-      log(`decision: fetch reason: cache-hit-pin-mismatch (dir=v${version} bin=${actualVersion})`);
+    if (expectedSha) {
+      const actualSha = sha256OfFileSync(finalPath);
+      if (actualSha === expectedSha) {
+        if (!opts.silent) log(`decision: hit reason: sha-match v${version} (${finalPath})`);
+        return finalPath;
+      }
+      log(`decision: fetch reason: cache-hit-sha-mismatch (dir=v${version} expected ${expectedSha.slice(0,12)}… got ${(actualSha||'').slice(0,12)}…)`);
       writeBootstrapError({
         expected_version: version,
-        cached_version: actualVersion,
-        error_phase: 'cache-hit-pin-mismatch',
-        error_message: `cached binary at ${finalPath} reports --version=${actualVersion} but cache dir pins v${version}`,
+        cached_version: null,
+        error_phase: 'cache-hit-sha-mismatch',
+        error_message: `cached binary at ${finalPath} sha=${actualSha} but manifest expects ${expectedSha}`,
       });
       try { fs.unlinkSync(finalPath); } catch (_) {}
       try { fs.unlinkSync(okSentinel); } catch (_) {}
     } else {
-      if (!opts.silent) log(`decision: hit reason: sentinel+${actualVersion ? 'pin-match' : 'no-probe'} (${finalPath})`);
+      if (!opts.silent) log(`decision: hit reason: sentinel+no-sha-manifest (${finalPath})`);
       return finalPath;
     }
   }
 
   if (healIfShaMatches(finalPath, expectedSha, okSentinel, partialPath, 'plugkit')) {
-    const actualVersion = probeBinaryVersion(finalPath);
-    if (actualVersion && actualVersion !== version) {
-      log(`decision: fetch reason: cache-heal-pin-mismatch (dir=v${version} bin=${actualVersion})`);
-      writeBootstrapError({
-        expected_version: version,
-        cached_version: actualVersion,
-        error_phase: 'cache-heal-pin-mismatch',
-        error_message: `healed binary at ${finalPath} reports --version=${actualVersion} but cache dir pins v${version}`,
-      });
-      try { fs.unlinkSync(finalPath); } catch (_) {}
-      try { fs.unlinkSync(okSentinel); } catch (_) {}
-    } else {
-      if (!opts.silent) log(`decision: heal reason: sha-match (${finalPath})`);
-      spawnDetachedRtkFetch(wrapperDir);
-      return finalPath;
-    }
+    if (!opts.silent) log(`decision: heal reason: sha-match (${finalPath})`);
+    spawnDetachedRtkFetch(wrapperDir);
+    return finalPath;
   }
 
   const lockPath = path.join(verDir, '.lock');
