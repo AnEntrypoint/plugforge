@@ -384,7 +384,7 @@ async function bootstrap(opts) {
     if (expectedSha) {
       const actualSha = sha256OfFileSync(finalPath);
       if (actualSha === expectedSha) {
-        if (!opts.silent) log(`decision: hit reason: sha-match v${version} (${finalPath})`);
+        obsEvent('bootstrap', 'decision.hit', { reason: 'sha-match', version, path: finalPath });
         copyToGmTools(finalPath, wrapperDir, version);
         return finalPath;
       }
@@ -398,14 +398,14 @@ async function bootstrap(opts) {
       try { fs.unlinkSync(finalPath); } catch (_) {}
       try { fs.unlinkSync(okSentinel); } catch (_) {}
     } else {
-      if (!opts.silent) log(`decision: hit reason: sentinel+no-sha-manifest (${finalPath})`);
+      obsEvent('bootstrap', 'decision.hit', { reason: 'sentinel+no-sha-manifest', path: finalPath });
       copyToGmTools(finalPath, wrapperDir, version);
       return finalPath;
     }
   }
 
   if (healIfShaMatches(finalPath, expectedSha, okSentinel, partialPath, 'plugkit')) {
-    if (!opts.silent) log(`decision: heal reason: sha-match (${finalPath})`);
+    obsEvent('bootstrap', 'decision.heal', { reason: 'sha-match', path: finalPath });
     spawnDetachedRtkFetch(wrapperDir);
     copyToGmTools(finalPath, wrapperDir, version);
     return finalPath;
@@ -415,12 +415,12 @@ async function bootstrap(opts) {
   acquireLock(lockPath);
   try {
     if (fs.existsSync(finalPath) && fs.existsSync(okSentinel)) {
-      log(`decision: hit reason: lock-race-resolved (${finalPath})`);
+      obsEvent('bootstrap', 'decision.hit', { reason: 'lock-race-resolved', path: finalPath });
       copyToGmTools(finalPath, wrapperDir, version);
       return finalPath;
     }
     if (healIfShaMatches(finalPath, expectedSha, okSentinel, partialPath, 'plugkit')) {
-      log(`decision: heal reason: sha-match-under-lock (${finalPath})`);
+      obsEvent('bootstrap', 'decision.heal', { reason: 'sha-match-under-lock', path: finalPath });
       spawnDetachedRtkFetch(wrapperDir);
       copyToGmTools(finalPath, wrapperDir, version);
       return finalPath;
