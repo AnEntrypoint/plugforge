@@ -117,29 +117,70 @@ function gmToolsDir() {
 // through node. Self-update inside the Rust binary keeps gm-tools fresh from
 // here on. Skipped silently on any error — the next session-start hook will
 // retry via ensure_tools_current.
-function copyToGmTools(finalPath, wrapperDir, version) {
+function killHoldersOfPath(targetPath) {
+  if (process.platform !== 'win32') return 0;
   try {
-    const dst = gmToolsDir();
-    fs.mkdirSync(dst, { recursive: true });
-    const exeName = process.platform === 'win32' ? 'plugkit.exe' : 'plugkit';
-    const target = path.join(dst, exeName);
-    const targetTmp = target + '.new';
-    fs.copyFileSync(finalPath, targetTmp);
-    try { fs.renameSync(targetTmp, target); }
+    const { spawnSync } = require('child_process');
+    const norm = path.resolve(targetPath).replace(/\//g, '\\');
+    const r = spawnSync('wmic', ['process', 'where', `ExecutablePath='${norm.replace(/\\/g, '\\\\')}'`, 'get', 'ProcessId', '/format:value'], { encoding: 'utf8', windowsHide: true, timeout: 5000 });
+    if (r.status !== 0 || !r.stdout) return 0;
+    const pids = [];
+    for (const line of r.stdout.split(/\r?\n/)) {
+      const m = line.match(/ProcessId=(\d+)/);
+      if (m) {
+        const pid = parseInt(m[1], 10);
+        if (Number.isFinite(pid) && pid !== process.pid) pids.push(pid);
+      }
+    }
+    for (const pid of pids) {
+      try { spawnSync('taskkill', ['/F', '/PID', String(pid)], { windowsHide: true, timeout: 3000 }); } catch (_) {}
+    }
+    return pids.length;
+  } catch (_) { return 0; }
+}
+
+function cleanOrphanNewFiles(dst, exeName) {
+  try {
+    for (const name of fs.readdirSync(dst)) {
+      if (name === exeName + '.new') continue;
+      if (/^plugkit(\.\d+\.\d+\.\d+)?\.new$/i.test(name)) {
+        try { fs.unlinkSync(path.join(dst, name)); } catch (_) {}
+      }
+    }
+  } catch (_) {}
+}
+
+function renameWithRetry(src, dst, attempts) {
+  for (let i = 0; i < attempts; i++) {
+    try { fs.renameSync(src, dst); return true; }
     catch (err) {
-      if (err.code === 'EEXIST' || err.code === 'EPERM' || err.code === 'EBUSY') {
-        // target may be locked by a running plugkit; the .new file persists
-        // and the in-Rust self-update will eventually swap it. Leave it.
-      } else { throw err; }
+      if (err.code !== 'EEXIST' && err.code !== 'EPERM' && err.code !== 'EBUSY' && err.code !== 'EACCES') throw err;
+      if (i === Math.floor(attempts / 2)) killHoldersOfPath(dst);
+      try { const { spawnSync } = require('child_process'); spawnSync(process.execPath, ['-e', 'setTimeout(()=>{}, 200)'], { timeout: 400, killSignal: 'SIGKILL', stdio: 'ignore', windowsHide: true }); } catch (_) {}
     }
-    if (process.platform !== 'win32') {
-      try { fs.chmodSync(target, 0o755); } catch (_) {}
-    }
-    fs.writeFileSync(path.join(dst, 'plugkit.version'), version);
-    try {
-      const srcSha = path.join(wrapperDir, 'plugkit.sha256');
-      if (fs.existsSync(srcSha)) fs.copyFileSync(srcSha, path.join(dst, 'plugkit.sha256'));
-    } catch (_) {}
+  }
+  return false;
+}
+
+function copyToGmTools(finalPath, wrapperDir, version) {
+  const dst = gmToolsDir();
+  fs.mkdirSync(dst, { recursive: true });
+  const exeName = process.platform === 'win32' ? 'plugkit.exe' : 'plugkit';
+  const target = path.join(dst, exeName);
+  const targetTmp = target + '.new';
+  cleanOrphanNewFiles(dst, exeName);
+  fs.copyFileSync(finalPath, targetTmp);
+  if (!renameWithRetry(targetTmp, target, 8)) {
+    obsEvent('bootstrap', 'gmtools.rename.failed', { target });
+    throw new Error(`gm-tools update blocked: cannot replace ${target} (held open by running plugkit and kill-retry exhausted)`);
+  }
+  if (process.platform !== 'win32') {
+    try { fs.chmodSync(target, 0o755); } catch (_) {}
+  }
+  fs.writeFileSync(path.join(dst, 'plugkit.version'), version);
+  try {
+    const srcSha = path.join(wrapperDir, 'plugkit.sha256');
+    if (fs.existsSync(srcSha)) fs.copyFileSync(srcSha, path.join(dst, 'plugkit.sha256'));
   } catch (_) {}
 }
 
@@ -804,6 +845,19 @@ if (require.main === module) {
   } else {
     bootstrap({ silent: false })
       .then(p => { process.stdout.write(p + '\n'); process.exit(0); })
-      .catch(err => { log(`FATAL: ${err.message}`); obsEvent('bootstrap', 'fatal', { err: String(err.message || err) }); process.exit(1); });
+      .catch(err => {
+        log(`FATAL: ${err.message}`);
+        obsEvent('bootstrap', 'fatal', { err: String(err.message || err) });
+        try {
+          const pinned = (() => { try { return readVersionFile(__dirname); } catch (_) { return null; } })();
+          writeBootstrapError({
+            expected_version: pinned,
+            cached_version: null,
+            error_phase: 'fatal',
+            error_message: String(err && err.message || err),
+          });
+        } catch (_) {}
+        process.exit(1);
+      });
   }
 }

@@ -1,3 +1,9 @@
+## 2026-05-12 - bootstrap: kill-before-rename on busy gm-tools targets
+
+Fixed silent stale-binary loop where `gm-starter/bin/bootstrap.js::copyToGmTools` swallowed `EBUSY`/`EPERM`/`EEXIST` on `renameSync(plugkit.exe.new → plugkit.exe)` and trusted an in-Rust self-update that the same hold-open also blocked. Result: bootstrap returned ok, but `plugkit.js::isReady()` sha-checked the stale `plugkit.exe`, mismatched the manifest, and emitted `[plugkit] bootstrap failed; aborting hook` on every prompt-submit. Orphan `plugkit.0.1.*.new` files accumulated across days.
+
+`copyToGmTools` now (a) sweeps stale `*.new` orphans before writing, (b) retries the atomic rename up to 8 times with 200 ms backoff, (c) at the halfway attempt enumerates Windows processes whose `ExecutablePath` is the target via `wmic` and terminates them with `taskkill /F`, (d) throws on exhausted retries instead of swallowing. The top-level `.catch` now writes `.gm/exec-spool/.bootstrap-error.json` alongside the JSONL `fatal` event so the documented spool sentinel surfaces this failure mode. Generalises the AGENTS.md "kill before rmSync" rule to in-place overwrite-rename of binaries held open by concurrent plugkit invocations.
+
 ## 2026-05-10 - verb-spool migration: Bash retains only git + utility verbs
 
 Code execution (nodejs, python, bash, typescript, go, rust, c, cpp, java, deno) routes through the file-spool exclusively. The Bash tool accepts git commands and utility verbs (`exec:recall`, `exec:codesearch`, `exec:memorize`, `exec:wait`, `exec:sleep`, `exec:browser`, `exec:runner`, `exec:type`, `exec:kill-port`, `exec:forget`, `exec:feedback`, `exec:learn-status`, `exec:learn-debug`, `exec:learn-build`, `exec:discipline`, `exec:pause`, `exec:status`, `exec:close`); everything else is a spool write to `.gm/exec-spool/in/<lang>/<N>.<ext>` and the watcher emits `out/<N>.json` as systemMessage.
