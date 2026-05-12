@@ -45,6 +45,14 @@ function writeBootstrapError(spec) {
   } catch (_) {}
 }
 
+function clearBootstrapError() {
+  try {
+    const projectDir = process.env.CLAUDE_PROJECT_DIR || process.cwd();
+    const out = path.join(projectDir, '.gm', 'exec-spool', '.bootstrap-error.json');
+    fs.unlinkSync(out);
+  } catch (_) {}
+}
+
 function obsEvent(subsystem, event, fields) {
   if (process.env.GM_LOG_DISABLE) return;
   try {
@@ -386,6 +394,7 @@ async function bootstrap(opts) {
       if (actualSha === expectedSha) {
         obsEvent('bootstrap', 'decision.hit', { reason: 'sha-match', version, path: finalPath });
         copyToGmTools(finalPath, wrapperDir, version);
+        clearBootstrapError();
         return finalPath;
       }
       log(`decision: fetch reason: cache-hit-sha-mismatch (dir=v${version} expected ${expectedSha.slice(0,12)}… got ${(actualSha||'').slice(0,12)}…)`);
@@ -400,6 +409,7 @@ async function bootstrap(opts) {
     } else {
       obsEvent('bootstrap', 'decision.hit', { reason: 'sentinel+no-sha-manifest', path: finalPath });
       copyToGmTools(finalPath, wrapperDir, version);
+      clearBootstrapError();
       return finalPath;
     }
   }
@@ -408,6 +418,7 @@ async function bootstrap(opts) {
     obsEvent('bootstrap', 'decision.heal', { reason: 'sha-match', path: finalPath });
     spawnDetachedRtkFetch(wrapperDir);
     copyToGmTools(finalPath, wrapperDir, version);
+    clearBootstrapError();
     return finalPath;
   }
 
@@ -417,12 +428,14 @@ async function bootstrap(opts) {
     if (fs.existsSync(finalPath) && fs.existsSync(okSentinel)) {
       obsEvent('bootstrap', 'decision.hit', { reason: 'lock-race-resolved', path: finalPath });
       copyToGmTools(finalPath, wrapperDir, version);
+      clearBootstrapError();
       return finalPath;
     }
     if (healIfShaMatches(finalPath, expectedSha, okSentinel, partialPath, 'plugkit')) {
       obsEvent('bootstrap', 'decision.heal', { reason: 'sha-match-under-lock', path: finalPath });
       spawnDetachedRtkFetch(wrapperDir);
       copyToGmTools(finalPath, wrapperDir, version);
+      clearBootstrapError();
       return finalPath;
     }
 
@@ -484,6 +497,7 @@ async function bootstrap(opts) {
     pruneOldVersions(root, version, readRtkVersion(wrapperDir));
     spawnDetachedRtkFetch(wrapperDir);
     copyToGmTools(finalPath, wrapperDir, version);
+    clearBootstrapError();
     return finalPath;
   } finally {
     releaseLock(lockPath);
