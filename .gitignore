@@ -22,6 +22,7 @@ plugforge-starter/skills/caveman/
 .plugkit-agent-worktree/
 *.stackdump
 # >>> gm managed (do not edit between markers)
+.codeinsight.digest
 .gm-stop-verified
 .gm/prd-state.json
 .gm/rslearn-counter.json
