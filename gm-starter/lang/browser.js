@@ -5,14 +5,22 @@ const { spawnSync, execSync } = require('child_process');
 const fsSync = require('fs');
 
 function findPlugkit() {
-  try { execSync('plugkit --version', { encoding: 'utf-8', timeout: 3000 }); return 'plugkit'; } catch (_) {}
+  if (process.env.PLUGKIT_BIN && fsSync.existsSync(process.env.PLUGKIT_BIN)) return process.env.PLUGKIT_BIN;
+  const home = os.homedir();
+  const isWin = process.platform === 'win32';
+  const exe = isWin ? 'plugkit.exe' : 'plugkit';
   const candidates = [
-    path.join(os.homedir(), '.local', 'bin', 'plugkit'),
-    path.join(os.homedir(), '.claude', 'plugins', 'marketplaces', 'gm-cc', 'bin', 'plugkit'),
+    path.join(home, '.claude', 'gm-tools', exe),
+    path.join(home, '.local', 'bin', exe),
+    path.join(home, '.claude', 'plugins', 'marketplaces', 'gm-cc', 'bin', exe),
   ];
+  if (process.env.CLAUDE_PLUGIN_ROOT) {
+    candidates.push(path.join(process.env.CLAUDE_PLUGIN_ROOT, 'bin', exe));
+  }
   for (const p of candidates) {
     if (fsSync.existsSync(p)) return p;
   }
+  try { execSync('plugkit --version', { encoding: 'utf-8', timeout: 3000 }); return 'plugkit'; } catch (_) {}
   return 'plugkit';
 }
 
