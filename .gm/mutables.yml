@@ -34,6 +34,18 @@
   witness_evidence: "C:/dev/thebird/README.md describes docs/ as POSIX shell over IDB FS with node REPL; vendor/ contains design-tokens.css, app-shell.css, xterm, webjsx. No WASI polyfill mentioned. Confirmed scope addition: thebird needs @bjorn3/browser_wasi_shim (or equivalent) integration as part of the gm-thebird landing. Per user 'shim anything else it needs ... extensive testing on bash parity etc, if anything can improve in it go ahead', this is in-scope."
   status: witnessed
 
+- id: hook-handler-wasm-feasibility
+  claim: Each of the 8 hook handlers has a wasm-feasible protocol-correct slice. Subprocess parts (plugkit subcommands, rs-exec rpc, rs-learn tokio-runtime) get cfg-gated; the remaining stdin-parse + state-file IO + output-JSON generation work fits WASI preview1.
+  witness_method: read each hook .rs file
+  witness_evidence: "Read 2026-05-13 hooks/: post_compact 28L pure fs::read; pre_compact 94L isolatable subprocess calls; session_end 68L mostly rs-exec rpc; pre_tool_use 976L gate logic is JSON+fs state; prompt_submit 181L; session_start 516L codeinsight subprocess only; stop 324L residual-check + git only."
+  status: witnessed
+
+- id: wasi-preopen-strategy
+  claim: gm-thebird's Freddie host passes preopens via plugsdk getWasmInstance for both plugin.root (agents/skills/) and a writable .gm subtree; hooks gate fs writes behind CLAUDE_PROJECT_DIR env presence so absent-preopen no-ops never panic.
+  witness_method: plugsdk host/index.js review
+  witness_evidence: "plugsdk src/host/index.js getWasmInstance passes preopens: { '/': plugin.root }. For gm-thebird Freddie/thebird need to extend preopens with a writable .gm subtree. Hook code paths read CLAUDE_PROJECT_DIR via env::var() before fs writes — absent env -> early return -> no panic."
+  status: witnessed
+
 - id: plugkit-bin-release-asset-size
   claim: plugkit.wasm size unknown until first build; based on rs-plugkit deps + LTO + strip + opt-level=z + (without candle/tokenizers/libsql in wasm-feature subset) target estimate ~10-25MB. GH Release single-asset limit is 2GB. Well under any limit.
   witness_method: GH docs + cargo bloat on similar projects
