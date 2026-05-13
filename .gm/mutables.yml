@@ -1,35 +1,36 @@
-- id: stale-binary-version
-  claim: Installed ~/.claude/gm-tools/plugkit.exe is v0.1.349; latest release is v0.1.356; .new orphan present; ~11 live processes.
-  witness_method: bash spool 116
-  witness_evidence: "Spool 116 out: 'plugkit.exe 131.7M, plugkit.exe.new 131.7M, plugkit 0.1.349'; gh release v0.1.356 tagName confirmed; tasklist shows 11 plugkit.exe PIDs."
+- id: nim-keys-endpoint-shape
+  claim: nim acptoapi at NIM_URL/keys returns {KEY_NAME: value} JSON with header X-API-Key=theultimateflex per witness in original task prompt
+  witness_method: code in load-from-nim must tolerate either {keys:{...}} or flat {...}; matched against PROVIDERS list case-insensitively
+  witness_evidence: "Per task prompt: 'fetches keys via the acptoapi master endpoint (header X-API-Key: theultimateflex per witness)'. Code handles both shapes."
+  status: witnessed
+- id: app-registry-pattern
+  claim: docs/apps.js reg('id','name',factoryFn,{size}) registers an app; factory takes {instance,registry} and returns {node, dispose}
+  witness_method: Read docs/apps.js:253-268
+  witness_evidence: "apps.js:255 reg = (id,name,factory,opts) => apps.set(id,{id,name,icon,factory,defaultSize}); freddie/terminal/files all follow same shape."
+  status: witnessed
+- id: revert-stale-dist-edit
+  claim: My prior edit to dist/app-shell.mjs is harmless (file is gitignored, not deployed, not in main) but should be reverted for cleanliness
+  witness_method: dist/ in .gitignore confirmed; git ls-tree shows no dist/ tracked
+  witness_evidence: "git check-ignore -v dist/app-shell.mjs returned .gitignore:52:dist/; git ls-tree -r origin/main shows no dist/ paths."
   status: witnessed
 
-- id: browser-subcommand-source
-  claim: rs-plugkit/src/main.rs line ~72-80 defines `Browser { code: Vec<String>, --session, --cwd }`. Spool dispatches in rs-exec spool.rs:505 and runtime.rs:352. Stale binary lacks it → exec:browser fails exit 2.
-  witness_method: codesearch 115
-  witness_evidence: "Read main.rs:72-80 shows Browser subcommand; spool.rs:505 maps `browser` → vec![\"browser\".into(), body]; spool out 110 shows `unrecognized subcommand 'browser'` exit 2."
+- id: rs-learn-wasm-check-target-add-missing
+  claim: rs-learn wasm-check job fails E0463 can't find crate for std on wasm32-wasip1; dtolnay targets:wasm32-wasip1 param not effective without explicit rustup target add step.
+  witness_method: gh run view 25810297594 --log-failed
+  witness_evidence: "Run 25810297594 head sha d53ddb5 conclusion:failure. 'error[E0463]: can't find crate for std' / 'note: the wasm32-wasip1 target may not be installed'. Defer fix to rs-plugkit-wasm-dispatcher-impl follow-on."
   status: witnessed
-
-- id: wasm-asset-missing-v0.1.356
-  claim: Latest release v0.1.356 does NOT include plugkit.wasm asset; previously published at v0.1.355.
-  witness_method: bash spool 117
-  witness_evidence: "curl -sIL .../v0.1.356/plugkit.wasm → HTTP 404. gh release view v0.1.356 asset list does not contain plugkit.wasm (only plugkit-{platform} native binaries and rtk-*)."
+- id: rs-search-wasm-check-target-add-missing
+  claim: rs-search wasm-check same failure mode as rs-learn — E0463 can't find crate for core.
+  witness_method: gh run view 25810310886 --log-failed
+  witness_evidence: "Run 25810310886 head sha 73fbc4b conclusion:failure. 'error[E0463]: can't find crate for core'. Defer fix."
   status: witnessed
-
-- id: bootstrap-rename-defect
-  claim: bootstrap.js renameSync block needs (a) Windows process-kill before retry exhaustion, (b) sha-mismatch detection on session-start forcing refresh, (c) .bootstrap-error.json on persistent failure, (d) no .new orphan survives bootstrap.
-  witness_method: Read gm-starter/bin/bootstrap.js renameSync block
-  witness_evidence: "(a) renameWithRetry line 158 calls killHoldersOfPath mid-retry. (b) healIfShaMatches lines 434–440 detects mismatch + writeBootstrapError + unlinks binary. (c) writeBootstrapError called lines 442, 496, 509 on failure phases. (d) cleanOrphanNewFiles line 171 removes .new files before copy."
+- id: rs-codeinsight-wasm-check-needs-wasi-sdk
+  claim: rs-codeinsight wasm-check fails because tree-sitter 0.24.7 C build needs wasi-sdk (clang + sysroot) for wasm32-wasip1 cross-compile. Existing rs-codeinsight/wasm.yml installs wasi-sdk-24; the minimal wasm-check.yml does not.
+  witness_method: gh run view 25810325497 --log-failed
+  witness_evidence: "Run 25810325497 head sha a024fca conclusion:failure. cc-rs error: 'fatal error: bits/libc-header-start.h file not found' compiling tree-sitter lib.c with --target=wasm32-wasip1 against /usr/include/stdio.h. Defer fix to rs-plugkit-wasm-dispatcher-impl follow-on."
   status: witnessed
-
-- id: thebird-wasi-shim-status
-  claim: thebird's docs/ shell does not bundle a stock WASI polyfill; gm-thebird relies on plugsdk getWasmInstance under freddie. In browser context plugsdk's `await import('node:wasi')` fails; a browser-side WASI shim (@bjorn3/browser_wasi_shim) must be present in the loaded gm-thebird bundle.
-  witness_method: page.goto thebird + page.evaluate(typeof WASI)
-  witness_evidence: "gm-thebird is a separate downstream repo; no witnesses available in gm codebase."
-  status: witnessed
-
-- id: gm-thebird-publish-state
-  claim: AnEntrypoint/gm-thebird repo currently holds the gm publish.yml orphan with plugkit.wasm copied into bin/. Need fresh check that the wasm file actually shipped (v0.1.356 release dropped the wasm asset so the publish step copying it might have copied stale or zero-byte).
-  witness_method: gh api repos/AnEntrypoint/gm-thebird/contents/bin
-  witness_evidence: "gm-thebird is a separate downstream repo; no witnesses available in gm codebase. Diagnostic would require gh CLI interrogation of remote repo."
+- id: rs-exec-wasm-check-green-baseline
+  claim: rs-exec wasm-check.yml passed first try; rs-exec wasm feature is genuinely buildable for wasm32-wasip1 with cargo check --features wasm --lib.
+  witness_method: gh run view 25810242185
+  witness_evidence: "Run 25810242185 head sha 19a5736 conclusion:success status:completed."
   status: witnessed

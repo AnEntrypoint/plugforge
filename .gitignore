@@ -22,7 +22,6 @@ plugforge-starter/skills/caveman/
 .plugkit-agent-worktree/
 *.stackdump
 # >>> gm managed (do not edit between markers)
-.codeinsight.digest
 .gm-stop-verified
 .gm/prd-state.json
 .gm/rslearn-counter.json
@@ -40,10 +39,6 @@ plugforge-starter/skills/caveman/
 .gm/exec-spool.in
 .gm/exec-spool.out
 .gm/exec-spool.started
-.gm/exec-spool/
-.gm/gm-fired-this-turn
-.gm/residual-check-fired
-.gm/groq.key
-.gm/*.key
 # tracked: .gm/rs-learn.db, .gm/code-search/, AGENTS.md, .gm/prd.yml
 # <<< gm managed
+
