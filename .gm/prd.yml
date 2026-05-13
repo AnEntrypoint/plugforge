@@ -1,20 +1,3 @@
-- id: rs-codeinsight-wasm
-  subject: Add wasm32-wasip1 build to rs-codeinsight
-  status: pending
-  description: Replace 28 native tree-sitter language crates with tree-sitter-wasm runtime + per-grammar wasm files loaded by host (or single wasm-loader crate). Walkdir+ignore gated to wasi. CI artifact.
-  effort: large
-  category: infra
-  route_family: execution
-  load: 0.7
-  failure_modes: [tree-sitter-native-link, cc-build-scripts, dynamic-grammar-load]
-  authorization: witnessed
-  blockedBy: []
-  acceptance:
-    - cargo build --target wasm32-wasip1 --features wasm succeeds
-    - per-language grammar wasm files packaged
-  edge_cases:
-    - grammar version pinning across native+wasm
-
 - id: rs-learn-wasm
   subject: Add wasm32-wasip1 build to rs-learn
   status: pending
