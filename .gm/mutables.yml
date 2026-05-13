@@ -1,0 +1,41 @@
+- id: libsql-wasm-replacement
+  claim: rs-learn's libsql 0.9 usage can be replaced under cfg(wasm) by sqlite-wasm-rs (raw sqlite3 FFI to prebuilt WASM, OPFS-backed). Not API-compatible — every call site needs translation. Confirmed via WebSearch + docs.rs/sqlite-wasm-rs.
+  witness_method: WebSearch sqlite-wasm-rs + docs.rs review
+  witness_evidence: "WebSearch result 2026-05-13: sqlite-wasm-rs (docs.rs/sqlite-wasm-rs) is a raw FFI to prebuilt libsqlite3.a; supports FTS5 via standard compile flags; OPFS persistence available. Different surface from libsql::Connection. Port strategy: thin abstraction trait in rs-learn::store::Conn impl'd by both backends."
+  status: witnessed
+
+- id: tree-sitter-grammars-wasm
+  claim: tree-sitter (rust crate) has a `wasm` feature using wasmtime-c-api + WasmStore.load_language(name, grammar_bytes). Cannot nest wasm-in-wasm cleanly — so rs-codeinsight wasm build exposes parse() via host-imports (host runs web-tree-sitter or wasmtime natively), not in-wasm parsing.
+  witness_method: WebSearch tree-sitter wasm runtime + github discussion #1550
+  witness_evidence: "tree-sitter Discussion #1550 + docs.rs/tree-sitter/wasm feature: WasmStore.load_language(language_name, GRAMMAR_BYTES). The crate's own wasm feature uses wasmtime; nested-wasm impractical. Resolution: rs-codeinsight cfg(wasm) drops all tree_sitter_<lang> deps; lang.rs::language_for() under cfg(wasm) returns Err and parse is delegated to host via extern \"C\" fn host_parse(lang:i32, src_ptr,src_len) -> tree_ptr."
+  status: witnessed
+
+- id: candle-wasm-bm25-isolation
+  claim: rs-search bm25/scanner/ignore/tokenize/mtime_cache/git/fusion/explain/eval are isolatable from candle/tokenizers/simsimd/mimalloc/libsql/tokio under existing feature gates. embed.rs+embed_cache.rs+pdf.rs+context.rs+mcp.rs are the feature-gated callers.
+  witness_method: read Cargo.toml + lib.rs; check which files are gated under `vector` feature
+  witness_evidence: "C:/dev/rs-search/Cargo.toml lines 122-126: `vector` feature gates candle/tokenizers/libsql/tokio; `perf` gates mimalloc; `pdf` gates pdf-extract; `simd` gates simsimd. New `wasm` feature = default-features=false + bm25 + ignore + regex + scanner only. lib.rs (540B) re-exports bm25/context/mcp/scanner/run_search — context+mcp need cfg(feature=\"vector\") or new cfg(feature=\"wasm\") branch."
+  status: witnessed
+
+- id: rs-exec-axum-stripping
+  claim: rs-exec's RPC handler functions in rpc.rs are data-pure; axum is the transport layer in main.rs/daemon.rs. Subprocess (Command::new) lives in runtime.rs/runner.rs/background_tasks.rs. Under cfg(wasm) the wasm build exports handler fns directly (as JSON-in/JSON-out) and uses host-imported extern fns for subprocess. tokio gated to rt-only.
+  witness_method: read rpc.rs structure + main.rs entry
+  witness_evidence: "C:/dev/rs-exec/src/rpc.rs (24.3K) contains handler fns; axum routing lives in src/main.rs / src/daemon.rs (3.0K). Command::new + sysinfo + which + fs2 + dirs all in runtime.rs (60.6K) and runner.rs (9.8K). cfg(wasm) plan: gate transport (axum/daemon), gate supervisor (background_tasks/kill/runner), expose rpc::handle_<method>(json:&str)->String as #[no_mangle] extern \"C\" via thin wrapper crate."
+  status: witnessed
+
+- id: freddie-wasm-plugin-loading
+  claim: Freddie's wrapPlugsdkPlugin in src/host/host.js wraps plugsdk-shaped plugins; it accepts whatever shapes the underlying plugsdk dispatcher accepts. Adding wasm-kind to plugsdk transparently extends Freddie.
+  witness_method: WebFetch freddie source; grep contract.js
+  witness_evidence: "C:/dev/freddie/src/host/contract.js exports definePlugin + FREDDIE_TO_SDK_HOOK mapping. README.md:155-163 confirms wrapPlugsdkPlugin auto-detects plugsdk-shaped {name, tools, hooks, meta}. Adding a `kind: \"wasm\"` to a hook entry is plugsdk's domain; Freddie's wrap layer is shape-agnostic."
+  status: witnessed
+
+- id: thebird-wasi-runtime
+  claim: thebird's docs/ POSIX shell exists with xstate v5 + IDB FS but does NOT bundle a stock WASI polyfill. Per README it has `node REPL with require() from IDB node_modules` — a Node-shaped runtime, not a WASI runtime. WASI polyfill must be added (use @bjorn3/browser_wasi_shim or wasmer-js).
+  witness_method: thebird README + docs/ folder layout
+  witness_evidence: "C:/dev/thebird/README.md describes docs/ as POSIX shell over IDB FS with node REPL; vendor/ contains design-tokens.css, app-shell.css, xterm, webjsx. No WASI polyfill mentioned. Confirmed scope addition: thebird needs @bjorn3/browser_wasi_shim (or equivalent) integration as part of the gm-thebird landing. Per user 'shim anything else it needs ... extensive testing on bash parity etc, if anything can improve in it go ahead', this is in-scope."
+  status: witnessed
+
+- id: plugkit-bin-release-asset-size
+  claim: plugkit.wasm size unknown until first build; based on rs-plugkit deps + LTO + strip + opt-level=z + (without candle/tokenizers/libsql in wasm-feature subset) target estimate ~10-25MB. GH Release single-asset limit is 2GB. Well under any limit.
+  witness_method: GH docs + cargo bloat on similar projects
+  witness_evidence: "GH Release single-file limit 2GB (docs.github.com); rs-plugkit native release binary is ~25MB stripped on linux-x64; wasm strips most ABI overhead but adds wasm-bindgen if used. Plan: no wasm-bindgen (raw extern C fns); expect <30MB. Bounded mutable — not blocking."
+  status: witnessed

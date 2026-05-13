@@ -1,0 +1,123 @@
+- id: rs-search-wasm
+  subject: Add wasm32-wasip1 build to rs-search
+  status: pending
+  description: Introduce `wasm` feature that selects bm25+ignore+regex only (no candle/simsimd/mimalloc/pdf-extract/libsql/tokio). Add cfg gates for fs/git walking under wasi. CI matrix entry uploads rs-search.wasm artifact.
+  effort: large
+  category: infra
+  route_family: execution
+  load: 0.6
+  failure_modes: [native-deps-on-wasm, simd-intrinsics-fail, fs-api-mismatch]
+  route_fit: examined
+  authorization: witnessed
+  acceptance:
+    - cargo build --target wasm32-wasip1 --no-default-features --features wasm succeeds in CI
+    - artifact uploaded to GH Release
+  edge_cases:
+    - ignore crate behavior on WASI fs
+    - regex unicode tables size
+
+- id: rs-codeinsight-wasm
+  subject: Add wasm32-wasip1 build to rs-codeinsight
+  status: pending
+  description: Replace 28 native tree-sitter language crates with tree-sitter-wasm runtime + per-grammar wasm files loaded by host (or single wasm-loader crate). Walkdir+ignore gated to wasi. CI artifact.
+  effort: large
+  category: infra
+  route_family: execution
+  load: 0.7
+  failure_modes: [tree-sitter-native-link, cc-build-scripts, dynamic-grammar-load]
+  authorization: witnessed
+  blockedBy: []
+  acceptance:
+    - cargo build --target wasm32-wasip1 --features wasm succeeds
+    - per-language grammar wasm files packaged
+  edge_cases:
+    - grammar version pinning across native+wasm
+
+- id: rs-learn-wasm
+  subject: Add wasm32-wasip1 build to rs-learn
+  status: pending
+  description: Replace libsql with sqlite-wasm-rs under cfg(target_arch=wasm32). tokio rt only (no multi-thread/process/signal). Drop axum/tower from wasm build. rs-search dep stays on its new wasm feature.
+  effort: large
+  category: infra
+  route_family: state
+  load: 0.7
+  failure_modes: [libsql-no-wasm, tokio-feature-mismatch, opfs-vs-pure-wasi]
+  authorization: witnessed
+  blockedBy: [rs-search-wasm]
+  acceptance:
+    - cargo build --target wasm32-wasip1 --no-default-features succeeds
+    - sqlite-wasm-rs path opens an in-memory DB and round-trips an insert/select in CI
+
+- id: rs-exec-wasm
+  subject: Add wasm32-wasip1 build to rs-exec
+  status: pending
+  description: cfg(target_arch=wasm32) gates around subprocess spawning, sysinfo, which, fs2 (file locks), axum HTTP RPC, dirs. Expose host-imported extern "C" functions for subprocess + clock + fs walk. Tokio rt-only feature set. CI artifact.
+  effort: large
+  category: infra
+  route_family: execution
+  load: 0.8
+  failure_modes: [no-process-on-wasm, no-axum-on-wasm, no-fs2-on-wasm, sysinfo-no-wasm]
+  authorization: witnessed
+  acceptance:
+    - cargo build --target wasm32-wasip1 succeeds
+    - wasm artifact exports rpc handler functions
+
+- id: rs-plugkit-wasm
+  subject: Add wasm32-wasip1 cdylib build to rs-plugkit
+  status: pending
+  description: Add cdylib + rlib crate-types. wasm-only `wasm` feature that propagates `wasm` feature to all deps. Expose hook_* and cli_* json-in/json-out functions via #[no_mangle]. Update release.yml matrix to add wasm32-wasip1 leg. Publish plugkit.wasm + sha256 to plugkit-bin Releases.
+  effort: large
+  category: infra
+  route_family: execution
+  load: 0.9
+  failure_modes: [downstream-wasm-builds-fail, missing-exports, sha-manifest-drift]
+  authorization: witnessed
+  blockedBy: [rs-exec-wasm, rs-learn-wasm, rs-search-wasm, rs-codeinsight-wasm]
+  acceptance:
+    - plugkit.wasm appears as a release asset on plugkit-bin
+    - plugkit.sha256 includes the wasm artifact
+    - gm-starter/bin/plugkit.sha256 bumped by CI
+
+- id: plugsdk-wasm-kind
+  subject: Add wasm plugin kind to plugsdk loader+dispatcher
+  status: pending
+  description: Loader recognizes hook entries with `kind:"wasm"` referencing a .wasm file. Dispatcher instantiates the module (wasmtime in node, WebAssembly.instantiate in browser), calls exported hook_<event>(json_ptr,len) and reads result via memory. Document the ABI in plugsdk/docs.
+  effort: medium
+  category: feature
+  route_family: boundary
+  load: 0.6
+  failure_modes: [abi-drift, mem-leak-on-shared-mem, browser-vs-node-load]
+  authorization: witnessed
+  acceptance:
+    - plugsdk test fixture loads a tiny rust-built wasm plugin and dispatches a hook in both node and browser
+
+- id: gm-thebird-platform
+  subject: Add gm-thebird platform output to gm
+  status: pending
+  description: New platforms/thebird.js mirroring gm-cc but emitting a plugsdk-shaped plugin manifest with hook entries of kind:"wasm" pointing at bin/plugkit.wasm. Register in PLATFORM_META. bootstrap.mjs fetches plugkit.wasm + sha256 instead of native binary. Add to publish.yml matrix targeting AnEntrypoint/gm-thebird.
+  effort: medium
+  category: feature
+  route_family: representation
+  load: 0.8
+  failure_modes: [adapter-divergence-vs-cc, missing-files-array, publish-matrix-skips]
+  authorization: witnessed
+  blockedBy: [rs-plugkit-wasm, plugsdk-wasm-kind]
+  acceptance:
+    - node cli.js gm-starter ./build emits build/gm-thebird/ with bin/plugkit.wasm + plugsdk manifest
+    - AnEntrypoint/gm-thebird repo exists with green publish
+    - Freddie loads it as a plugsdk plugin without errors
+
+- id: thebird-freddie-witness
+  subject: Witness gm-thebird hook dispatch in thebird via Freddie
+  status: pending
+  description: In thebird's docs/ shell, install gm-thebird, boot Freddie's plugin host, fire one PreToolUse event, assert the result flows through plugkit.wasm. Capture exec:browser screenshots. Document any thebird shim added.
+  effort: medium
+  category: feature
+  route_family: observability
+  load: 0.9
+  failure_modes: [wasi-polyfill-mismatch, opfs-permission, freddie-host-divergence]
+  authorization: witnessed
+  blockedBy: [gm-thebird-platform]
+  acceptance:
+    - exec:browser screenshot shows successful hook dispatch in thebird
+    - test.js entry in thebird (or freddie) round-trips a hook via plugkit.wasm
