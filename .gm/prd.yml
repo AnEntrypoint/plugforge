@@ -1,21 +1,3 @@
-- id: rs-search-wasm
-  subject: Add wasm32-wasip1 build to rs-search
-  status: pending
-  description: Introduce `wasm` feature that selects bm25+ignore+regex only (no candle/simsimd/mimalloc/pdf-extract/libsql/tokio). Add cfg gates for fs/git walking under wasi. CI matrix entry uploads rs-search.wasm artifact.
-  effort: large
-  category: infra
-  route_family: execution
-  load: 0.6
-  failure_modes: [native-deps-on-wasm, simd-intrinsics-fail, fs-api-mismatch]
-  route_fit: examined
-  authorization: witnessed
-  acceptance:
-    - cargo build --target wasm32-wasip1 --no-default-features --features wasm succeeds in CI
-    - artifact uploaded to GH Release
-  edge_cases:
-    - ignore crate behavior on WASI fs
-    - regex unicode tables size
-
 - id: rs-codeinsight-wasm
   subject: Add wasm32-wasip1 build to rs-codeinsight
   status: pending
