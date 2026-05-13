@@ -1,3 +1,19 @@
+- id: live-thebird-deployed
+  claim: anentrypoint.github.io/thebird/ serves recent commit with freddie+config app
+  witness_method: exec:browser navigate + page.evaluate
+  witness_evidence: "Live page title 'os — browser-native web OS'; window.__debug.shell.registry includes id='config' name='config' alongside chat/freddie/terminal/browser/files; instance auto-booted as i28 with __debug.instances.i28.host (plugsdk-shaped host with pi.tools=read/write/edit/grep/list/memory/chat/delegate/web_search, pi.hooks initialized with 5 hook arrays)."
+  status: witnessed
+- id: hook-witness-surface
+  claim: Real hook witness surface is window.__debug.instances[id].host.pi.hooks (registered) and post-call inspection. PRD's __debug.gm.lastHook is aspirational.
+  witness_method: page.evaluate read __debug.instances[id].host
+  witness_evidence: "Loaded a plugsdk plugin via host.loadPlugin({kind:'plugsdk',hooks:[{type:'preToolUse',handler},{type:'postToolUse',handler}]}); host.pi.hooks.pre_tool_use.length went 0->1, post 0->1; runTool('list',{}) fired pre+post handlers (10 calls captured across write/list/read sequence). Plain host.runCli('run',text) does NOT fire hooks — hook bridge is strictly inside runTool. Bridge wiring verified end-to-end."
+  status: witnessed
+- id: indexeddb-keys-persist
+  claim: Provider keys persist across reload via instance-fs IndexedDB
+  witness_method: page.evaluate before/after reload
+  witness_evidence: "fs.setApiKey('openai','sk-witness-1234')+flush on i28; reload spawned new instance i29 (i29.fs.getApiKey('openai')=null because each boot mints a fresh instance id); reloaded createFs('i28') from IDB thebird-fs-i28 returns getApiKey('openai')='sk-witness-1234' and getConfig().providers.openai.apiKey='sk-witness-1234'. Same for todolist items: writes to /apps/todolist/items.json on i30 survived reload — i30fs.readFile after reload returned identical JSON. Per-instance IDB persistence is real; cross-boot identity requires instance-id continuation (separate concern from persistence)."
+  status: witnessed
+
 - id: nim-keys-endpoint-shape
   claim: nim acptoapi at NIM_URL/keys returns {KEY_NAME: value} JSON with header X-API-Key=theultimateflex per witness in original task prompt
   witness_method: code in load-from-nim must tolerate either {keys:{...}} or flat {...}; matched against PROVIDERS list case-insensitively
@@ -29,8 +45,36 @@
   witness_method: gh run view 25811244336 --repo AnEntrypoint/rs-codeinsight
   witness_evidence: "Run 25811244336 head sha 5e52cce conclusion:success in 28s. Commit 5e52cce on main."
   status: resolved
+- id: rs-search-public-surface
+  claim: rs-search lib exposes run_search not Searcher; need to introduce Searcher::search wrapper as the stable public surface.
+  witness_method: Read C:/dev/rs-search/src/lib.rs
+  witness_evidence: "src/lib.rs:22 pub fn run_search(query:&str, root:&Path)->Vec<bm25::SearchResult>. No Searcher struct exists."
+  status: witnessed
+
+- id: rs-search-cargo-already-gated
+  claim: candle/tokenizers/libsql/tokio are already optional and only enabled by feature vector; --features wasm excludes them.
+  witness_method: Read C:/dev/rs-search/Cargo.toml
+  witness_evidence: "Cargo.toml lines 38-42: vector pulls candle/tokenizers/libsql/tokio; wasm=[]; wasm-check.yml uses --no-default-features --features wasm --lib."
+  status: witnessed
+
 - id: rs-exec-wasm-check-green-baseline
   claim: rs-exec wasm-check.yml passed first try; rs-exec wasm feature is genuinely buildable for wasm32-wasip1 with cargo check --features wasm --lib.
   witness_method: gh run view 25810242185
   witness_evidence: "Run 25810242185 head sha 19a5736 conclusion:success status:completed."
+  status: witnessed
+
+- id: plugsdk-is-js-not-ts
+  claim: plugsdk uses .js + esbuild bundle, not TypeScript; PRD's src/browser.ts naming is shorthand — implementation is src/browser.js with matching d.ts in build output to remain consistent with codebase
+  witness_method: Read C:/dev/plugsdk/package.json + scripts/build.mjs
+  witness_evidence: "package.json type:module main dist/index.js; build.mjs uses esbuild on .js entryPoints; no tsconfig.json present; existing files all .js"
+  status: witnessed
+- id: existing-wasm-pattern
+  claim: src/host/index.js already implements WASI loading pattern that browser path mirrors with browser_wasi_shim instead of node:wasi
+  witness_method: Read C:/dev/plugsdk/src/host/index.js
+  witness_evidence: "host/index.js:53-78 getWasmInstance uses globalThis.WASI || import('node:wasi'); pack/unpack via plugkit_alloc/free pattern is the convention"
+  status: witnessed
+- id: host-import-surface-16
+  claim: exactly 16 host imports per wasm-parity.md target table; signatures are u64-packed (ptr|len<<32) returns
+  witness_method: Read C:/dev/rs-plugkit/docs/wasm-parity.md
+  witness_evidence: "wasm-parity.md lines 22-43: fs_read,fs_write,fs_readdir,fs_stat,fetch,kv_get,kv_put,kv_query,vec_search,browser_spawn,browser_eval,browser_close,exec_js,log,now_ms,env_get = 16; pack_result(ptr,len)->u64 convention"
   status: witnessed
