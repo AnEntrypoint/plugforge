@@ -11,20 +11,6 @@
   acceptance:
     - plugsdk imports plugkit.wasm in browser; preToolUse hook returns expected packed result via test page
 
-- id: gm-thebird-publish
-  subject: Ensure gm publish.yml emits gm-thebird with wasm plugkit
-  status: pending
-  description: Verify platforms/thebird.js (or add it) writes a build/gm-thebird that mirrors gm-cc but consumes plugkit.wasm + plugsdk browser loader instead of native plugkit binary. Add gm-thebird to publish.yml matrix targeting AnEntrypoint/gm-thebird orphan-commit repo.
-  effort: medium
-  category: infra
-  route_family: boundary
-  load: 0.7
-  authorization: none
-  blockedBy: [plugsdk-browser-loader]
-  acceptance:
-    - AnEntrypoint/gm-thebird main HEAD contains plugkit.wasm + browser bootstrap
-    - publish.yml run green on gm-thebird leg
-
 - id: freddie-gm-wiring
   subject: Wire freddie agent loop to plugsdk browser hooks
   status: pending
