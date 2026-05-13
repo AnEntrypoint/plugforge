@@ -169,11 +169,43 @@ function copyToGmTools(finalPath, wrapperDir, version) {
   const target = path.join(dst, exeName);
   const targetTmp = target + '.new';
   cleanOrphanNewFiles(dst, exeName);
+  if (fs.existsSync(target)) {
+    let needsRefresh = true;
+    try {
+      const cur = sha256OfFileSync(target);
+      const src = sha256OfFileSync(finalPath);
+      if (cur === src) needsRefresh = false;
+    } catch (_) {}
+    if (!needsRefresh) {
+      try { fs.writeFileSync(path.join(dst, 'plugkit.version'), version); } catch (_) {}
+      return;
+    }
+    try { killHoldersOfPath(target); } catch (_) {}
+  }
   fs.copyFileSync(finalPath, targetTmp);
   if (!renameWithRetry(targetTmp, target, 8)) {
-    obsEvent('bootstrap', 'gmtools.rename.failed', { target });
-    throw new Error(`gm-tools update blocked: cannot replace ${target} (held open by running plugkit and kill-retry exhausted)`);
+    try { killHoldersOfPath(target); } catch (_) {}
+    try { fs.unlinkSync(target); } catch (_) {}
+    try { fs.renameSync(targetTmp, target); }
+    catch (_) {
+      try { fs.unlinkSync(targetTmp); } catch (_) {}
+      obsEvent('bootstrap', 'gmtools.rename.failed', { target });
+      writeBootstrapError({
+        expected_version: version,
+        cached_version: null,
+        error_phase: 'gmtools-rename',
+        error_message: `cannot replace ${target} after kill+unlink retry; orphan removed`,
+      });
+      throw new Error(`gm-tools update blocked: cannot replace ${target} (held open by running plugkit and kill-retry exhausted)`);
+    }
   }
+  try {
+    for (const name of fs.readdirSync(dst)) {
+      if (/^plugkit(\.\d+\.\d+\.\d+)?\.new$/i.test(name)) {
+        try { fs.unlinkSync(path.join(dst, name)); } catch (_) {}
+      }
+    }
+  } catch (_) {}
   if (process.platform !== 'win32') {
     try { fs.chmodSync(target, 0o755); } catch (_) {}
   }
