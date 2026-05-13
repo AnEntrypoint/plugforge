@@ -1,0 +1,66 @@
+- id: plugsdk-browser-loader
+  subject: Implement plugsdk/src/browser.ts with 16 host imports backed by OPFS+IDB
+  status: pending
+  description: Add browser.ts exporting loadPlugkit({url,storage}) using @bjorn3/browser_wasi_shim. Implement makeHostImports providing all 16 imports backed by IndexedDB store keys/kv/vec/tasks + OPFS for blobs>1MB. wrapHookCalls returns existing plugsdk hook API. Conditional Node vs browser entry by typeof window. Publish plugsdk.
+  effort: large
+  category: feature
+  route_family: boundary
+  load: 0.9
+  authorization: none
+  blockedBy: []
+  acceptance:
+    - plugsdk imports plugkit.wasm in browser; preToolUse hook returns expected packed result via test page
+
+- id: gm-thebird-publish
+  subject: Ensure gm publish.yml emits gm-thebird with wasm plugkit
+  status: pending
+  description: Verify platforms/thebird.js (or add it) writes a build/gm-thebird that mirrors gm-cc but consumes plugkit.wasm + plugsdk browser loader instead of native plugkit binary. Add gm-thebird to publish.yml matrix targeting AnEntrypoint/gm-thebird orphan-commit repo.
+  effort: medium
+  category: infra
+  route_family: boundary
+  load: 0.7
+  authorization: none
+  blockedBy: [plugsdk-browser-loader]
+  acceptance:
+    - AnEntrypoint/gm-thebird main HEAD contains plugkit.wasm + browser bootstrap
+    - publish.yml run green on gm-thebird leg
+
+- id: freddie-gm-wiring
+  subject: Wire freddie agent loop to plugsdk browser hooks
+  status: pending
+  description: Update C:/dev/freddie to call plugsdk hooks at prompt-submit/pre-tool-use/post-tool-use/session-start/stop/pre-compact/post-compact. Surface additionalContext + systemMessage into freddie context. Surface tool-call denials as chat errors.
+  effort: medium
+  category: feature
+  route_family: boundary
+  load: 0.7
+  authorization: none
+  blockedBy: [plugsdk-browser-loader]
+  acceptance:
+    - freddie test harness invokes plugsdk hook and observes injected context
+
+- id: thebird-config-witness
+  subject: Witness thebird config tab + nim-key UI live on anentrypoint.github.io/thebird
+  status: pending
+  description: Browser-driven witness: navigate, open config tab, set NIM_URL or per-provider key, reload, confirm keys persist via IndexedDB keys store, send chat through freddie, observe gm hook injection in __debug.gm.lastHook.
+  effort: medium
+  category: feature
+  route_family: observability
+  load: 0.7
+  authorization: none
+  blockedBy: [freddie-gm-wiring, gm-thebird-publish]
+  acceptance:
+    - page.evaluate returns __debug.gm.lastHook with non-null preToolUse marker
+    - reload preserves IndexedDB keys
+
+- id: browser-e2e-todolist
+  subject: End-to-end witness creating a todolist app via freddie+gm in thebird
+  status: pending
+  description: Browser drives freddie chat: "create a todolist app", observe app render in preview iframe, witness IndexedDB persistence, reload, items survive. Captures hook trajectory in window.__debug.gm.
+  effort: medium
+  category: feature
+  route_family: observability
+  load: 0.8
+  authorization: none
+  blockedBy: [thebird-config-witness]
+  acceptance:
+    - Preview iframe contains todolist app with persisted items after reload
