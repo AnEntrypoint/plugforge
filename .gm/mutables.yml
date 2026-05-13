@@ -5,9 +5,9 @@
   status: witnessed
 
 - id: tree-sitter-grammars-wasm
-  claim: tree-sitter (rust crate) has a `wasm` feature using wasmtime-c-api + WasmStore.load_language(name, grammar_bytes). Cannot nest wasm-in-wasm cleanly — so rs-codeinsight wasm build exposes parse() via host-imports (host runs web-tree-sitter or wasmtime natively), not in-wasm parsing.
-  witness_method: WebSearch tree-sitter wasm runtime + github discussion #1550
-  witness_evidence: "tree-sitter Discussion #1550 + docs.rs/tree-sitter/wasm feature: WasmStore.load_language(language_name, GRAMMAR_BYTES). The crate's own wasm feature uses wasmtime; nested-wasm impractical. Resolution: rs-codeinsight cfg(wasm) drops all tree_sitter_<lang> deps; lang.rs::language_for() under cfg(wasm) returns Err and parse is delegated to host via extern \"C\" fn host_parse(lang:i32, src_ptr,src_len) -> tree_ptr."
+  claim: All 28 tree-sitter language crates (versions 0.23–1.x) cross-compile cleanly to wasm32-wasip1 with wasi-sdk 24 and proper CC/AR/CFLAGS env setup. Confirmed 2026-05-13 on rs-codeinsight CI (run 25784203978). This unblocks in-wasm parsing without nested-wasm problem — rs-codeinsight can include tree-sitter grammars directly in wasm build, not delegate to host.
+  witness_method: GH Actions CI run 25784203978 on AnEntrypoint/rs-codeinsight (commit b1a8af7); cargo build --target wasm32-wasip1 all-languages feature set
+  witness_evidence: "GH run 25784203978 on AnEntrypoint/rs-codeinsight: all 28 tree-sitter language crates compiled to wasm32-wasip1 successfully. Build env: wasi-sdk 24, CC_wasm32_wasip1=$WASI_SDK_PATH/bin/clang, AR_wasm32_wasip1=$WASI_SDK_PATH/bin/llvm-ar, CFLAGS_wasm32_wasip1=--sysroot=$WASI_SDK_PATH/share/wasi-sysroot. Applies to any cc-built C deps (ring, openssl-sys, zlib-sys). Download: https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-24/wasi-sdk-24.0-x86_64-linux.tar.gz"
   status: witnessed
 
 - id: candle-wasm-bm25-isolation
