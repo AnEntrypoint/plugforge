@@ -15,20 +15,20 @@
   status: witnessed
 
 - id: rs-learn-wasm-check-target-add-missing
-  claim: rs-learn wasm-check job fails E0463 can't find crate for std on wasm32-wasip1; dtolnay targets:wasm32-wasip1 param not effective without explicit rustup target add step.
-  witness_method: gh run view 25810297594 --log-failed
-  witness_evidence: "Run 25810297594 head sha d53ddb5 conclusion:failure. 'error[E0463]: can't find crate for std' / 'note: the wasm32-wasip1 target may not be installed'. Defer fix to rs-plugkit-wasm-dispatcher-impl follow-on."
-  status: witnessed
+  claim: rs-learn wasm-check resolved by adding explicit `rustup target add wasm32-wasip1` step after dtolnay/rust-toolchain.
+  witness_method: gh run view 25811208136 --repo AnEntrypoint/rs-learn
+  witness_evidence: "Run 25811208136 head sha 244153e conclusion:success. Commit 244153e on main."
+  status: resolved
 - id: rs-search-wasm-check-target-add-missing
-  claim: rs-search wasm-check same failure mode as rs-learn — E0463 can't find crate for core.
-  witness_method: gh run view 25810310886 --log-failed
-  witness_evidence: "Run 25810310886 head sha 73fbc4b conclusion:failure. 'error[E0463]: can't find crate for core'. Defer fix."
-  status: witnessed
+  claim: rs-search wasm-check resolved with same `rustup target add wasm32-wasip1` step.
+  witness_method: gh run view 25811224425 --repo AnEntrypoint/rs-search
+  witness_evidence: "Run 25811224425 head sha 8093ba2 conclusion:success. Commit 8093ba2 on main."
+  status: resolved
 - id: rs-codeinsight-wasm-check-needs-wasi-sdk
-  claim: rs-codeinsight wasm-check fails because tree-sitter 0.24.7 C build needs wasi-sdk (clang + sysroot) for wasm32-wasip1 cross-compile. Existing rs-codeinsight/wasm.yml installs wasi-sdk-24; the minimal wasm-check.yml does not.
-  witness_method: gh run view 25810325497 --log-failed
-  witness_evidence: "Run 25810325497 head sha a024fca conclusion:failure. cc-rs error: 'fatal error: bits/libc-header-start.h file not found' compiling tree-sitter lib.c with --target=wasm32-wasip1 against /usr/include/stdio.h. Defer fix to rs-plugkit-wasm-dispatcher-impl follow-on."
-  status: witnessed
+  claim: rs-codeinsight wasm-check resolved by installing wasi-sdk-24 and setting CC_wasm32_wasip1/AR_wasm32_wasip1/CFLAGS_wasm32_wasip1 with --sysroot for tree-sitter cross-compile.
+  witness_method: gh run view 25811244336 --repo AnEntrypoint/rs-codeinsight
+  witness_evidence: "Run 25811244336 head sha 5e52cce conclusion:success in 28s. Commit 5e52cce on main."
+  status: resolved
 - id: rs-exec-wasm-check-green-baseline
   claim: rs-exec wasm-check.yml passed first try; rs-exec wasm feature is genuinely buildable for wasm32-wasip1 with cargo check --features wasm --lib.
   witness_method: gh run view 25810242185
