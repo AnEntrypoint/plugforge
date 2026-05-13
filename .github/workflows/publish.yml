@@ -30,7 +30,7 @@ jobs:
         run: |
           # Get the highest published version across all CLI packages
           MAX_NPM="0.0.0"
-          for PKG in gm-cc gm-gc gm-oc gm-kilo gm-codex gm-qwen gm-copilot-cli gm-hermes gm-antigravity; do
+          for PKG in gm-cc gm-gc gm-oc gm-kilo gm-codex gm-qwen gm-copilot-cli gm-hermes gm-antigravity gm-thebird; do
             V=$(npm view "$PKG" version 2>/dev/null || echo "0.0.0")
             MAX_NPM=$(printf '%s\n' "$V" "$MAX_NPM" | sort -V | tail -1)
           done
@@ -99,6 +99,7 @@ jobs:
           - {platform: hermes, name: "Hermes Agent"}
           - {platform: antigravity, name: "Antigravity"}
           - {platform: windsurf, name: "Windsurf"}
+          - {platform: thebird, name: "thebird"}
 
     steps:
       - uses: actions/checkout@v4
@@ -209,7 +210,7 @@ jobs:
           echo "✅ Force-pushed single-commit history to $REPO_NAME"
 
       - name: Publish to npm
-        if: matrix.platform == 'oc' || matrix.platform == 'kilo' || matrix.platform == 'qwen' || matrix.platform == 'hermes' || matrix.platform == 'antigravity' || matrix.platform == 'codex'
+        if: matrix.platform == 'oc' || matrix.platform == 'kilo' || matrix.platform == 'qwen' || matrix.platform == 'hermes' || matrix.platform == 'antigravity' || matrix.platform == 'codex' || matrix.platform == 'thebird'
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |

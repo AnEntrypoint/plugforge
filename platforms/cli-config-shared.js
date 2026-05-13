@@ -2103,4 +2103,150 @@ Use \`/gm\` or invoke skills by name in Hermes to access the full state machine 
   }
 });
 
-module.exports = { cc, gc, codex, oc, kilo, qwen, hermes };
+function createThebirdInstallerScript() {
+  return `#!/usr/bin/env node
+const fs = require('fs');
+const path = require('path');
+const os = require('os');
+const https = require('https');
+
+const homeDir = process.env.HOME || process.env.USERPROFILE || os.homedir();
+const destDir = path.join(homeDir, '.freddie', 'plugins', 'gm-thebird');
+const srcDir = __dirname;
+const isUpgrade = fs.existsSync(destDir);
+
+console.log(isUpgrade ? 'Upgrading gm-thebird...' : 'Installing gm-thebird...');
+
+${COPY_RECURSIVE_FN}
+
+function downloadPlugkitWasm(version, target) {
+  return new Promise((resolve, reject) => {
+    const url = 'https://github.com/AnEntrypoint/plugkit-bin/releases/download/v' + version + '/plugkit.wasm';
+    function get(u, redirectsLeft) {
+      https.get(u, { headers: { 'User-Agent': 'gm-thebird-installer' } }, res => {
+        if ([301,302,303,307,308].includes(res.statusCode) && res.headers.location && redirectsLeft > 0) {
+          return get(res.headers.location, redirectsLeft - 1);
+        }
+        if (res.statusCode !== 200) { reject(new Error('plugkit.wasm fetch failed: HTTP ' + res.statusCode)); return; }
+        const out = fs.createWriteStream(target);
+        res.pipe(out);
+        out.on('finish', () => out.close(resolve));
+        out.on('error', reject);
+      }).on('error', reject);
+    }
+    get(url, 5);
+  });
+}
+
+(async () => {
+  try {
+    fs.mkdirSync(destDir, { recursive: true });
+    fs.mkdirSync(path.join(destDir, 'bin'), { recursive: true });
+    copyRecursive(path.join(srcDir, 'agents'), path.join(destDir, 'agents'));
+    copyRecursive(path.join(srcDir, 'hooks'), path.join(destDir, 'hooks'));
+    copyRecursive(path.join(srcDir, 'skills'), path.join(destDir, 'skills'));
+    try { fs.copyFileSync(path.join(srcDir, 'plugin.json'), path.join(destDir, 'plugin.json')); } catch {}
+    try { fs.copyFileSync(path.join(srcDir, 'gm.json'), path.join(destDir, 'gm.json')); } catch {}
+    try { fs.copyFileSync(path.join(srcDir, 'README.md'), path.join(destDir, 'README.md')); } catch {}
+
+    const version = fs.readFileSync(path.join(srcDir, 'bin', 'plugkit.version'), 'utf-8').trim();
+    const wasmTarget = path.join(destDir, 'bin', 'plugkit.wasm');
+    if (!fs.existsSync(wasmTarget)) {
+      console.log('Fetching plugkit.wasm v' + version + '...');
+      await downloadPlugkitWasm(version, wasmTarget);
+    }
+    fs.writeFileSync(path.join(destDir, 'bin', 'plugkit.version'), version);
+
+    console.log('✓ gm-thebird ' + (isUpgrade ? 'upgraded' : 'installed') + ' to ' + destDir);
+    console.log('Restart Freddie to load the plugin.');
+  } catch (e) {
+    console.error('Installation failed:', e.message);
+    process.exit(1);
+  }
+})();
+`;
+}
+
+const thebird = factory('thebird', 'thebird', 'plugin.json', 'AGENTS.md', {
+  formatConfigJson(config) {
+    return makePackageJson({ ...config, author: { name: config.author, url: 'https://github.com/AnEntrypoint' } });
+  },
+  generatePackageJson(pluginSpec, extraFields = {}) {
+    return makePackageJson({
+      name: 'gm-thebird', version: pluginSpec.version, description: pluginSpec.description,
+      author: pluginSpec.author, license: pluginSpec.license,
+      ...repoFields('gm-thebird'), engines: pluginSpec.engines, publishConfig: pluginSpec.publishConfig,
+      bin: { 'gm-thebird': './cli.js' },
+      files: ['agents/', 'bin/', 'hooks/', 'skills/', 'plugin.json', 'gm.json', 'README.md', 'cli.js', 'AGENTS.md'],
+      keywords: ['thebird', 'freddie', 'plugsdk', 'wasm', 'agent', 'state-machine', 'gm'],
+      scripts: pluginSpec.scripts, ...extraFields
+    });
+  },
+  getPackageJsonFields() {
+    return {
+      files: ['agents/', 'bin/', 'hooks/', 'skills/', 'plugin.json', 'cli.js', 'README.md', 'AGENTS.md', 'gm.json'],
+      keywords: ['thebird', 'freddie', 'plugsdk', 'wasm', 'agent', 'state-machine', 'gm']
+    };
+  },
+  getAdditionalFiles(spec) {
+    return {
+      'plugin.json': TemplateBuilder.generatePluginJson(spec),
+      'cli.js': createThebirdInstallerScript()
+    };
+  },
+  buildHookSpec() {
+    return {
+      envVar: 'CLAUDE_PLUGIN_ROOT',
+      plugkitInvoker: 'node',
+      events: [
+        { eventKey: 'PreToolUse',       commands: [{ kind: 'wasm', subcommand: 'pre-tool-use',  timeout: 3600 }] },
+        { eventKey: 'PostToolUse',      commands: [{ kind: 'wasm', subcommand: 'post-tool-use', timeout: 35000 }] },
+        { eventKey: 'SessionStart',     commands: [{ kind: 'wasm', subcommand: 'session-start', timeout: 180000 }] },
+        { eventKey: 'UserPromptSubmit', commands: [{ kind: 'wasm', subcommand: 'prompt-submit', timeout: 60000 }] },
+        { eventKey: 'PreCompact',       commands: [{ kind: 'wasm', subcommand: 'pre-compact',   timeout: 30000 }] },
+        { eventKey: 'PostCompact',      commands: [{ kind: 'wasm', subcommand: 'post-compact',  timeout: 5000 }] },
+        { eventKey: 'Stop',             commands: [
+          { kind: 'wasm', subcommand: 'stop',     timeout: 15000 },
+          { kind: 'wasm', subcommand: 'stop-git', timeout: 210000 }
+        ]}
+      ]
+    };
+  },
+  generateReadme(spec) {
+    return `# gm-thebird
+
+Browser-native gm output. Loads rs-plugkit as a WebAssembly module
+via plugsdk's wasm-kind dispatcher under [Freddie](https://github.com/AnEntrypoint/freddie)
+inside [thebird](https://github.com/AnEntrypoint/thebird).
+
+1:1 feature parity with gm-cc — same skills, same hooks, same state
+machine — but the plugkit binary is plugkit.wasm instead of a native
+process. plugkit.wasm is published to
+https://github.com/AnEntrypoint/plugkit-bin/releases alongside the
+native targets.
+
+## Install
+
+\`\`\`bash
+npm install -g gm-thebird
+gm-thebird
+\`\`\`
+
+The installer copies the plugin to \`~/.freddie/plugins/gm-thebird\`
+and fetches the matching plugkit.wasm version from plugkit-bin.
+
+Restart Freddie. The plugin loads via plugsdk; hooks fire as wasm
+exports (hook_pre_tool_use, hook_post_tool_use, hook_session_start,
+hook_user_prompt_submit, hook_pre_compact, hook_post_compact,
+hook_stop, hook_stop_git).
+
+## Browser
+
+When Freddie runs inside thebird's docs/ shell, the same plugin
+loads — thebird's POSIX-in-browser layer supplies the WASI preview1
+imports plugkit.wasm needs.
+`;
+  }
+});
+
+module.exports = { cc, gc, codex, oc, kilo, qwen, hermes, thebird };
