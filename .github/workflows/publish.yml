@@ -179,6 +179,20 @@ jobs:
             fi
           fi
 
+          if [ "$PLATFORM" = "thebird" ]; then
+            PV=$(cat "${SOURCE_ROOT}/${BUILD_DIR}/bin/plugkit.version" 2>/dev/null | tr -d ' \n\r')
+            if [ -n "$PV" ]; then
+              echo "⏬ Browser platform — fetching plugkit.wasm@v$PV"
+              curl -sLf -o "${SOURCE_ROOT}/${BUILD_DIR}/bin/plugkit.wasm" \
+                "https://github.com/AnEntrypoint/plugkit-bin/releases/download/v${PV}/plugkit.wasm" \
+                && echo "✅ Fetched plugkit.wasm ($(stat -c%s "${SOURCE_ROOT}/${BUILD_DIR}/bin/plugkit.wasm" 2>/dev/null || stat -f%z "${SOURCE_ROOT}/${BUILD_DIR}/bin/plugkit.wasm") bytes)" \
+                || { echo "❌ plugkit.wasm v$PV not found in plugkit-bin release"; exit 1; }
+              curl -sLf -o "${SOURCE_ROOT}/${BUILD_DIR}/bin/plugkit.wasm.sha256" \
+                "https://github.com/AnEntrypoint/plugkit-bin/releases/download/v${PV}/plugkit.wasm.sha256" \
+                || echo "⚠️ plugkit.wasm.sha256 not present at v$PV — leaving sha-less"
+            fi
+          fi
+
           REMOTE_HEAD=$(git ls-remote "https://github.com/AnEntrypoint/${REPO_NAME}.git" main 2>/dev/null | awk '{print $1}' || true)
           NEED_COMPARE=0
           if [ -n "$REMOTE_HEAD" ]; then
