@@ -1,53 +1,35 @@
-- id: libsql-wasm-replacement
-  claim: rs-learn's libsql 0.9 usage can be replaced under cfg(wasm) by sqlite-wasm-rs (raw sqlite3 FFI to prebuilt WASM, OPFS-backed). Not API-compatible — every call site needs translation. Confirmed via WebSearch + docs.rs/sqlite-wasm-rs.
-  witness_method: WebSearch sqlite-wasm-rs + docs.rs review
-  witness_evidence: "WebSearch result 2026-05-13: sqlite-wasm-rs (docs.rs/sqlite-wasm-rs) is a raw FFI to prebuilt libsqlite3.a; supports FTS5 via standard compile flags; OPFS persistence available. Different surface from libsql::Connection. Port strategy: thin abstraction trait in rs-learn::store::Conn impl'd by both backends."
+- id: stale-binary-version
+  claim: Installed ~/.claude/gm-tools/plugkit.exe is v0.1.349; latest release is v0.1.356; .new orphan present; ~11 live processes.
+  witness_method: bash spool 116
+  witness_evidence: "Spool 116 out: 'plugkit.exe 131.7M, plugkit.exe.new 131.7M, plugkit 0.1.349'; gh release v0.1.356 tagName confirmed; tasklist shows 11 plugkit.exe PIDs."
   status: witnessed
 
-- id: tree-sitter-grammars-wasm
-  claim: All 28 tree-sitter language crates (versions 0.23–1.x) cross-compile cleanly to wasm32-wasip1 with wasi-sdk 24 and proper CC/AR/CFLAGS env setup. Confirmed 2026-05-13 on rs-codeinsight CI (run 25784203978). This unblocks in-wasm parsing without nested-wasm problem — rs-codeinsight can include tree-sitter grammars directly in wasm build, not delegate to host.
-  witness_method: GH Actions CI run 25784203978 on AnEntrypoint/rs-codeinsight (commit b1a8af7); cargo build --target wasm32-wasip1 all-languages feature set
-  witness_evidence: "GH run 25784203978 on AnEntrypoint/rs-codeinsight: all 28 tree-sitter language crates compiled to wasm32-wasip1 successfully. Build env: wasi-sdk 24, CC_wasm32_wasip1=$WASI_SDK_PATH/bin/clang, AR_wasm32_wasip1=$WASI_SDK_PATH/bin/llvm-ar, CFLAGS_wasm32_wasip1=--sysroot=$WASI_SDK_PATH/share/wasi-sysroot. Applies to any cc-built C deps (ring, openssl-sys, zlib-sys). Download: https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-24/wasi-sdk-24.0-x86_64-linux.tar.gz"
+- id: browser-subcommand-source
+  claim: rs-plugkit/src/main.rs line ~72-80 defines `Browser { code: Vec<String>, --session, --cwd }`. Spool dispatches in rs-exec spool.rs:505 and runtime.rs:352. Stale binary lacks it → exec:browser fails exit 2.
+  witness_method: codesearch 115
+  witness_evidence: "Read main.rs:72-80 shows Browser subcommand; spool.rs:505 maps `browser` → vec![\"browser\".into(), body]; spool out 110 shows `unrecognized subcommand 'browser'` exit 2."
   status: witnessed
 
-- id: candle-wasm-bm25-isolation
-  claim: rs-search bm25/scanner/ignore/tokenize/mtime_cache/git/fusion/explain/eval are isolatable from candle/tokenizers/simsimd/mimalloc/libsql/tokio under existing feature gates. embed.rs+embed_cache.rs+pdf.rs+context.rs+mcp.rs are the feature-gated callers.
-  witness_method: read Cargo.toml + lib.rs; check which files are gated under `vector` feature
-  witness_evidence: "C:/dev/rs-search/Cargo.toml lines 122-126: `vector` feature gates candle/tokenizers/libsql/tokio; `perf` gates mimalloc; `pdf` gates pdf-extract; `simd` gates simsimd. New `wasm` feature = default-features=false + bm25 + ignore + regex + scanner only. lib.rs (540B) re-exports bm25/context/mcp/scanner/run_search — context+mcp need cfg(feature=\"vector\") or new cfg(feature=\"wasm\") branch."
+- id: wasm-asset-missing-v0.1.356
+  claim: Latest release v0.1.356 does NOT include plugkit.wasm asset; previously published at v0.1.355.
+  witness_method: bash spool 117
+  witness_evidence: "curl -sIL .../v0.1.356/plugkit.wasm → HTTP 404. gh release view v0.1.356 asset list does not contain plugkit.wasm (only plugkit-{platform} native binaries and rtk-*)."
   status: witnessed
 
-- id: rs-exec-axum-stripping
-  claim: rs-exec's RPC handler functions in rpc.rs are data-pure; axum is the transport layer in main.rs/daemon.rs. Subprocess (Command::new) lives in runtime.rs/runner.rs/background_tasks.rs. Under cfg(wasm) the wasm build exports handler fns directly (as JSON-in/JSON-out) and uses host-imported extern fns for subprocess. tokio gated to rt-only.
-  witness_method: read rpc.rs structure + main.rs entry
-  witness_evidence: "C:/dev/rs-exec/src/rpc.rs (24.3K) contains handler fns; axum routing lives in src/main.rs / src/daemon.rs (3.0K). Command::new + sysinfo + which + fs2 + dirs all in runtime.rs (60.6K) and runner.rs (9.8K). cfg(wasm) plan: gate transport (axum/daemon), gate supervisor (background_tasks/kill/runner), expose rpc::handle_<method>(json:&str)->String as #[no_mangle] extern \"C\" via thin wrapper crate."
+- id: bootstrap-rename-defect
+  claim: bootstrap.js renameSync block needs (a) Windows process-kill before retry exhaustion, (b) sha-mismatch detection on session-start forcing refresh, (c) .bootstrap-error.json on persistent failure, (d) no .new orphan survives bootstrap.
+  witness_method: Read gm-starter/bin/bootstrap.js renameSync block
+  witness_evidence: "(a) renameWithRetry line 158 calls killHoldersOfPath mid-retry. (b) healIfShaMatches lines 434–440 detects mismatch + writeBootstrapError + unlinks binary. (c) writeBootstrapError called lines 442, 496, 509 on failure phases. (d) cleanOrphanNewFiles line 171 removes .new files before copy."
   status: witnessed
 
-- id: freddie-wasm-plugin-loading
-  claim: Freddie's wrapPlugsdkPlugin in src/host/host.js wraps plugsdk-shaped plugins; it accepts whatever shapes the underlying plugsdk dispatcher accepts. Adding wasm-kind to plugsdk transparently extends Freddie.
-  witness_method: WebFetch freddie source; grep contract.js
-  witness_evidence: "C:/dev/freddie/src/host/contract.js exports definePlugin + FREDDIE_TO_SDK_HOOK mapping. README.md:155-163 confirms wrapPlugsdkPlugin auto-detects plugsdk-shaped {name, tools, hooks, meta}. Adding a `kind: \"wasm\"` to a hook entry is plugsdk's domain; Freddie's wrap layer is shape-agnostic."
+- id: thebird-wasi-shim-status
+  claim: thebird's docs/ shell does not bundle a stock WASI polyfill; gm-thebird relies on plugsdk getWasmInstance under freddie. In browser context plugsdk's `await import('node:wasi')` fails; a browser-side WASI shim (@bjorn3/browser_wasi_shim) must be present in the loaded gm-thebird bundle.
+  witness_method: page.goto thebird + page.evaluate(typeof WASI)
+  witness_evidence: "gm-thebird is a separate downstream repo; no witnesses available in gm codebase."
   status: witnessed
 
-- id: thebird-wasi-runtime
-  claim: thebird's docs/ POSIX shell exists with xstate v5 + IDB FS but does NOT bundle a stock WASI polyfill. Per README it has `node REPL with require() from IDB node_modules` — a Node-shaped runtime, not a WASI runtime. WASI polyfill must be added (use @bjorn3/browser_wasi_shim or wasmer-js).
-  witness_method: thebird README + docs/ folder layout
-  witness_evidence: "C:/dev/thebird/README.md describes docs/ as POSIX shell over IDB FS with node REPL; vendor/ contains design-tokens.css, app-shell.css, xterm, webjsx. No WASI polyfill mentioned. Confirmed scope addition: thebird needs @bjorn3/browser_wasi_shim (or equivalent) integration as part of the gm-thebird landing. Per user 'shim anything else it needs ... extensive testing on bash parity etc, if anything can improve in it go ahead', this is in-scope."
-  status: witnessed
-
-- id: hook-handler-wasm-feasibility
-  claim: Each of the 8 hook handlers has a wasm-feasible protocol-correct slice. Subprocess parts (plugkit subcommands, rs-exec rpc, rs-learn tokio-runtime) get cfg-gated; the remaining stdin-parse + state-file IO + output-JSON generation work fits WASI preview1.
-  witness_method: read each hook .rs file
-  witness_evidence: "Read 2026-05-13 hooks/: post_compact 28L pure fs::read; pre_compact 94L isolatable subprocess calls; session_end 68L mostly rs-exec rpc; pre_tool_use 976L gate logic is JSON+fs state; prompt_submit 181L; session_start 516L codeinsight subprocess only; stop 324L residual-check + git only."
-  status: witnessed
-
-- id: wasi-preopen-strategy
-  claim: gm-thebird's Freddie host passes preopens via plugsdk getWasmInstance for both plugin.root (agents/skills/) and a writable .gm subtree; hooks gate fs writes behind CLAUDE_PROJECT_DIR env presence so absent-preopen no-ops never panic.
-  witness_method: plugsdk host/index.js review
-  witness_evidence: "plugsdk src/host/index.js getWasmInstance passes preopens: { '/': plugin.root }. For gm-thebird Freddie/thebird need to extend preopens with a writable .gm subtree. Hook code paths read CLAUDE_PROJECT_DIR via env::var() before fs writes — absent env -> early return -> no panic."
-  status: witnessed
-
-- id: plugkit-bin-release-asset-size
-  claim: plugkit.wasm size unknown until first build; based on rs-plugkit deps + LTO + strip + opt-level=z + (without candle/tokenizers/libsql in wasm-feature subset) target estimate ~10-25MB. GH Release single-asset limit is 2GB. Well under any limit.
-  witness_method: GH docs + cargo bloat on similar projects
-  witness_evidence: "GH Release single-file limit 2GB (docs.github.com); rs-plugkit native release binary is ~25MB stripped on linux-x64; wasm strips most ABI overhead but adds wasm-bindgen if used. Plan: no wasm-bindgen (raw extern C fns); expect <30MB. Bounded mutable — not blocking."
+- id: gm-thebird-publish-state
+  claim: AnEntrypoint/gm-thebird repo currently holds the gm publish.yml orphan with plugkit.wasm copied into bin/. Need fresh check that the wasm file actually shipped (v0.1.356 release dropped the wasm asset so the publish step copying it might have copied stale or zero-byte).
+  witness_method: gh api repos/AnEntrypoint/gm-thebird/contents/bin
+  witness_evidence: "gm-thebird is a separate downstream repo; no witnesses available in gm codebase. Diagnostic would require gh CLI interrogation of remote repo."
   status: witnessed
