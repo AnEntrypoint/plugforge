@@ -43,5 +43,7 @@ plugforge-starter/skills/caveman/
 .gm/exec-spool/
 .gm/gm-fired-this-turn
 .gm/residual-check-fired
+.gm/groq.key
+.gm/*.key
 # tracked: .gm/rs-learn.db, .gm/code-search/, AGENTS.md, .gm/prd.yml
 # <<< gm managed
