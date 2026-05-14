@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const net = require('net');
+const crypto = require('crypto');
 const { spawn, execSync } = require('child_process');
 const os = require('os');
 
@@ -82,6 +83,56 @@ function checkPortReachable(host, port, timeoutMs = 500) {
       resolve(false);
     });
   });
+}
+
+function computeIndexDigest(cwd = process.cwd()) {
+  try {
+    let mtimeSum = 0;
+    const walkDir = (dir) => {
+      try {
+        const entries = fs.readdirSync(dir, { withFileTypes: true });
+        for (const entry of entries) {
+          if (entry.isDirectory()) {
+            if (!entry.name.startsWith('.') && entry.name !== 'node_modules') {
+              walkDir(path.join(dir, entry.name));
+            }
+          } else {
+            const fullPath = path.join(dir, entry.name);
+            const stat = fs.statSync(fullPath);
+            mtimeSum += stat.mtimeMs;
+          }
+        }
+      } catch (e) {
+        return;
+      }
+    };
+
+    walkDir(cwd);
+
+    let gitHead = '';
+    try {
+      gitHead = execSync('git rev-parse HEAD', { cwd, encoding: 'utf8' }).trim();
+    } catch {
+      gitHead = 'unknown';
+    }
+
+    let dirtyStatus = 'clean';
+    try {
+      const porcelain = execSync('git status --porcelain', { cwd, encoding: 'utf8' }).trim();
+      if (porcelain.length > 0) {
+        dirtyStatus = 'dirty';
+      }
+    } catch {
+      dirtyStatus = 'unknown';
+    }
+
+    const digestInput = `${mtimeSum}:${gitHead}:${dirtyStatus}`;
+    const digest = crypto.createHash('sha256').update(digestInput).digest('hex');
+    return `v1:${digest}:files=${mtimeSum}`;
+  } catch (e) {
+    emitDaemonEvent('digest', 'error', 'Failed to compute digest', { error: e.message });
+    return '';
+  }
 }
 
 function writeStatusFile(daemonName, status, sessionId) {
