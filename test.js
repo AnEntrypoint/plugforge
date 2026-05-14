@@ -216,4 +216,67 @@ test('rs-plugkit hook files exist and are valid Rust', () => {
   });
 });
 
+test('gm-complete skill includes git enforcement gates', () => {
+  const skillPath = 'gm-starter/skills/gm-complete/SKILL.md';
+  if (!fs.existsSync(skillPath)) return;
+  const content = fs.readFileSync(skillPath, 'utf8');
+  assert(content.includes('git_clean'), 'git_clean gate missing');
+  assert(content.includes('git_pushed'), 'git_pushed gate missing');
+  assert(content.includes('git status --porcelain'), 'git status check missing');
+  assert(content.includes('git log origin/main..HEAD'), 'git log check missing');
+});
+
+test('update-docs skill includes browser cleanup exit phase', () => {
+  const skillPath = 'gm-starter/skills/update-docs/SKILL.md';
+  if (!fs.existsSync(skillPath)) return;
+  const content = fs.readFileSync(skillPath, 'utf8');
+  assert(content.includes('browser cleanup'), 'browser cleanup section missing');
+  assert(content.includes('exit'), 'exit phase documentation missing');
+});
+
+test('hook count reduction: all 10 platforms generate ≤9 hook events', () => {
+  const platforms = ['gm-cc', 'gm-gc', 'gm-oc', 'gm-kilo', 'gm-codex', 'gm-copilot-cli', 'gm-vscode', 'gm-cursor', 'gm-zed', 'gm-jetbrains'];
+  const buildDir = 'gm-build';
+  if (!fs.existsSync(buildDir)) return;
+  platforms.forEach(p => {
+    const hookPath = path.join(buildDir, p, 'hooks', 'hooks.json');
+    if (!fs.existsSync(hookPath)) return;
+    const hooks = JSON.parse(fs.readFileSync(hookPath, 'utf8'));
+    const eventCount = hooks.hooks ? hooks.hooks.length : 0;
+    assert(eventCount <= 9, `${p}: ${eventCount} hook events exceeds target of ≤9`);
+  });
+});
+
+test('prd and mutables files well-formed and witnessed', () => {
+  const gmDir = '.gm';
+  if (!fs.existsSync(gmDir)) return;
+  const prdPath = path.join(gmDir, 'prd.yml');
+  const mutablesPath = path.join(gmDir, 'mutables.yml');
+  if (fs.existsSync(prdPath)) {
+    const prd = yaml.load(fs.readFileSync(prdPath, 'utf8'));
+    if (prd) {
+      prd.forEach(item => {
+        assert(item.id, 'prd item missing id');
+        assert(['pending', 'in_progress', 'completed'].includes(item.status), `prd status invalid: ${item.status}`);
+      });
+    }
+  }
+  if (fs.existsSync(mutablesPath)) {
+    const mutables = yaml.load(fs.readFileSync(mutablesPath, 'utf8'));
+    if (mutables) {
+      mutables.forEach(m => {
+        if (m.status === 'witnessed') {
+          assert(m.witness_evidence && m.witness_evidence.length > 0, `mutable ${m.id} witnessed but missing evidence`);
+        }
+      });
+    }
+  }
+});
+
+test('spool-dispatch.js exports dispatchSpool', () => {
+  const m = require('./gm-starter/lib/spool-dispatch.js');
+  assert(m.dispatchSpool, 'dispatchSpool not exported');
+  assert(typeof m.dispatchSpool === 'function', 'dispatchSpool is not a function');
+});
+
 console.log('\n✓ All tests passed');
