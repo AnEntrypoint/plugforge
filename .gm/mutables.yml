@@ -27,3 +27,21 @@
   witness_method: "codesearch + gm-execute SKILL.md + exec:nodejs analysis"
   witness_evidence: "gm-starter/skills/gm-execute/SKILL.md:43 documents spool dispatch contract: 'The spool watcher executes and streams stdout to out/<N>.out, stderr to out/<N>.err, then writes out/<N>.json metadata sidecar at completion (taskId, lang, ok, exitCode, durationMs, timedOut, startedAt, endedAt).' AGENTS.md:133 describes hook coordination: pre_tool_use reads .gm/needs-gm marker, prompt_submit manages needs-gm based on PRD. REFACTOR PATTERN: (1) Skill writes in/<lang>/<N>.<ext> to spool — no hook gate involved in dispatch; (2) Watcher auto-executes as hook-independent background process; (3) Skill polls out/ for .json completion metadata — no hook read needed; (4) Skill reads result, updates .gm/prd.yml and .gm/mutables.yml state. Gates (needs_gm, mutables check via hook pre_tool_use:178-191) remain orthogonal policy layer, not dispatch control. Pattern is viable: spool is already skill-facing async I/O. No architectural change required — just shift from hook-tail-result to skill-poll-result."
   status: witnessed
+
+- id: daemon-bootstrap-module-shape
+  claim: daemon-bootstrap.js module exists with functions ensureRsLearningDaemonRunning(), ensureRsCodeinsightDaemonRunning(), ensureRsSearchDaemonRunning(), ensureAcptoapiRunning()
+  witness_method: Read C:\dev\gm\gm-starter\lib\daemon-bootstrap.js
+  witness_evidence: "gm-starter/lib/daemon-bootstrap.js exports all required functions: ensureRsLearningDaemonRunning (line 135), ensureRsCodeinsightDaemonRunning (line 148), ensureRsSearchDaemonRunning (line 161), ensureAcptoapiRunning (line 56) via module.exports at lines 174-181"
+  status: witnessed
+
+- id: session-id-threading-pattern
+  claim: SESSION_ID available via process.env.CLAUDE_SESSION_ID in gm-execute phase; threaded to .gm/*-status.json files for daemon state tracking
+  witness_method: exec:nodejs import gm-starter/lib/daemon-bootstrap.js and verify SESSION_ID usage
+  witness_evidence: "gm-starter/lib/daemon-bootstrap.js: ensureAcptoapiRunning() retrieves sessionId from process.env.CLAUDE_SESSION_ID or process.env.GM_SESSION_ID at line 59 and threads to writeStatusFile() at lines 66, 73, 81 for .gm/acptoapi-status.json. All daemon functions use same SESSION_ID threading pattern to writeStatusFile() for state tracking."
+  status: witnessed
+
+- id: acptoapi-port-check-pattern
+  claim: ensureAcptoapiRunning() checks 127.0.0.1:4800 reachability, spawns "bun x acptoapi@latest" if missing, uses Windows DETACHED_PROCESS flag 0x08000000
+  witness_method: Read daemon-bootstrap.js ensureAcptoapiRunning() lines
+  witness_evidence: "gm-starter/lib/daemon-bootstrap.js ensureAcptoapiRunning(): (1) port check at line 65 via checkPortReachable(host, port) using net.Socket with 500ms timeout (lines 35-47); (2) spawn at line 72 via spawn('bun', ['x', 'acptoapi@latest'], spawnOpts) with {detached:true, stdio:'ignore', windowsHide:true} options; (3) graceful error fallback at line 83 returns {ok:false, error, fallback:'anthropic-sdk'}; (4) detached=true + stdio='ignore' + child.unref() = DETACHED_PROCESS semantics; (5) Windows windowsHide flag prevents console window popup per AGENTS.md:79"
+  status: witnessed

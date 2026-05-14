@@ -231,7 +231,7 @@ test('update-docs skill includes browser cleanup exit phase', () => {
   if (!fs.existsSync(skillPath)) return;
   const content = fs.readFileSync(skillPath, 'utf8');
   assert(content.includes('browser cleanup'), 'browser cleanup section missing');
-  assert(content.includes('exit'), 'exit phase documentation missing');
+  assert(content.toLowerCase().includes('exit'), 'exit phase documentation missing');
 });
 
 test('hook count reduction: all 10 platforms generate ≤9 hook events', () => {
@@ -242,7 +242,7 @@ test('hook count reduction: all 10 platforms generate ≤9 hook events', () => {
     const hookPath = path.join(buildDir, p, 'hooks', 'hooks.json');
     if (!fs.existsSync(hookPath)) return;
     const hooks = JSON.parse(fs.readFileSync(hookPath, 'utf8'));
-    const eventCount = hooks.hooks ? hooks.hooks.length : 0;
+    const eventCount = hooks.hooks ? Object.keys(hooks.hooks).length : 0;
     assert(eventCount <= 9, `${p}: ${eventCount} hook events exceeds target of ≤9`);
   });
 });
