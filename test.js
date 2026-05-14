@@ -279,4 +279,28 @@ test('spool-dispatch.js exports dispatchSpool', () => {
   assert(typeof m.dispatchSpool === 'function', 'dispatchSpool is not a function');
 });
 
+test('browser.js exports session management functions', () => {
+  const browser = require('./gm-starter/lib/browser.js');
+  assert(browser.createSession, 'createSession not exported');
+  assert(browser.sendCommand, 'sendCommand not exported');
+  assert(browser.getScreenshot, 'getScreenshot not exported');
+  assert(browser.closeSession, 'closeSession not exported');
+  assert(browser.isBrowserAvailable, 'isBrowserAvailable not exported');
+  assert(typeof browser.createSession === 'function', 'createSession is not a function');
+  assert(typeof browser.sendCommand === 'function', 'sendCommand is not a function');
+  assert(typeof browser.getScreenshot === 'function', 'getScreenshot is not a function');
+});
+
+test('browser-spool-handler.js exports handleBrowserVerb', () => {
+  const handler = require('./gm-starter/lib/browser-spool-handler.js');
+  assert(handler.handleBrowserVerb, 'handleBrowserVerb not exported');
+  assert(typeof handler.handleBrowserVerb === 'function', 'handleBrowserVerb is not a function');
+});
+
+test('daemon-bootstrap.js exports ensureBrowserReady', () => {
+  const daemonBootstrap = require('./gm-starter/lib/daemon-bootstrap.js');
+  assert(daemonBootstrap.ensureBrowserReady, 'ensureBrowserReady not exported');
+  assert(typeof daemonBootstrap.ensureBrowserReady === 'function', 'ensureBrowserReady is not a function');
+});
+
 console.log('\n✓ All tests passed');

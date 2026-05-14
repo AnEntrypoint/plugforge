@@ -1,264 +1,179 @@
-- id: gm-skill-framework-bootstrap
-  subject: Create daemon-bootstrap.js for standalone gm-skill daemon orchestration
+- id: parity-rs-learn-skill-access
+  subject: Enable rs-learn (recall/memorize) access from skills via socket
   status: completed
   description: |
-    gm-skill must provide a standalone daemon-bootstrap.js (no plugkit hooks dependency) that spawns and monitors acptoapi, rs-learn, and rs-codeinsight daemons via spool dispatch. Implements checkState, spawn, waitForReady, getSocket, shutdown exported functions per AGENTS.md contract. Writes JSON status to .gm/ and emits structured JSONL logs to ~/.claude/gm-log. Works for any platform (no hooks, pure Node.js).
+    Skills must access rs-learn daemon directly via socket (127.0.0.1:4801 default) without hook infrastructure. Create lib/learning.js with checkLearningAvailable(), queryLearning(query, discipline), persistLearning(fact, discipline). Integrate with daemon-bootstrap.js to ensure rs-learn is running. Skills can then exec:recall and exec:memorize through spool.
   effort: medium
   category: infra
   route_family: boundary
   load: 0.9
   failure_modes:
-    - daemon spawn fails on Windows vs Unix
-    - socket reachability check hangs
-    - stale daemon process not detected
-    - race condition between multiple spawn attempts
-  route_fit: examined
-  authorization: witnessed
-  blocking: []
-  blockedBy: []
-  acceptance:
-    - daemon-bootstrap.js exports checkState(daemonName), spawn(daemonName, cmd), waitForReady(daemonName, host, port, timeoutMs), getSocket(daemonName), shutdown(daemonName)
-    - Detects running daemons via platform-specific mechanism (tasklist on Windows, pgrep on Unix)
-    - Verifies socket reachability before returning success
-    - Emits JSONL events to ~/.claude/gm-log/<date>/daemon.jsonl
-    - Writes status JSON to .gm/<daemon>-status.json
-    - Handles missing/stale daemons gracefully (no crash on re-check)
-    - Works in exec:nodejs spool without hook infrastructure
-
-- id: gm-skill-package-structure
-  subject: Wire gm-skill package.json, exports, and lib/ infrastructure
-  status: completed
-  description: |
-    gm-skill package.json must export daemon-bootstrap.js and skill loader. Create lib/manifest.js to discover SKILL.md files in skills/ and generate skill metadata. Create lib/loader.js to dynamically load skills and execute them via index.js per platform. Verify builds cleanly and supports require/ESM dual import paths.
-  effort: small
-  category: infra
-  route_family: boundary
-  load: 0.6
-  failure_modes:
-    - skills/ not discoverable from downstream platforms
-    - SKILL.md frontmatter not parsed correctly
-    - module.exports mismatch for ESM
-  route_fit: examined
-  authorization: witnessed
-  blocking: [gm-skill-gm-skill-index]
-  blockedBy: [gm-skill-framework-bootstrap]
-  acceptance:
-    - package.json main points to lib/index.js ✓
-    - lib/index.js exports { getSkills, getSkill, loadSkill, bootstrapDaemon } ✓
-    - lib/manifest.js discovers all skills/ directories and parses SKILL.md frontmatter ✓
-    - Skill metadata includes name, description, allowed-tools, compatible-platforms, end-to-end flag ✓
-    - Skills discoverable from downstream repos via require('gm-skill').getSkills() ✓
-
-- id: gm-skill-gm-skill-index
-  subject: Implement core skills (gm, planning, gm-execute, gm-emit, gm-complete, update-docs) as index.js modules
-  status: pending
-  description: |
-    Each skill/ directory must have index.js that:
-    1. Reads SKILL.md from the skill directory
-    2. Implements the skill's logic (dispatch to subagents or direct execution)
-    3. Returns end-to-end JSON on stdout (nextSkill, context, phase) per gm SKILL.md
-    4. Handles errors and timeouts without crashing
-    5. Routes through spool for any code execution (exec:nodejs, exec:bash)
-
-    gm → planning → gm-execute → gm-emit → gm-complete → update-docs, with cycle-back to planning on unknowns.
-  effort: large
-  category: feature
-  route_family: reasoning
-  load: 1.0
-  failure_modes:
-    - skill invocation infinite loops
-    - JSON output malformed or missing nextSkill
-    - context not passed between skills
-    - mutable resolution never completes
-    - git operations fail (push, commit)
-    - async operations timeout
+    - rs-learn socket not available
+    - discipline isolation broken
+    - memory writes not persisted
+    - session threading lost
   route_fit: examined
   authorization: weak_prior
-  blocking: []
-  blockedBy: [gm-skill-package-structure]
+  blocking: [parity-codeinsight-search-skill]
+  blockedBy: []
   acceptance:
-    - gm/index.js parses request, invokes planning as first skill, returns nextSkill="planning"
-    - planning/index.js runs ORIENT, mutable discovery, PRD generation, returns nextSkill="gm-execute"
-    - gm-execute/index.js parallelizes independent PRD items via subagents, returns nextSkill="gm-emit" or "planning" (on unknowns)
-    - gm-emit/index.js writes .gm/ files, verifies from disk, returns nextSkill="gm-complete"
-    - gm-complete/index.js verifies git state, checks tests, returns nextSkill="update-docs" or null
-    - update-docs/index.js updates README + AGENTS.md + site, commits and pushes, returns nextSkill=null
-    - All skills respect timeouts and emit clear error messages
-    - end-to-end JSON always includes { nextSkill, context, phase }
+    - lib/learning.js exports checkLearningAvailable(), queryLearning(query, discipline, sessionId), persistLearning(fact, discipline, sessionId)
+    - daemon-bootstrap.js spawns rs-learn on 127.0.0.1:4801
+    - Socket reachability verified before returning success
+    - Discipline parameter scopes queries to named stores
+    - Session ID threaded through all calls
+    - Memory available check prevents silent failures
+    - Error handling surfaces rs-learn unavailable without crashing
 
-- id: gm-skill-spool-integration
-  subject: Wire gm-skill skills to use spool dispatch for code execution
+- id: parity-codeinsight-search-skill
+  subject: Enable codeinsight (code search) from skills via socket
   status: completed
   description: |
-    Skills must dispatch work via spool (write to .gm/exec-spool/in/<lang>/<N>.<ext>) rather than invoking subagents directly. Implement helper functions to write spool files, poll output, and parse results. Create wrapper for exec:nodejs, exec:bash, exec:codesearch, exec:recall, exec:memorize that skill code can call directly.
-  effort: medium
-  category: infra
-  route_family: execution
-  load: 0.7
-  failure_modes:
-    - spool watchers timeout or hang
-    - output parsing fails
-    - session_id not threaded through
-    - temp files not cleaned up
-  route_fit: examined
-  authorization: witnessed
-  blocking: [gm-skill-gm-skill-index]
-  blockedBy: [gm-skill-package-structure]
-  acceptance:
-    - lib/spool.js exports { writeSpool, readSpoolOutput, waitForCompletion, execNodejs, execBash, execCodesearch, execRecall, execMemorize } ✓
-    - Each function handles file I/O, polling, and error recovery ✓
-    - Timeouts default to 30s, configurable per call ✓
-    - Session ID threaded through all spool operations ✓
-    - Temp files in exec-spool cleaned on success ✓
-
-- id: gm-skill-end-to-end-chaining
-  subject: Implement end-to-end skill chaining (JSON handoff between consecutive skills)
-  status: completed
-  description: |
-    When a skill returns nextSkill in JSON, the gm index.js must automatically invoke the next skill and pass context. No manual chaining. Support up to 5 hops in a single gm:gm invocation (gm → planning → gm-execute → gm-emit → gm-complete → update-docs). On nextSkill=null, complete and return. Handle cycle-back to planning when unknowns detected.
-  effort: small
-  category: feature
-  route_family: reasoning
-  load: 0.5
-  failure_modes:
-    - infinite loops (skill returns itself as nextSkill)
-    - context lost between hops
-    - memory not persisted (recall/memorize failures)
-  route_fit: examined
-  authorization: witnessed
-  blocking: []
-  blockedBy: [gm-skill-gm-skill-index]
-  acceptance:
-    - gm/index.js runs a skill chain loop until nextSkill=null ✓
-    - Context object passed as argument to each skill ✓
-    - Loop timeout (5 min default) prevents infinite chains ✓
-    - Cycle-back to planning on planning-mutable-detect triggers ✓
-    - gm/index.js implements while loop that chains skills until nextSkill=null ✓
-    - All 6 core skills (gm, planning, gm-execute, gm-emit, gm-complete, update-docs) implemented ✓
-    - test-e2e.js verifies chain execution ✓
-
-- id: gm-skill-test-e2e
-  subject: Test gm-skill end-to-end with a real task (trivial feature or bug fix)
-  status: completed
-  description: |
-    Witness gm-skill skills running against a small real task: parse task request → run PLAN → EXECUTE → EMIT → COMPLETE. Verify PRD generation, mutable resolution, subagent dispatch, and final push succeed. Use a test repo or local example project. Document actual output and any failures.
+    Skills must access rs-codeinsight daemon directly via socket (127.0.0.1:4802 default). Create lib/codeinsight.js with searchCode(query), indexProject(projectPath), getDiagnostics(). Integrate with daemon-bootstrap.js. Skills invoke via spool (exec:codesearch) which internally uses this library.
   effort: medium
   category: infra
   route_family: boundary
   load: 0.8
   failure_modes:
-    - skill invocation crashes on real request ✓
-    - PRD generation malformed ✓
-    - mutable discovery infinite loops ✓
-    - subagent dispatch fails ✓
-    - git push fails (auth, remote not set) ✓
+    - codeinsight socket not available
+    - index stale or missing
+    - query parsing fails
+    - discipline mixing breaks isolation
   route_fit: examined
-  authorization: witnessed
-  blocking: []
-  blockedBy: [gm-skill-gm-skill-index, gm-skill-spool-integration, gm-skill-end-to-end-chaining]
+  authorization: weak_prior
+  blocking: [parity-browser-skill]
+  blockedBy: [parity-rs-learn-skill-access]
   acceptance:
-    - gm-skill invoked with a sample request ✓
-    - PRD generated and verified on disk ✓
-    - All mutables resolved (status: witnessed) ✓
-    - Files written to disk match expected state ✓
-    - Git commit + push succeeds ✓
-    - Final output confirms COMPLETE ✓
-    - test-e2e.js verifies skill structure and chain execution ✓
-    - full-e2e-test.js creates test repo and runs complete workflow ✓
+    - lib/codeinsight.js exports searchCode(query, discipline), indexProject(projectPath), getDiagnostics()
+    - daemon-bootstrap.js spawns rs-codeinsight on 127.0.0.1:4802
+    - Socket reachability verified before returning success
+    - Discipline parameter scopes searches
+    - Session ID threaded through
+    - Graceful fallback when unavailable
 
-- id: gm-skill-npm-publish
-  subject: Configure npm publish workflow and dist/ build in gm-skill
+- id: parity-browser-skill
+  subject: Enable browser automation from skills (exec:browser)
   status: completed
   description: |
-    Create .github/workflows/gm-skill-publish.yml to auto-publish to npm on main branch push. Build dist/ with esbuild or webpack bundling all skills and lib/ into a single package. Pin versions in package.json (gm-skill should never be in flux). Verify downstream platforms (gm-cc, gm-gc) can require gm-skill@latest without dupes or conflicts.
-  effort: small
+    Skills must support browser automation without plugkit hook infrastructure. Create lib/browser.js managing browser sessions via rs-exec (127.0.0.1:5000 default browser session API). Skills dispatch exec:browser verb to spool. Browser sessions persist across turns within a Claude session, closed only on real session-end.
+  effort: medium
   category: infra
   route_family: boundary
-  load: 0.5
+  load: 0.7
   failure_modes:
-    - npm token missing or revoked
-    - dist/ not included in package
-    - version conflicts with downstream deps
+    - browser session creation fails
+    - session persistence lost
+    - screenshot encoding broken
+    - cleanup hangs
   route_fit: examined
-  authorization: witnessed
-  blocking: []
-  blockedBy: [gm-skill-test-e2e]
+  authorization: weak_prior
+  blocking: [parity-git-skill-control]
+  blockedBy: [parity-codeinsight-search-skill]
   acceptance:
-    - .github/workflows/gm-skill-publish.yml created at C:\dev\gm-skill\.github\workflows\gm-skill-publish.yml ✓
-    - package.json configured with build script and esbuild ✓
-    - package.json includes dist/ in files array ✓
-    - Version auto-bumped (patch) by CI (gh action: npm version patch) ✓
-    - gm-cc, gm-gc can install and use gm-skill as devDependency ✓
+    - lib/browser.js exports createSession(sessionId), sendCommand(sessionId, command), closeSession(sessionId), getScreenshot(sessionId)
+    - Browser sessions keyed by CLAUDE_SESSION_ID
+    - Sessions persist until real session-end (clear/logout/prompt_input_exit)
+    - exec:browser verb supported in spool (in/browser/<N>.txt body format: start | stop | screenshot | click | type | navigate)
+    - Screenshot base64 encoding preserved
+    - Error handling surfaces browser unavailable gracefully
 
-- id: gm-skill-docs-readme
-  subject: Write comprehensive README for gm-skill package
-  status: completed
+- id: parity-git-skill-control
+  subject: Enable comprehensive git control from skills (commit, push, status, diff)
+  status: pending
   description: |
-    README.md documents: purpose (orchestration skills for any gm platform), architecture (daemon bootstrap, skill chaining, spool dispatch), API surface (exported functions + examples), platform integration (how downstream repos load and use gm-skill), troubleshooting (common failures, logs location).
-  effort: small
-  category: docs
-  route_family: representation
-  load: 0.3
-  failure_modes:
-    - API docs missing examples
-    - platform integration steps unclear
-  route_fit: examined
-  authorization: witnessed
-  blocking: []
-  blockedBy: [gm-skill-test-e2e]
-  acceptance:
-    - README.md created with purpose, architecture, API surface sections ✓
-    - Example skill invocation shown (module exports, runSkill, getSkills) ✓
-    - Daemon bootstrap documented (checkState, spawn, waitForReady, getSocket, shutdown) ✓
-    - Spool dispatch pattern explained (in/<lang>/<N>.<ext> format, verbs) ✓
-    - Troubleshooting section included (daemon start, skill not found, spool hung, memory unavailable) ✓
-    - Links to AGENTS.md and skill files ✓
-
-- id: gm-skill-integration-gm-cc
-  subject: Integrate gm-skill into gm-cc as devDependency
-  status: completed
-  description: |
-    gm-cc hooks must load gm-skill and use its skills (planning, gm-execute, etc.) instead of importing from gm-starter. Verify gm:gm and gm:planning skills load correctly from gm-skill. Test in Claude Code plugin.
-  effort: small
+    Skills must perform full git operations without hooks: commit, push, status, diff, log, checkout, rebase, cherry-pick. Create lib/git.js wrapping all git commands with Windows compatibility, proper auth handling, and error surfaces. Skills dispatch exec:bash for git operations, using lib/git.js utilities for parsing output and error recovery.
+  effort: large
   category: infra
-  route_family: boundary
-  load: 0.6
+  route_family: execution
+  load: 0.9
   failure_modes:
-    - skills not found in gm-skill
-    - version mismatch between gm-skill and gm-cc
-    - hook loading fails
+    - git push blocked by auth
+    - Windows line ending issues
+    - commit hooks fail
+    - rebase conflicts unhandled
   route_fit: examined
-  authorization: witnessed
-  blocking: []
-  blockedBy: [gm-skill-npm-publish]
+  authorization: weak_prior
+  blocking: [parity-hook-elimination]
+  blockedBy: [parity-browser-skill]
   acceptance:
-    - INTEGRATION-gm-cc.md created with detailed steps ✓
-    - Documents package.json devDependency addition ✓
-    - Shows skill loading pattern: require('gm-skill').getSkill(...) ✓
-    - Explains skill invocation and context passing ✓
-    - Includes verification checklist and troubleshooting ✓
-    - Rollback instructions provided ✓
+    - lib/git.js exports commit(message, files, sessionId), push(branch, sessionId), status(sessionId), diff(sessionId), log(sessionId), checkout(branch, sessionId), rebase(upstream, sessionId)
+    - All functions handle Windows CRLF + Unix LF correctly
+    - Git user configured via CLAUDE.md (lanmower, almagestfraternite@gmail.com)
+    - Auth errors (no creds, blocked by org) surfaced clearly
+    - Commit messages respect 72-char summary limit
+    - Rebase conflicts preserved with user indication
+    - Windows shell escaping correct
 
-- id: gm-skill-integration-gm-gc
-  subject: Integrate gm-skill into gm-gc as devDependency (Gemini CLI)
-  status: completed
+- id: parity-hook-elimination
+  subject: Audit hooks and eliminate those replaced by skills
+  status: pending
   description: |
-    gm-gc (Gemini CLI) must load and use gm-skill orchestration skills. Verify Gemini CLI can dispatch to gm:planning and upstream skills. Test in Gemini CLI environment.
-  effort: small
+    Review all plugkit hooks (session_start, pre_tool_use, post_tool_use, prompt_submit, stop) and identify which functionality now lives in skills. Remove redundant hooks, update AGENTS.md to reflect skill-native equivalents. Hooks to evaluate: daemon spawn (→ skill), mutable gate (→ skill), needs-gm gate (→ skill), codeinsight sync (→ skill).
+  effort: medium
   category: infra
   route_family: boundary
   load: 0.6
   failure_modes:
-    - gm-skill not loadable in Gemini CLI env
-    - agent format incompatibility
+    - removing hook breaks downstream platforms
+    - skill doesn't fire in all contexts where hook did
+    - AGENTS.md outdated after removal
   route_fit: examined
-  authorization: witnessed
-  blocking: []
-  blockedBy: [gm-skill-npm-publish]
+  authorization: weak_prior
+  blocking: [parity-functional-completeness]
+  blockedBy: [parity-git-skill-control]
   acceptance:
-    - INTEGRATION-gm-gc.md created with platform-specific steps ✓
-    - Documents gm-skill devDependency addition ✓
-    - Shows skill dispatch pattern for Gemini CLI ✓
-    - Explains spool integration (watcher + session management) ✓
-    - Includes workflow example and platform differences ✓
-    - Verification checklist and troubleshooting provided ✓
+    - All hooks audited against skill equivalents
+    - Redundant hooks identified with replacement pattern documented
+    - AGENTS.md updated with skill-native alternatives
+    - No functional regression (skills cover all hook paths)
+    - downstream platforms still work post-cleanup
+
+- id: parity-functional-completeness
+  subject: Run functional parity test comparing gm-skill vs gm-cc outputs
+  status: pending
+  description: |
+    Execute identical tasks in both gm-skill and gm-cc harnesses and compare outputs. Verify: PRD generation identical, skill chain identical, git state identical, AGENTS.md identical, file creation identical. Document any divergences and fix them.
+  effort: large
+  category: infra
+  route_family: boundary
+  load: 0.8
+  failure_modes:
+    - outputs diverge (PRD different, files different)
+    - skill chain fails while hook chain succeeds
+    - git state inconsistent
+    - search results different between codeinsight paths
+  route_fit: examined
+  authorization: weak_prior
+  blocking: [parity-residual-work]
+  blockedBy: [parity-hook-elimination]
+  acceptance:
+    - Identical task request given to both harnesses
+    - PRD files compared (yaml diff)
+    - Skill chain outputs compared (json equality)
+    - Final git state identical (diff, log)
+    - Final file set identical (ls -la, hash check)
+    - Any divergences fixed in follow-up items
+
+- id: parity-residual-work
+  subject: Complete all residual in-spirit and out-of-spirit work discovered during parity testing
+  status: pending
+  description: |
+    After parity testing, enumerate all discovered issues, improvements, optimizations, and edge cases. Self-authorize in-spirit residuals (items that fit the spirit of functional-parity but weren't explicitly scoped). Name and stop on out-of-spirit items. Execute all in-spirit residuals in this run.
+  effort: large
+  category: feature
+  route_family: reasoning
+  load: 0.7
+  failure_modes:
+    - parity test incomplete
+    - residuals not enumerated
+    - wrong scope judgment
+  route_fit: examined
+  authorization: weak_prior
+  blocking: []
+  blockedBy: [parity-functional-completeness]
+  acceptance:
+    - Comprehensive residual list generated from parity test failures
+    - Each item categorized as in-spirit or out-of-spirit
+    - In-spirit items executed and verified
+    - Out-of-spirit items named (not executed)
+    - All changes committed and pushed

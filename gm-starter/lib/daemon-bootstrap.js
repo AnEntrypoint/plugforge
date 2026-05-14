@@ -345,10 +345,106 @@ async function ensureRsSearchDaemonRunning() {
   }
 }
 
+async function ensureRsCodeinsightReady(sessionId = getSessionId()) {
+  const startTime = Date.now();
+  const daemonName = 'rs-codeinsight';
+  const host = '127.0.0.1';
+  const port = 4802;
+
+  try {
+    emitDaemonEvent(daemonName, 'info', 'Ensuring daemon readiness', { sessionId, host, port });
+
+    await ensureRsCodeinsightDaemonRunning();
+
+    const maxWaitMs = 30000;
+    const pollIntervalMs = 500;
+    const deadline = Date.now() + maxWaitMs;
+
+    while (Date.now() < deadline) {
+      const reachable = await checkPortReachable(host, port, 1000);
+      if (reachable) {
+        emitDaemonEvent(daemonName, 'info', 'Daemon ready', {
+          host,
+          port,
+          elapsedMs: Date.now() - startTime,
+          sessionId,
+        });
+        writeStatusFile(daemonName, 'ready', sessionId);
+        return { ok: true, host, port, sessionId, durationMs: Date.now() - startTime };
+      }
+
+      await new Promise(resolve => setTimeout(resolve, pollIntervalMs));
+    }
+
+    emitDaemonEvent(daemonName, 'warn', 'Timeout waiting for readiness', {
+      host,
+      port,
+      maxWaitMs,
+      sessionId,
+      elapsedMs: Date.now() - startTime,
+    });
+    writeStatusFile(daemonName, 'timeout', sessionId);
+    return { ok: false, error: 'Timeout waiting for codeinsight daemon', durationMs: Date.now() - startTime };
+  } catch (e) {
+    emitDaemonEvent(daemonName, 'error', 'Failed to ensure readiness', {
+      error: e.message,
+      sessionId,
+      durationMs: Date.now() - startTime,
+    });
+    writeStatusFile(daemonName, 'error', sessionId);
+    return { ok: false, error: e.message, durationMs: Date.now() - startTime };
+  }
+}
+
+async function ensureBrowserReady(sessionId = getSessionId()) {
+  const startTime = Date.now();
+  const host = '127.0.0.1';
+  const port = 5000;
+
+  try {
+    emitDaemonEvent('browser', 'info', 'Checking browser readiness', { sessionId, host, port });
+
+    const maxWaitMs = 10000;
+    const pollIntervalMs = 250;
+    const deadline = Date.now() + maxWaitMs;
+
+    while (Date.now() < deadline) {
+      const reachable = await checkPortReachable(host, port, 1000);
+      if (reachable) {
+        emitDaemonEvent('browser', 'info', 'Browser ready', {
+          host,
+          port,
+          elapsedMs: Date.now() - startTime,
+          sessionId,
+        });
+        return { ok: true, host, port, sessionId, durationMs: Date.now() - startTime };
+      }
+
+      await new Promise(resolve => setTimeout(resolve, pollIntervalMs));
+    }
+
+    emitDaemonEvent('browser', 'warn', 'Browser not available', {
+      host,
+      port,
+      maxWaitMs,
+      sessionId,
+    });
+    return { ok: false, error: 'Browser API not available at 127.0.0.1:5000', durationMs: Date.now() - startTime };
+  } catch (e) {
+    emitDaemonEvent('browser', 'error', 'Failed to check browser', {
+      error: e.message,
+      sessionId,
+    });
+    return { ok: false, error: e.message, durationMs: Date.now() - startTime };
+  }
+}
+
 module.exports = {
   ensureAcptoapiRunning,
   ensureRsCodeinsightDaemonRunning,
+  ensureRsCodeinsightReady,
   ensureRsSearchDaemonRunning,
   ensureRsLearningDaemonRunning,
+  ensureBrowserReady,
   checkPortReachable,
 };

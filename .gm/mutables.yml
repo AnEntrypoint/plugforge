@@ -87,3 +87,75 @@
   witness_method: codesearch gm skill publish workflow
   witness_evidence: "publish.yml and cascade.yml patterns exist; auto-version-bump and npm publish flows documented"
   status: witnessed
+
+- id: codeinsight-module-created
+  claim: gm-starter/lib/codeinsight.js exports searchCode, indexProject, getDiagnostics, getIndexStatus, checkSocketReachable
+  witness_method: Read C:\dev\gm\gm-starter\lib\codeinsight.js and verify module.exports
+  witness_evidence: "codeinsight.js created at line 1-261: exports { searchCode, indexProject, getDiagnostics, getIndexStatus, checkSocketReachable }. searchCode(query, discipline, sessionId) at line 175; indexProject(projectPath, discipline, sessionId) at line 190; getDiagnostics(projectPath, discipline, sessionId) at line 207; getIndexStatus(discipline, sessionId) at line 230; checkSocketReachable(host, port, timeoutMs) at line 31. All functions async with proper error handling and discipline parameter support."
+  status: witnessed
+
+- id: codeinsight-daemon-bootstrap-integration
+  claim: daemon-bootstrap.js exports ensureRsCodeinsightReady that waits for socket availability
+  witness_method: Read C:\dev\gm\gm-starter\lib\daemon-bootstrap.js and verify exports
+  witness_evidence: "ensureRsCodeinsightReady(sessionId) added at lines 348-391: calls ensureRsCodeinsightDaemonRunning(), polls checkPortReachable for 30s, returns {ok, host, port, sessionId, durationMs} on success. Error handling with JSONL logging. Exported in module.exports alongside ensureRsCodeinsightDaemonRunning."
+  status: witnessed
+
+- id: codeinsight-socket-request-protocol
+  claim: sendRequest function implements JSON-line request/response protocol with discipline scoping
+  witness_method: Read C:\dev\gm\gm-starter\lib\codeinsight.js sendRequest function
+  witness_evidence: "sendRequest(request, sessionId) at lines 52-155: validates socket reachability before connecting. Creates net.Socket, sends JSON-stringified request with discipline field. Parses line-delimited JSON responses. Handles timeouts (30s), connection errors, and missing responses. Returns {ok, error, durationMs} on failure; {ok, ...response, durationMs} on success."
+  status: witnessed
+
+- id: codeinsight-discipline-scoping
+  claim: All searchCode, indexProject, getDiagnostics calls include discipline parameter and pass to daemon
+  witness_method: Inspect function signatures in codeinsight.js
+  witness_evidence: "searchCode(query, discipline='default', sessionId) line 175 passes discipline in request object line 182. indexProject(projectPath, discipline='default', sessionId) line 190 passes discipline in request line 198. getDiagnostics(projectPath, discipline='default', sessionId) line 207 passes discipline in request line 220. getIndexStatus(discipline='default', sessionId) line 230 passes discipline in request line 236. All functions default discipline='default' and thread through request payload."
+  status: witnessed
+
+- id: codeinsight-error-handling-graceful
+  claim: codeinsight.js handles unavailable socket with graceful fallback and error surfaces
+  witness_method: Read error handling paths in codeinsight.js
+  witness_evidence: "checkSocketReachable at line 31-49 returns boolean (false on timeout/error). sendRequest at line 52 checks reachability before connecting; returns {ok:false, error:message, durationMs} if unreachable (line 60-65). Socket errors (lines 143-150), timeouts (lines 81-87), connection errors (lines 139-142) all return {ok:false, error:message} instead of throwing. Event emission with emitEvent calls log socket unavailability and request failures. No uncaught exceptions."
+  status: witnessed
+
+- id: learning-js-exports-complete
+  claim: lib/learning.js exports all required functions with correct signatures
+  witness_method: exec:nodejs verify learning.js module exports
+  witness_evidence: "learning.js exports: checkLearningAvailable (async), queryLearning (async), persistLearning (async), ensureDaemonRunning (async), RS_LEARN_HOST (string '127.0.0.1'), RS_LEARN_PORT (number 4801). All functions are async and return Promises."
+  status: witnessed
+
+- id: learning-socket-communication
+  claim: learning.js implements JSON-RPC socket communication with rs-learn daemon
+  witness_method: Read C:\dev\gm\gm-starter\lib\learning.js jsonRpcCall function
+  witness_evidence: "jsonRpcCall at lines 105-188: creates net.Socket, sends JSON.stringify({jsonrpc:'2.0', method, params, id}), parses line-delimited JSON responses. Handles timeouts, connection errors, parse errors. Returns result on success or rejects on error. Protocol matches JSON-RPC 2.0 specification."
+  status: witnessed
+
+- id: learning-discipline-isolation
+  claim: Discipline parameter is correctly passed through to rs-learn RPC calls
+  witness_method: Inspect queryLearning and persistLearning in learning.js
+  witness_evidence: "queryLearning at line 191 accepts discipline='default' parameter. Calls jsonRpcCall with params {query, discipline} at lines 204-209. persistLearning at line 231 accepts discipline='default' parameter. Calls jsonRpcCall with params {fact, discipline} at lines 244-249. Both functions pass discipline through params to RPC call."
+  status: witnessed
+
+- id: learning-session-threading
+  claim: Session ID is threaded through all learning.js functions
+  witness_method: Read all learning.js functions and verify SESSION_ID parameter
+  witness_evidence: "checkLearningAvailable line 78: sessionId from process.env or 'unknown'. ensureDaemonRunning line 50: sessionId parameter with fallback. queryLearning line 191: sessionId parameter passed to jsonRpcCall. persistLearning line 231: sessionId parameter passed to jsonRpcCall. All calls include sessionId in event emissions and RPC params. jsonRpcCall line 122 includes sessionId in params object sent to daemon."
+  status: witnessed
+
+- id: learning-error-handling
+  claim: learning.js surfaces rs-learn unavailable errors without crashing
+  witness_method: Read error paths in queryLearning and persistLearning
+  witness_evidence: "queryLearning lines 195-228: try/catch wraps checkLearningAvailable and jsonRpcCall. Unavailable socket returns null instead of throwing (line 201). Errors logged via emitLearningEvent (lines 220-226) and return null. persistLearning lines 231-265: try/catch wraps checkLearningAvailable and jsonRpcCall. Unavailable socket throws with clear message (line 241). Errors logged via emitLearningEvent (lines 259-263). checkLearningAvailable lines 78-102: socket errors and timeouts resolve to false instead of throwing."
+  status: witnessed
+
+- id: daemon-bootstrap-ensureRsLearning-function
+  claim: daemon-bootstrap.js exports ensureRsLearningDaemonRunning function
+  witness_method: Read C:\dev\gm\gm-starter\lib\daemon-bootstrap.js
+  witness_evidence: "ensureRsLearningDaemonRunning at lines 156-204: spawns rs-learn via 'bun x rs-learn@latest', detached process. Checks isDaemonRunning before spawn. Emits events, writes status file. Returns {ok, already_running, pid, sessionId, durationMs}. Exported in module.exports line 352."
+  status: witnessed
+
+- id: learning-daemon-bootstrap-integration
+  claim: learning.js integrates with daemon-bootstrap.js to ensure rs-learn is running
+  witness_method: Read ensureDaemonRunning in learning.js
+  witness_evidence: "ensureDaemonRunning at lines 50-76: calls getDaemonBootstrap() to load daemon-bootstrap module. Invokes bootstrap.ensureRsLearningDaemonRunning() and logs result. Returns boolean success/failure. Called by learning.js functions before socket operations if needed."
+  status: witnessed
