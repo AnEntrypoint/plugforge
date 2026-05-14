@@ -1,0 +1,2 @@
+project/gm-skill-bootstrap-contract
+lib/bootstrap-compat.js re-exports bootstrap.js functions (ensureRsLearningDaemonRunning, ensureAcptoapiRunning, etc) without repo structure dependency. Reads GM_BOOTSTRAP_PATH env var; falls back to ~/.claude/gm-tools/bootstrap.js. Allows gm-skill package to spawn daemons and initialize bootstrap from skill-only context without gm repo structure.

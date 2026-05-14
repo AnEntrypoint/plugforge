@@ -1,0 +1,37 @@
+- id: residual-scan-wave-3-4
+  subject: Enumerate in-spirit reachable residuals for WAVE 3.4+
+  status: completed
+  description: After gm-skill-repo-scaffold is complete, scan for pre-existing breaks, neighboring issues, implied follow-ons reachable from this session. Expected residuals within scope (all self-authorized under prior user mandate for maximum coverage) include gm-skill npm package integration into 12 downstream repos, hook-removal work in rs-plugkit, auto-spawn daemon consolidation, and WAVE 3 documentation updates.
+  effort: small
+  category: infra
+  route_family: grounding
+  load: 0.5
+  failure_modes: []
+  route_fit: examined
+  authorization: witnessed
+  blocking: []
+  blockedBy: []
+  acceptance:
+    - Enumerate all in-spirit residuals (pre-existing breaks this session, neighboring lint/test/build failures, obvious refactor wins, observability gaps, doc drift, follow-on work user implied)
+    - Explicitly state "residual scan complete: X items identified, Y items out-of-spirit or unreachable"
+    - Any reachable in-spirit residual appended to PRD as separate item with explicit dependency graph
+  edge_cases:
+    - Distinguish between in-spirit self-authorized expansion vs out-of-scope
+    - Residuals unreachable from this session are named and skipped
+- id: rebuild-all-platforms
+  subject: Rebuild all 10 platform outputs after scaffold completion
+  status: pending
+  description: Run node cli.js gm-starter ./build to regenerate all platform outputs (gm-cc, gm-gc, gm-oc, gm-kilo, gm-codex, gm-copilot-cli, gm-vscode, gm-cursor, gm-zed, gm-jetbrains) so they inherit any template changes and pick up scaffolded gm-skill integration.
+  effort: small
+  category: infra
+  route_family: execution
+  load: 0.4
+  failure_modes: []
+  route_fit: examined
+  authorization: witnessed
+  blocking: []
+  blockedBy: ['residual-scan-wave-3-4']
+  acceptance:
+    - build/ directory regenerated
+    - 10 platform subdirs all present with latest content
+    - No build errors or warnings

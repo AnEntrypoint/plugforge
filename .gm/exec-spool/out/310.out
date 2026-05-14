@@ -1,0 +1,19 @@
+=== SCAFFOLD SPOOL STATUS ===
+{
+  "100": {
+    "exitCode": 1,
+    "ok": false,
+    "durationMs": 1008
+  },
+  "101": {
+    "exitCode": 1,
+    "ok": false,
+    "durationMs": 1708
+  },
+  "102": {
+    "exitCode": 0,
+    "ok": true,
+    "durationMs": 870
+  }
+}
+ERROR: Some tasks failed

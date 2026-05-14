@@ -1,0 +1,50 @@
+[discipline:default] platforms/copilot-cli.js:1-60 [159L] (100.0%)
+   > const CLIAdapter = require('../lib/cli-adapter');
+   > const gen = require('./copilot-cli-gen');
+   > 
+
+[discipline:default] platforms/windsurf.js:1-60 [137L] (89.5%)
+   > const ExtensionAdapter = require('../lib/extension-adapter');
+   > const { windsurfManifest } = require('./ide-manifests');
+   > const TemplateBuilder = require('../lib/template-builder');
+
+[discipline:default] platforms/vscode.js:1-60 [192L] (89.5%)
+   > const ExtensionAdapter = require('../lib/extension-adapter');
+   > const { vscodeManifest } = require('./ide-manifests');
+   > const TemplateBuilder = require('../lib/template-builder');
+
+[discipline:default] platforms/cursor.js:1-60 [144L] (89.5%)
+   > const ExtensionAdapter = require('../lib/extension-adapter');
+   > const { cursorManifest } = require('./ide-manifests');
+   > const TemplateBuilder = require('../lib/template-builder');
+
+[discipline:default] platforms/zed.js:1-60 [60L] (85.0%)
+   > const ExtensionAdapter = require('../lib/extension-adapter');
+   > const { zedManifest } = require('./ide-manifests');
+   > const TemplateBuilder = require('../lib/template-builder');
+
+[discipline:default] AGENTS.md:1-60 [167L] (83.6%)
+   > # Architecture & Philosophy
+   > 
+   > gm generates 10 platform implementations from a single convention-driven source.
+
+[discipline:default] platforms/cli-config-shared.js:1441-1500 [2242L] (in: getPackageJsonFields) (81.6%)
+   >     });
+   >   },
+   >   getPackageJsonFields() {
+
+[discipline:default] platforms/base.js:1-60 [123L] (68.6%)
+   > const path = require('path');
+   > const fs = require('fs');
+   > const { writeFile, ensureDir, copyFile } = require('../lib/file-generator');
+
+[discipline:default] gm-starter/skills/create-lang-plugin/SKILL.md:1-60 [122L] (62.4%)
+   > ---
+   > name: create-lang-plugin
+   > description: Create a lang/ plugin that wires any CLI tool or language runtime i
+
+[discipline:default] gm-starter/skills/update-docs/SKILL.md:1-60 [67L] (59.5%)
+   > ---
+   > name: update-docs
+   > description: UPDATE-DOCS phase. Refresh README.md, AGENTS.md, and docs/index.htm
+

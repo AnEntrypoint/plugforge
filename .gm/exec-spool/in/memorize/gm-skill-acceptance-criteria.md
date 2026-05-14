@@ -1,0 +1,2 @@
+project/gm-skill-acceptance-criteria
+WAVE 3.3 acceptance criteria for gm-skill repo: (1) created at AnEntrypoint/gm-skill with MIT license; (2) directory structure with skills/, lib/, bin/ folders; (3) all 6 SKILL.md files copied with gate logic index.js in each; (4) package.json with @gm/gm-skill named exports; (5) .github/workflows/publish.yml for CI/CD with version bump and NPM publish; (6) README documenting skill-only architecture, gate logic, and bootstrap-compat.js contract vs gm-starter differences.

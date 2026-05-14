@@ -1,0 +1,16 @@
+=== Module Exports ===
+[
+  "ensureRsLearningDaemonRunning"
+]
+
+=== Function Signatures ===
+ensureRsLearningDaemonRunning: AsyncFunction
+  (0 params)
+
+=== File Size ===
+Total lines: 136
+
+=== Test: ensureRsLearningDaemonRunning callable ===
+Type: function
+Name: ensureRsLearningDaemonRunning
+Callable: true

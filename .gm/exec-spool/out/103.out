@@ -1,0 +1,408 @@
+[rebuild] Starting platform rebuild...
+[rebuild] Removing stale build/ directory...
+[rebuild] Running: node cli.js gm-starter ./build
+
+============================================================
+PLUGFORGE VALIDATION REPORT
+============================================================
+
+Summary: 4 agents, 0 hooks, 24 skills
+Errors: 0, Warnings: 0
+
+✅ INFO:
+   ✓ gm.json spec validated: gm@2.0.1034
+   ✓ Agents validated: gm, memorize, research-worker, textprocessing
+   ✓ hooks/hooks.json present (plugkit handles hook events)
+   ✓ Skills validated: browser, code-search, create-lang-plugin, gm, gm-cc, gm-codex, gm-complete, gm-copilot-cli, gm-cursor, gm-emit, gm-execute, gm-gc, gm-jetbrains, gm-kilo, gm-oc, gm-vscode, gm-zed, governance, pages, planning, research, ssh, textprocessing, update-docs
+   ℹ No MCP servers configured (optional)
+   ✓ File integrity check passed (28 files exist)
+
+============================================================
+✅ CONFIGURATION VALID - Ready to build!
+============================================================
+
+
+======================================================================
+DETAILED BUILD REPORT
+======================================================================
+
+Build Results: 15 succeeded, 0 failed
+Output Directory: C:\dev\gm\build
+
+SUCCESSFUL BUILDS:
+----------------------------------------------------------------------
+
+📦 cc              | 58 files
+   Config Files:
+     • .claude-plugin\marketplace.json
+     • .github\workflows\pages.yml
+     • .mcp.json
+     • gm.json
+     • hooks\hooks.json
+     ... and 3 more
+   Documentation:
+     • agents\gm.md
+     • agents\memorize.md
+     • agents\research-worker.md
+     • agents\textprocessing.md
+     • AGENTS.md
+     ... and 28 more
+   Other:
+     • .editorconfig
+     • .gitignore
+     • bin\bootstrap.js
+     • bin\plugkit.js
+     • bin\plugkit.sha256
+     ... and 12 more
+
+📦 gc              | 38 files
+   Config Files:
+     • .github\workflows\pages.yml
+     • .mcp.json
+     • gemini-extension.json
+     • gm.json
+     • hooks\hooks.json
+     ... and 2 more
+   Documentation:
+     • agents\gm.md
+     • agents\memorize.md
+     • agents\research-worker.md
+     • agents\textprocessing.md
+     • AGENTS.md
+     ... and 4 more
+   Other:
+     • .editorconfig
+     • .gitignore
+     • bin\bootstrap.js
+     • bin\plugkit.js
+     • bin\plugkit.sha256
+     ... and 17 more
+
+📦 oc              | 62 files
+   Config Files:
+     • .github\workflows\pages.yml
+     • .mcp.json
+     • gm.json
+     • hooks\hooks.json
+     • hooks\hooks.spec.json
+     ... and 2 more
+   Documentation:
+     • agents\gm.md
+     • agents\memorize.md
+     • agents\research-worker.md
+     • agents\textprocessing.md
+     • AGENTS.md
+     ... and 28 more
+   Other:
+     • .editorconfig
+     • .gitignore
+     • bin\bootstrap.js
+     • bin\plugkit.js
+     • bin\plugkit.sha256
+     ... and 17 more
+
+📦 codex           | 63 files
+   Config Files:
+     • .agents\plugins\marketplace.json
+     • .app.json
+     • .codex-plugin\plugin.json
+     • .github\workflows\pages.yml
+     • .mcp.json
+     ... and 5 more
+   Documentation:
+     • agents\gm.md
+     • agents\memorize.md
+     • agents\research-worker.md
+     • agents\textprocessing.md
+     • AGENTS.md
+     ... and 28 more
+   Other:
+     • .editorconfig
+     • .gitignore
+     • assets\icon.svg
+     • assets\logo.svg
+     • bin\bootstrap.js
+     ... and 15 more
+
+📦 kilo            | 62 files
+   Config Files:
+     • .github\workflows\pages.yml
+     • .mcp.json
+     • gm.json
+     • hooks\hooks.json
+     • hooks\hooks.spec.json
+     ... and 2 more
+   Documentation:
+     • agents\gm.md
+     • agents\memorize.md
+     • agents\research-worker.md
+     • agents\textprocessing.md
+     • AGENTS.md
+     ... and 28 more
+   Other:
+     • .editorconfig
+     • .gitignore
+     • bin\bootstrap.js
+     • bin\plugkit.js
+     • bin\plugkit.sha256
+     ... and 17 more
+
+📦 qwen            | 56 files
+   Config Files:
+     • .github\workflows\pages.yml
+     • .mcp.json
+     • gm.json
+     • hooks\hooks.json
+     • hooks\hooks.spec.json
+     ... and 2 more
+   Documentation:
+     • agents\gm.md
+     • agents\memorize.md
+     • agents\research-worker.md
+     • agents\textprocessing.md
+     • AGENTS.md
+     ... and 28 more
+   Other:
+     • .editorconfig
+     • .gitignore
+     • bin\bootstrap.js
+     • bin\plugkit.js
+     • bin\plugkit.sha256
+     ... and 11 more
+
+📦 hermes          | 54 files
+   Config Files:
+     • .github\workflows\pages.yml
+     • .mcp.json
+     • gm.json
+     • hermes-skill.json
+     • hooks\hooks.json
+     ... and 1 more
+   Documentation:
+     • agents\gm.md
+     • agents\memorize.md
+     • agents\research-worker.md
+     • agents\textprocessing.md
+     • AGENTS.md
+     ... and 27 more
+   Other:
+     • .editorconfig
+     • .gitignore
+     • bin\bootstrap.js
+     • bin\plugkit.js
+     • bin\plugkit.sha256
+     ... and 11 more
+
+📦 thebird         | 55 files
+   Config Files:
+     • .github\workflows\pages.yml
+     • .mcp.json
+     • gm.json
+     • hooks\hooks.json
+     • hooks\hooks.spec.json
+     ... and 2 more
+   Documentation:
+     • agents\gm.md
+     • agents\memorize.md
+     • agents\research-worker.md
+     • agents\textprocessing.md
+     • AGENTS.md
+     ... and 27 more
+   Other:
+     • .editorconfig
+     • .gitignore
+     • bin\bootstrap.js
+     • bin\plugkit.js
+     • bin\plugkit.sha256
+     ... and 11 more
+
+📦 vscode          | 31 files
+   Config Files:
+     • .github\workflows\pages.yml
+     • package.json
+   Documentation:
+     • agents\gm.md
+     • CONTRIBUTING.md
+     • LICENSE
+     • README.md
+     • skills\browser\SKILL.md
+     ... and 13 more
+   Other:
+     • .editorconfig
+     • .gitignore
+     • .vscodeignore
+     • bin\bootstrap.js
+     • bin\plugkit.js
+     ... and 6 more
+
+📦 cursor          | 32 files
+   Config Files:
+     • .cursor\mcp.json
+     • .github\workflows\pages.yml
+     • package.json
+   Documentation:
+     • agents\gm.md
+     • CONTRIBUTING.md
+     • LICENSE
+     • README.md
+     • skills\browser\SKILL.md
+     ... and 13 more
+   Other:
+     • .cursorrules
+     • .editorconfig
+     • .gitignore
+     • bin\bootstrap.js
+     • bin\plugkit.js
+     ... and 6 more
+
+📦 zed             | 31 files
+   Config Files:
+     • .github\workflows\pages.yml
+   Documentation:
+     • agents\gm.md
+     • CONTRIBUTING.md
+     • LICENSE
+     • README.md
+     • skills\browser\SKILL.md
+     ... and 13 more
+   Other:
+     • .editorconfig
+     • .gitignore
+     • bin\bootstrap.js
+     • bin\plugkit.js
+     • bin\plugkit.sha256
+     ... and 7 more
+
+📦 jetbrains       | 33 files
+   Config Files:
+     • .github\workflows\pages.yml
+   Documentation:
+     • CONTRIBUTING.md
+     • docs\gm.md
+     • docs\skills\browser\SKILL.md
+     • docs\skills\code-search\SKILL.md
+     • docs\skills\create-lang-plugin\SKILL.md
+     ... and 13 more
+   Other:
+     • .editorconfig
+     • .gitignore
+     • bin\bootstrap.js
+     • bin\plugkit.js
+     • bin\plugkit.sha256
+     ... and 9 more
+
+📦 copilot-cli     | 47 files
+   Config Files:
+     • .github\workflows\pages.yml
+     • .mcp.json
+     • hooks\hooks.json
+     • hooks\hooks.spec.json
+     • manifest.yml
+     ... and 2 more
+   Documentation:
+     • agents\gm.md
+     • agents\memorize.md
+     • CONTRIBUTING.md
+     • copilot-profile.md
+     • LICENSE
+     ... and 25 more
+   Other:
+     • .editorconfig
+     • .gitignore
+     • bin\bootstrap.js
+     • bin\plugkit.js
+     • bin\plugkit.sha256
+     ... and 5 more
+
+📦 antigravity     | 42 files
+   Config Files:
+     • .github\workflows\pages.yml
+     • package.json
+   Documentation:
+     • agents\gm.md
+     • CONTRIBUTING.md
+     • LICENSE
+     • README.md
+     • skills\browser\SKILL.md
+     ... and 23 more
+   Other:
+     • .editorconfig
+     • .gitignore
+     • .vscodeignore
+     • bin\bootstrap.js
+     • bin\install.js
+     ... and 7 more
+
+📦 windsurf        | 32 files
+   Config Files:
+     • .github\workflows\pages.yml
+     • .windsurf\mcp.json
+     • package.json
+   Documentation:
+     • agents\gm.md
+     • CONTRIBUTING.md
+     • LICENSE
+     • README.md
+     • skills\browser\SKILL.md
+     ... and 13 more
+   Other:
+     • .editorconfig
+     • .gitignore
+     • .windsurfrules
+     • bin\bootstrap.js
+     • bin\plugkit.js
+     ... and 6 more
+
+======================================================================
+
+
+POTENTIAL ISSUES:
+
+  ⚠️  Some platforms have unusual file counts (avg: 46). This might indicate platform-specific issues.
+  ⚠️  vscode: Missing hooks configuration
+  ⚠️  cursor: Missing hooks configuration
+  ⚠️  zed: Missing hooks configuration
+  ⚠️  jetbrains: Missing hooks configuration
+  ⚠️  jetbrains: Missing gm agent
+  ⚠️  antigravity: Missing hooks configuration
+  ⚠️  windsurf: Missing hooks configuration
+
+HOOK VALIDATION:
+
+  cc: ✅ hooks.json valid with 4 event types
+  gc: ⚠️  Hook "BeforeTool" doesn't use path variables: node ${extensionPath}/hooks/pre-tool-use-hook.js
+  gc: ⚠️  Hook "SessionStart" doesn't use path variables: node ${extensionPath}/hooks/session-start-hook.js
+  gc: ⚠️  Hook "BeforeAgent" doesn't use path variables: node ${extensionPath}/hooks/prompt-submit-hook.js
+  gc: ⚠️  Hook "SessionEnd" doesn't use path variables: node ${extensionPath}/hooks/stop-hook.js
+  gc: ⚠️  Hook "SessionEnd" doesn't use path variables: node ${extensionPath}/hooks/stop-hook-git.js
+  oc: ✅ hooks.json valid with 3 event types
+  codex: ✅ hooks.json valid with 5 event types
+  kilo: ✅ hooks.json valid with 3 event types
+  qwen: ✅ hooks.json valid with 4 event types
+  hermes: ✅ hooks.json valid with 0 event types
+  thebird: ✅ hooks.json valid with 4 event types
+  vscode: ⚠️  No hooks directory found
+  cursor: ⚠️  No hooks directory found
+  zed: ⚠️  No hooks directory found
+  jetbrains: ⚠️  No hooks directory found
+  copilot-cli: ❌ Referenced hook file missing: plugkit
+  copilot-cli: ❌ Referenced hook file missing: plugkit
+  copilot-cli: ❌ Referenced hook file missing: plugkit
+  copilot-cli: ❌ Referenced hook file missing: plugkit
+  copilot-cli: ❌ Referenced hook file missing: plugkit
+  copilot-cli: ❌ Referenced hook file missing: plugkit
+  antigravity: ⚠️  No hooks directory found
+  windsurf: ⚠️  No hooks directory found
+
+[rebuild] Verifying build outputs...
+[rebuild] ✓ gm-cc
+[rebuild] ✓ gm-gc
+[rebuild] ✓ gm-oc
+[rebuild] ✓ gm-kilo
+[rebuild] ✓ gm-codex
+[rebuild] ✓ gm-copilot-cli
+[rebuild] ✓ gm-vscode
+[rebuild] ✓ gm-cursor
+[rebuild] ✓ gm-zed
+[rebuild] ✓ gm-jetbrains
+[rebuild] All 10 platforms present. Build succeeded.

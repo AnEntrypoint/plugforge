@@ -1,0 +1,50 @@
+95bdb97e feat: add daemon-bootstrap.js module with ensureRsLearningDaemonRunning()
+---
+ ? .claude/worktrees/agent-a83f1e32ff127d31f
+ ? .claude/worktrees/agent-a846cfea110af7dc9
+ ? .claude/worktrees/agent-ad834a9a69c49bcf9
+ ? .claude/worktrees/agent-ae7dc18956e74d101
+ M .codeinsight.digest
+ M .gm/exec-spool/.status.json
+ M .gm/exec-spool/.watcher.heartbeat
+ M .gm/mutables.yml
+ M package.json
+ M test.js
+?? .gm/exec-spool/in/nodejs/clear-lock-and-commit.js
+?? .gm/exec-spool/in/nodejs/direct-create.js
+?? .gm/exec-spool/in/nodejs/discovery.js
+?? .gm/exec-spool/in/nodejs/final-commit.js
+?? .gm/exec-spool/in/nodejs/find_and_read.js
+?? .gm/exec-spool/in/nodejs/test-daemon-bootstrap.js
+?? .gm/exec-spool/in/nodejs/verify-creation.js
+?? .gm/exec-spool/in/nodejs/witness-daemon-bootstrap-simple.js
+?? .gm/exec-spool/in/nodejs/witness-daemon-bootstrap.js
+?? .gm/exec-spool/in/sleep/
+?? .gm/exec-spool/out/1.err
+?? .gm/exec-spool/out/1.json
+?? .gm/exec-spool/out/1.out
+?? .gm/exec-spool/out/10.err
+?? .gm/exec-spool/out/10.json
+?? .gm/exec-spool/out/10.out
+?? .gm/exec-spool/out/11.err
+?? .gm/exec-spool/out/11.json
+?? .gm/exec-spool/out/11.out
+?? .gm/exec-spool/out/12.err
+?? .gm/exec-spool/out/12.out
+?? .gm/exec-spool/out/4.err
+?? .gm/exec-spool/out/4.json
+?? .gm/exec-spool/out/4.out
+?? .gm/exec-spool/out/5.err
+?? .gm/exec-spool/out/5.json
+?? .gm/exec-spool/out/5.out
+?? .gm/exec-spool/out/6.json
+?? .gm/exec-spool/out/6.out
+?? .gm/exec-spool/out/7.err
+?? .gm/exec-spool/out/7.json
+?? .gm/exec-spool/out/7.out
+?? .gm/exec-spool/out/8.err
+?? .gm/exec-spool/out/8.json
+?? .gm/exec-spool/out/8.out
+?? .gm/exec-spool/out/9.err
+?? .gm/exec-spool/out/9.json
+?? .gm/exec-spool/out/9.out
