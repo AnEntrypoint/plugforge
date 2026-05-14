@@ -28,3 +28,54 @@
   witness_method: exec:codesearch gm anthropic SDK LLM provider imports
   witness_evidence: gm/lib/.js files contain no Anthropic SDK imports (verified via file scan) - gm delegates LLM provider to rs-learn and downstream agents
   status: witnessed
+- id: hermes-acp-support-2026
+  claim: Hermes Agent v0.13.0 (May 2026) supports ACP protocol natively
+  witness_method: WebSearch hermes NousResearch ACP support 2026
+  witness_evidence: https://github.com/NousResearch/hermes-agent/releases/tag/v2026.5.7 - Hermes v0.13.0 released May 7 2026 with ACP Server Mode; https://hermes-agent.nousresearch.com/docs/user-guide/features/acp - ACP Editor Integration docs confirm stdio mode support
+  status: witnessed
+- id: cline-acp-support-2026
+  claim: Cline CLI v2.0.0+ supports ACP protocol via --acp flag
+  witness_method: WebSearch cline ACP agent support cli 2026
+  witness_evidence: https://cline.ghost.io/announcing-cline-cli-2-0/ - Cline CLI 2.0 announcement confirms ACP support; https://docs.cline.bot/cli/acp-editor-integrations - documentation for --acp flag and ACP integration
+  status: witnessed
+- id: acpx-agent-implementation
+  claim: acpx (OpenClaw) is a headless ACP client for agent-to-agent communication
+  witness_method: WebSearch acpx OpenClaw ACP agent 2026
+  witness_evidence: https://github.com/openclaw/acpx - acpx is headless CLI client for Agent Client Protocol; supports persistent sessions, agent-to-agent communication; https://docs.openclaw.ai/tools/acp-agents - OpenClaw ACP agents documentation confirms acpx integration
+  status: witnessed
+
+- id: freddie_location
+  claim: freddie repository exists at C:\dev\freddie and contains pi-ai LLM provider integration
+  witness_method: PowerShell directory check and Read freddie/package.json
+  witness_evidence: C:\dev\freddie exists with src/agent directory; package.json:30 lists acptoapi@^1.0.69 as dependency
+  status: witnessed
+
+- id: freddie_pi_ai_bridge
+  claim: freddie's primary LLM routing happens via llm_resolver.js which uses acptoapi bridge as primary provider
+  witness_method: Read freddie/src/agent/llm_resolver.js and acptoapi-bridge.js
+  witness_evidence: llm_resolver.js:120 calls bridgeReachable() first, line 122 calls bridgeCall() for simple models, line 127 falls back to callAnthropicSDK on error
+  status: witnessed
+
+- id: acptoapi_http_server
+  claim: acptoapi runs HTTP server on 127.0.0.1:4800 with /v1/chat/completions endpoint compatible with OpenAI format
+  witness_method: Read acptoapi/bin/agentapi.js and freddie/src/agent/acptoapi-bridge.js
+  witness_evidence: acptoapi/bin/agentapi.js:7 sets default port 4800; acptoapi-bridge.js:35 calls endpoint at base.replace('/') + '/chat/completions'
+  status: witnessed
+
+- id: freddie_acptoapi_integration_complete
+  claim: freddie has full acptoapi LLM provider integration with request/response shape matching and fallback error handling
+  witness_method: Read freddie/src/agent/{llm_resolver.js, acptoapi-bridge.js}
+  witness_evidence: llm_resolver.js:110-150 implements resolveCallLLM with acptoapi bridge check + fallback; acptoapi-bridge.js:13-46 implements callLLM with adaptMessage/adaptResponse for format conversion; line 87-99 implements isReachable connectivity check
+  status: witnessed
+
+- id: spool-helpers-created
+  claim: gm-starter/lib/spool.js exists with writeSpool, readSpoolOutput, waitForCompletion, getAllOutputs exports
+  witness_method: Read C:\dev\gm\gm-starter\lib\spool.js
+  witness_evidence: "spool.js:140-148 module.exports contains { writeSpool, readSpoolOutput, waitForCompletion, getAllOutputs, getSpoolBaseDir, generateTaskId, validateLang, getExtForLang }"
+  status: witnessed
+
+- id: gm-skill-exports-spool
+  claim: gm-skill/index.js exports spool helpers at module.exports.spool
+  witness_method: exec:nodejs import gm-skill and verify gmSkill.spool.writeSpool exists
+  witness_evidence: "exec:nodejs test output shows gm-skill exports: checkPortReachable, ensureAcptoapiRunning, ensureRsCodeinsightDaemonRunning, ensureRsLearningDaemonRunning, ensureRsSearchDaemonRunning, spool. Spool functions verified: generateTaskId, getAllOutputs, getExtForLang, getSpoolBaseDir, readSpoolOutput, validateLang, waitForCompletion, writeSpool"
+  status: witnessed
