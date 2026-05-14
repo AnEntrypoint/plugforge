@@ -30,17 +30,20 @@ function parseSkillMarkdown(content) {
 }
 
 function readSkillManifest(skillName) {
-  const skillMdPath = path.join(
-    __dirname,
-    '..',
-    '..',
-    'gm-starter',
-    'skills',
-    skillName,
-    'SKILL.md'
-  );
+  const searchPaths = [
+    path.join(__dirname, '..', 'skills', skillName, 'SKILL.md'),
+    path.join(__dirname, '..', '..', 'gm-starter', 'skills', skillName, 'SKILL.md')
+  ];
 
-  if (!fs.existsSync(skillMdPath)) {
+  let skillMdPath = null;
+  for (const p of searchPaths) {
+    if (fs.existsSync(p)) {
+      skillMdPath = p;
+      break;
+    }
+  }
+
+  if (!skillMdPath) {
     return {
       name: skillName,
       description: '',
@@ -69,7 +72,7 @@ function readSkillManifest(skillName) {
 }
 
 function getManifest() {
-  const skills = ['gm', 'gm-execute', 'gm-emit', 'gm-complete'];
+  const skills = ['gm', 'planning', 'gm-execute', 'gm-emit', 'gm-complete', 'update-docs'];
   return {
     name: 'gm-skill',
     version: '1.0.0',
@@ -83,7 +86,7 @@ function getSkill(name) {
 }
 
 function getAllSkills() {
-  const skills = ['gm', 'gm-execute', 'gm-emit', 'gm-complete'];
+  const skills = ['gm', 'planning', 'gm-execute', 'gm-emit', 'gm-complete', 'update-docs'];
   return skills.map(name => readSkillManifest(name));
 }
 
