@@ -5,7 +5,7 @@
   "main": "index.js",
   "exports": {
     ".": "./index.js",
-    "./daemon-bootstrap": "./index.js",
+    "./daemon-bootstrap": "./lib/daemon-bootstrap.js",
     "./manifest": "./lib/manifest.js"
   },
   "scripts": {
