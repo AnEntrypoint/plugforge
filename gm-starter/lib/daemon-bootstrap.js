@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const net = require('net');
 const { spawn, execSync } = require('child_process');
 const os = require('os');
 
@@ -60,6 +61,27 @@ function isDaemonRunning(daemonName) {
   } catch (e) {
     return false;
   }
+}
+
+function checkPortReachable(host, port, timeoutMs = 500) {
+  return new Promise((resolve) => {
+    const socket = new net.Socket();
+    const timeoutHandle = setTimeout(() => {
+      socket.destroy();
+      resolve(false);
+    }, timeoutMs);
+
+    socket.connect(port, host, () => {
+      clearTimeout(timeoutHandle);
+      socket.destroy();
+      resolve(true);
+    });
+
+    socket.on('error', () => {
+      clearTimeout(timeoutHandle);
+      resolve(false);
+    });
+  });
 }
 
 function writeStatusFile(daemonName, status, sessionId) {
@@ -130,6 +152,152 @@ async function ensureRsLearningDaemonRunning() {
   }
 }
 
+async function ensureAcptoapiRunning() {
+  const sessionId = getSessionId();
+  const projectDir = process.env.CLAUDE_PROJECT_DIR || process.cwd();
+  const statusPath = path.join(projectDir, '.gm', 'acptoapi-status.json');
+
+  const host = '127.0.0.1';
+  const port = 4800;
+
+  try {
+    const reachable = await checkPortReachable(host, port);
+
+    if (reachable) {
+      emitDaemonEvent('acptoapi', 'info', 'Already running', { port, sessionId });
+      writeStatusFile('acptoapi', 'running', sessionId);
+      return { ok: true, message: 'acptoapi already running' };
+    }
+
+    emitDaemonEvent('acptoapi', 'info', 'Spawning daemon', { port, sessionId });
+
+    const env = Object.assign({}, process.env, {
+      CLAUDE_SESSION_ID: sessionId,
+    });
+
+    try {
+      const child = spawn('bun', ['x', 'acptoapi@latest'], {
+        detached: true,
+        stdio: 'ignore',
+        windowsHide: true,
+        env,
+      });
+      child.unref();
+      emitDaemonEvent('acptoapi', 'info', 'Daemon spawned', { pid: child.pid, port, sessionId });
+      writeStatusFile('acptoapi', 'spawned', sessionId);
+      return { ok: true, message: 'acptoapi spawned', pid: child.pid };
+    } catch (spawnErr) {
+      emitDaemonEvent('acptoapi', 'warn', 'Spawn failed, fallback to SDK', {
+        error: spawnErr.message,
+        sessionId,
+      });
+      writeStatusFile('acptoapi', 'spawn_failed', sessionId);
+      return { ok: false, message: 'acptoapi spawn failed, fallback to Anthropic SDK', error: spawnErr.message };
+    }
+  } catch (err) {
+    emitDaemonEvent('acptoapi', 'error', 'Check failed', {
+      error: err.message,
+      sessionId,
+    });
+    writeStatusFile('acptoapi', 'check_error', sessionId);
+    return { ok: false, message: 'acptoapi check failed, fallback to Anthropic SDK', error: err.message };
+  }
+}
+
+async function ensureRsCodeinsightDaemonRunning() {
+  const daemonName = 'rs-codeinsight';
+  const sessionId = getSessionId();
+  const startTime = Date.now();
+
+  try {
+    emitDaemonEvent(daemonName, 'info', 'Daemon startup check initiated', { sessionId });
+
+    if (isDaemonRunning(daemonName)) {
+      emitDaemonEvent(daemonName, 'info', 'Daemon already running', { sessionId });
+      writeStatusFile(daemonName, 'running', sessionId);
+      return { ok: true, already_running: true };
+    }
+
+    emitDaemonEvent(daemonName, 'info', 'Spawning daemon', { sessionId });
+
+    const env = Object.assign({}, process.env, {
+      CLAUDE_SESSION_ID: sessionId,
+    });
+
+    const proc = spawn('bun', ['x', 'rs-codeinsight@latest'], {
+      detached: true,
+      stdio: 'ignore',
+      windowsHide: true,
+      env,
+    });
+
+    const pid = proc.pid;
+    proc.unref();
+
+    emitDaemonEvent(daemonName, 'info', 'Daemon spawned successfully', { pid, sessionId });
+    writeStatusFile(daemonName, 'started', sessionId);
+
+    return { ok: true, pid, sessionId, durationMs: Date.now() - startTime };
+  } catch (e) {
+    emitDaemonEvent(daemonName, 'error', 'Daemon spawn failed', {
+      error: e.message,
+      sessionId,
+      durationMs: Date.now() - startTime,
+    });
+    writeStatusFile(daemonName, 'error', sessionId);
+    throw e;
+  }
+}
+
+async function ensureRsSearchDaemonRunning() {
+  const daemonName = 'rs-search';
+  const sessionId = getSessionId();
+  const startTime = Date.now();
+
+  try {
+    emitDaemonEvent(daemonName, 'info', 'Daemon startup check initiated', { sessionId });
+
+    if (isDaemonRunning(daemonName)) {
+      emitDaemonEvent(daemonName, 'info', 'Daemon already running', { sessionId });
+      writeStatusFile(daemonName, 'running', sessionId);
+      return { ok: true, already_running: true };
+    }
+
+    emitDaemonEvent(daemonName, 'info', 'Spawning daemon', { sessionId });
+
+    const env = Object.assign({}, process.env, {
+      CLAUDE_SESSION_ID: sessionId,
+    });
+
+    const proc = spawn('bun', ['x', 'rs-search@latest'], {
+      detached: true,
+      stdio: 'ignore',
+      windowsHide: true,
+      env,
+    });
+
+    const pid = proc.pid;
+    proc.unref();
+
+    emitDaemonEvent(daemonName, 'info', 'Daemon spawned successfully', { pid, sessionId });
+    writeStatusFile(daemonName, 'started', sessionId);
+
+    return { ok: true, pid, sessionId, durationMs: Date.now() - startTime };
+  } catch (e) {
+    emitDaemonEvent(daemonName, 'error', 'Daemon spawn failed', {
+      error: e.message,
+      sessionId,
+      durationMs: Date.now() - startTime,
+    });
+    writeStatusFile(daemonName, 'error', sessionId);
+    throw e;
+  }
+}
+
 module.exports = {
+  ensureAcptoapiRunning,
+  ensureRsCodeinsightDaemonRunning,
+  ensureRsSearchDaemonRunning,
   ensureRsLearningDaemonRunning,
+  checkPortReachable,
 };
