@@ -87,13 +87,22 @@ const path = require('path');
 ${NODE_MODULES_HELPERS}
 
 function install() {
-  if (!isInsideNodeModules()) return;
+  if (!isInsideNodeModules()) {
+    process.stderr.write('[gm-gc-install] not in node_modules context, skipping\\n');
+    return;
+  }
   const projectRoot = getProjectRoot();
-  if (!projectRoot) return;
-  const geminiDir = path.join(projectRoot, '.gemini', 'extensions', 'gm-gc');
+  if (!projectRoot) {
+    process.stderr.write('[gm-gc-install] could not resolve project root\\n');
+    return;
+  }
+  const geminiDir = path.join(projectRoot, '.gemini', 'extensions', 'gm');
   const sourceDir = __dirname;
-  safeCopyDirectory(path.join(sourceDir, 'agents'), path.join(geminiDir, 'agents'));
-  safeCopyDirectory(path.join(sourceDir, 'hooks'), path.join(geminiDir, 'hooks'));
+  process.stderr.write(\`[gm-gc-install] destination: \${geminiDir}\\n\`);
+  const agentsOk = safeCopyDirectory(path.join(sourceDir, 'agents'), path.join(geminiDir, 'agents'));
+  process.stderr.write(\`[gm-gc-install] agents: \${agentsOk ? 'ok' : 'failed'}\\n\`);
+  const hooksOk = safeCopyDirectory(path.join(sourceDir, 'hooks'), path.join(geminiDir, 'hooks'));
+  process.stderr.write(\`[gm-gc-install] hooks: \${hooksOk ? 'ok' : 'failed'}\\n\`);
 }
 
 install();
