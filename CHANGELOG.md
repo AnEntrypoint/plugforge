@@ -1,6 +1,14 @@
+## 2026-05-14 - hooks: skill-based gate logic via .gm/ markers
+
+All 5 hooks (session_start, pre_tool_use, prompt_submit, post_tool_use, session_end) implement skill-driven gate logic reading marker files and YAML state. session_start writes `.gm/needs-gm` when `.gm/` folder exists. prompt_submit manages needs-gm based on PRD existence — if `.gm/prd.yml` exists (autonomous work), needs-gm is written; if absent, needs-gm is deleted. pre_tool_use denies tool use if gm is needed but `.gm/gm-fired-this-turn` marker absent (lines 89-99, 140-142); on Skill(gm:gm) or Agent(subagent_type="gm:gm"), writes the marker (lines 106-127). Mutables gate (lines 178-191) reads `.gm/mutables.yml` via `scan_unresolved_mutable_ids()` and denies Write/Edit/git if any entry has `status: unknown`. prompt_submit deletes `.gm/gm-fired-this-turn` at turn start (line 46) to reset. post_tool_use tracks turn state in `.gm/turn-state.json`. session_end on real-exit cleans up tasks and browsers. Together: PRD exists → needs-gm written → Skill(gm:gm) required → gm-fired marker gate clears → mutables gate checks YAML resolution → skill chain proceeds.
+
 ## 2026-05-14 - bootstrap: skill-bootstrap.js completed
 
 gm-starter/lib/skill-bootstrap.js now provides shared bootstrap orchestration for all 10 output skills. Detects plugkit binary at ~/.claude/gm-tools/plugkit{.exe,}, verifies SHA256 against manifest (gm.json::plugkitVersion + bin/plugkit.sha256), downloads from AnEntrypoint/plugkit-bin Releases on mismatch, kills stale processes before re-spawn on Windows (honoring EBUSY precedent), spawns daemon in detached mode with stdio:'ignore', and emits structured JSONL events to ~/.claude/gm-log/<date>/bootstrap.jsonl. Returns Promise<{ ok, error? }> for graceful error handling in skill setup. Removed abandoned refactoring modules (plugkit-platform.js, plugkit-manifest.js) created during failed modularization attempt—skill-bootstrap.js remains single coherent concern.
+
+## 2026-05-14 - platform skill manifests: AgentSkills.io compliance
+
+gm-starter/skills/gm/SKILL.md + 9 platform-specific manifests (gm-cc through gm-jetbrains, excluding gm-gc per design) ship with AgentSkills.io frontmatter: name, description, allowed-tools=[Skill]. TemplateBuilder.loadSkillsFromSource emits manifests to build/gm-<platform>/skills/<name>/SKILL.md during build. No skill duplication across platforms; each platform gets its own directory. Manifests enable downstream tooling (claude.ai Routing, agent discovery, skill marketplaces) to introspect available skills without parsing internal prose.
 
 ## 2026-05-12 - bootstrap: kill-before-rename on busy gm-tools targets
 

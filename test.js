@@ -2,6 +2,7 @@ const assert = require('assert');
 const { spawnSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
+const yaml = require('js-yaml');
 
 const PASS = '\x1b[32m✓\x1b[0m';
 const FAIL = '\x1b[31m✗\x1b[0m';
@@ -161,6 +162,58 @@ test('codex installer wires config.toml idempotent + reversible', () => {
   merger.uninstallFromConfigToml(cfg);
   assert.strictEqual(fs.readFileSync(cfg, 'utf8'), userPrefix, 'uninstall failed to restore user content');
   fs.rmSync(tmp, { recursive: true, force: true });
+});
+
+test('gm hook gate: mutables.yml blocks unresolved entries', () => {
+  const gmDir = '.gm';
+  if (!fs.existsSync(gmDir)) return;
+  const mutablesFile = path.join(gmDir, 'mutables.yml');
+  if (!fs.existsSync(mutablesFile)) return;
+  const mutables = yaml.load(fs.readFileSync(mutablesFile, 'utf8'));
+  if (!mutables) return;
+  const unresolved = mutables.filter(m => m.status === 'unknown');
+  assert.strictEqual(unresolved.length, 0, `${unresolved.length} unresolved mutables should block PRD execution`);
+});
+
+test('gm hook gate: prd.yml structure valid', () => {
+  const gmDir = '.gm';
+  if (!fs.existsSync(gmDir)) return;
+  const prdFile = path.join(gmDir, 'prd.yml');
+  if (!fs.existsSync(prdFile)) return;
+  const prd = yaml.load(fs.readFileSync(prdFile, 'utf8'));
+  if (!prd) return;
+  prd.forEach(item => {
+    assert(item.id, 'prd item missing id');
+    assert(item.subject, 'prd item missing subject');
+    assert(['pending', 'in_progress', 'completed'].includes(item.status), `prd item ${item.id} has invalid status: ${item.status}`);
+    assert(Array.isArray(item.acceptance), `prd item ${item.id} acceptance is not array`);
+  });
+});
+
+test('gm hook gate: mutable witness evidence present when witnessed', () => {
+  const gmDir = '.gm';
+  if (!fs.existsSync(gmDir)) return;
+  const mutablesFile = path.join(gmDir, 'mutables.yml');
+  if (!fs.existsSync(mutablesFile)) return;
+  const mutables = yaml.load(fs.readFileSync(mutablesFile, 'utf8'));
+  if (!mutables) return;
+  mutables.forEach(m => {
+    if (m.status === 'witnessed') {
+      assert(m.witness_evidence && m.witness_evidence.length > 0, `mutable ${m.id} is witnessed but has no evidence`);
+    }
+  });
+});
+
+test('rs-plugkit hook files exist and are valid Rust', () => {
+  const hookDir = 'C:\\dev\\rs-plugkit\\src\\hook';
+  if (!fs.existsSync(hookDir)) return;
+  const hooks = ['session_start.rs', 'pre_tool_use.rs', 'prompt_submit.rs', 'post_tool_use.rs', 'session_end.rs'];
+  hooks.forEach(hook => {
+    const file = path.join(hookDir, hook);
+    assert(fs.existsSync(file), `${hook} missing`);
+    const content = fs.readFileSync(file, 'utf8');
+    assert(content.includes('pub fn run('), `${hook} missing pub fn run`);
+  });
 });
 
 console.log('\n✓ All tests passed');
