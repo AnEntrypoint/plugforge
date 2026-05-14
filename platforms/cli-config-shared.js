@@ -909,16 +909,6 @@ const cc = factory('cc', 'Claude Code', 'CLAUDE.md', 'CLAUDE.md', {
         ]},
         { eventKey: 'UserPromptSubmit', commands: [
           { kind: 'plugkit', subcommand: 'prompt-submit', timeout: 60000 }
-        ]},
-        { eventKey: 'PreCompact', commands: [
-          { kind: 'plugkit', subcommand: 'pre-compact', timeout: 30000 }
-        ]},
-        { eventKey: 'PostCompact', commands: [
-          { kind: 'plugkit', subcommand: 'post-compact', timeout: 5000 }
-        ]},
-        { eventKey: 'Stop', commands: [
-          { kind: 'plugkit', subcommand: 'stop', timeout: 15000 },
-          { kind: 'plugkit', subcommand: 'stop-git', timeout: 210000 }
         ]}
       ]
     };
@@ -1975,13 +1965,9 @@ const qwen = factory('qwen', 'Qwen Code', 'qwen-extension.json', 'CLAUDE.md', {
       plugkitInvoker: 'node',
       events: [
         { eventKey: 'PreToolUse', commands: [{ kind: 'plugkit', subcommand: 'pre-tool-use', timeout: 3600 }] },
+        { eventKey: 'PostToolUse', commands: [{ kind: 'plugkit', subcommand: 'post-tool-use', timeout: 35000 }] },
         { eventKey: 'SessionStart', commands: [{ kind: 'plugkit', subcommand: 'session-start', timeout: 180000 }] },
-        { eventKey: 'UserPromptSubmit', commands: [{ kind: 'plugkit', subcommand: 'prompt-submit', timeout: 60000 }] },
-        { eventKey: 'PreCompact', commands: [{ kind: 'plugkit', subcommand: 'pre-compact', timeout: 30000 }] },
-        { eventKey: 'Stop', wrapMode: 'flat-matchers', commands: [
-          { kind: 'plugkit', subcommand: 'stop', timeout: 300000 },
-          { kind: 'plugkit', subcommand: 'stop-git', timeout: 60000 }
-        ]}
+        { eventKey: 'UserPromptSubmit', commands: [{ kind: 'plugkit', subcommand: 'prompt-submit', timeout: 60000 }] }
       ]
     };
   },
@@ -2202,13 +2188,7 @@ const thebird = factory('thebird', 'thebird', 'plugin.json', 'AGENTS.md', {
         { eventKey: 'PreToolUse',       commands: [{ kind: 'wasm', subcommand: 'pre-tool-use',  timeout: 3600 }] },
         { eventKey: 'PostToolUse',      commands: [{ kind: 'wasm', subcommand: 'post-tool-use', timeout: 35000 }] },
         { eventKey: 'SessionStart',     commands: [{ kind: 'wasm', subcommand: 'session-start', timeout: 180000 }] },
-        { eventKey: 'UserPromptSubmit', commands: [{ kind: 'wasm', subcommand: 'prompt-submit', timeout: 60000 }] },
-        { eventKey: 'PreCompact',       commands: [{ kind: 'wasm', subcommand: 'pre-compact',   timeout: 30000 }] },
-        { eventKey: 'PostCompact',      commands: [{ kind: 'wasm', subcommand: 'post-compact',  timeout: 5000 }] },
-        { eventKey: 'Stop',             commands: [
-          { kind: 'wasm', subcommand: 'stop',     timeout: 15000 },
-          { kind: 'wasm', subcommand: 'stop-git', timeout: 210000 }
-        ]}
+        { eventKey: 'UserPromptSubmit', commands: [{ kind: 'wasm', subcommand: 'prompt-submit', timeout: 60000 }] }
       ]
     };
   },
