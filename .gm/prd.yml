@@ -1,0 +1,383 @@
+- id: rs-learn-claudeclient-removal
+  subject: Remove ClaudeCliClient from rs-learn and wire acptoapi + Anthropic SDK fallback
+  status: pending
+  description: Replace ClaudeCliClient LLM provider in rs-learn with acptoapi socket (127.0.0.1:4800) as primary, Anthropic SDK as fallback. All unit tests must pass.
+  effort: large
+  category: refactor
+  route_family: boundary
+  load: 0.8
+  failure_modes:
+    - ClaudeCliClient removal leaves orphaned imports
+    - acptoapi socket unreachable in tests
+    - Anthropic SDK fallback does not initialize
+  route_fit: examined
+  authorization: witnessed
+  blocking: []
+  blockedBy: []
+  acceptance:
+    - All ClaudeCliClient references removed from rs-learn src
+    - LLM provider detects acptoapi:4800 first, falls back to Anthropic SDK
+    - All unit tests pass (embedding, recall, graph traversal)
+    - CI green on rs-exec cascade
+
+- id: research-hermes-acp-compat
+  subject: Research hermes (NousResearch) ACP JSON-RPC compatibility and auto-spawn
+  status: pending
+  description: Investigate hermes binary location, invocation syntax, JSON-RPC stdio protocol support, environment setup, and Windows DETACHED_PROCESS compatibility.
+  effort: medium
+  category: infra
+  route_family: grounding
+  load: 0.5
+  failure_modes:
+    - hermes binary location varies by OS
+    - hermes does not support pure JSON-RPC stdio
+  route_fit: unexamined
+  authorization: none
+  blocking: []
+  blockedBy: []
+  mutables:
+    - hermes-acp-compat
+  acceptance:
+    - hermes discovery method documented (which/where)
+    - ACP JSON-RPC compatibility confirmed
+    - Auto-spawn gate and env vars documented
+
+- id: research-cline-acp-compat
+  subject: Research cline ACP JSON-RPC compatibility and auto-spawn
+  status: pending
+  description: Investigate cline binary location, invocation syntax, JSON-RPC stdio protocol support, environment setup, and Windows DETACHED_PROCESS compatibility.
+  effort: medium
+  category: infra
+  route_family: grounding
+  load: 0.5
+  failure_modes:
+    - cline binary location varies by OS
+    - cline does not support pure JSON-RPC stdio
+  route_fit: unexamined
+  authorization: none
+  blocking: []
+  blockedBy: []
+  mutables:
+    - cline-acp-compat
+  acceptance:
+    - cline discovery method documented (which/where)
+    - ACP JSON-RPC compatibility confirmed
+    - Auto-spawn gate and env vars documented
+
+- id: research-acpx-acp-compat
+  subject: Research acpx (OpenClaw) ACP JSON-RPC compatibility and auto-spawn
+  status: pending
+  description: Investigate acpx binary location, invocation syntax, JSON-RPC stdio protocol support, environment setup, and Windows DETACHED_PROCESS compatibility.
+  effort: medium
+  category: infra
+  route_family: grounding
+  load: 0.5
+  failure_modes:
+    - acpx binary location varies by OS
+    - acpx does not support pure JSON-RPC stdio
+  route_fit: unexamined
+  authorization: none
+  blocking: []
+  blockedBy: []
+  mutables:
+    - acpx-acp-compat
+  acceptance:
+    - acpx discovery method documented (which/where)
+    - ACP JSON-RPC compatibility confirmed
+    - Auto-spawn gate and env vars documented
+
+- id: rs-plugkit-agent-discovery-expansion
+  subject: Expand rs-plugkit agent auto-spawn to include hermes, cline, acpx
+  status: pending
+  description: Add hermes, cline, acpx binary discovery and spawning to session_start hook. Verify Windows DETACHED_PROCESS flag and ACP JSON-RPC over stdio.
+  effort: large
+  category: feature
+  route_family: execution
+  load: 0.7
+  failure_modes:
+    - Agent binary not found, spawn silently skipped
+    - Windows DETACHED_PROCESS flag incorrect
+    - Agent does not respond to JSON-RPC
+  route_fit: examined
+  authorization: weak_prior
+  blocking: []
+  blockedBy:
+    - research-hermes-acp-compat
+    - research-cline-acp-compat
+    - research-acpx-acp-compat
+  mutables:
+    - hermes-acp-compat
+    - cline-acp-compat
+    - acpx-acp-compat
+  acceptance:
+    - hermes, cline, acpx binary discovery works
+    - Windows spawning uses DETACHED_PROCESS (0x08000000)
+    - All agents respond to ACP JSON-RPC
+    - Agent spawn failures logged, fallback works
+
+- id: gm-agents-md-acptoapi-contract-update
+  subject: Document acptoapi daemon-bootstrap integration in AGENTS.md
+  status: pending
+  description: Add/refresh section in AGENTS.md explaining acptoapi as primary LLM provider, daemon-bootstrap spawning, agent discovery, Windows process handling, Anthropic SDK fallback.
+  effort: small
+  category: docs
+  route_family: representation
+  load: 0.2
+  failure_modes:
+    - Documentation unclear on pure-API contract
+  route_fit: examined
+  authorization: weak_prior
+  blocking: []
+  blockedBy: []
+  acceptance:
+    - AGENTS.md updated with acptoapi provider section
+    - daemon-bootstrap contract clearly explained
+    - Agent discovery pattern documented
+    - Windows DETACHED_PROCESS spawning documented
+
+- id: gm-skill-md-acptoapi-preference-update
+  subject: Update gm SKILL.md files to reference acptoapi as default LLM provider
+  status: pending
+  description: Update gm, gm-execute, gm-emit, gm-complete SKILL.md files across all 9 bundled platforms to note acptoapi preference and Anthropic SDK fallback.
+  effort: medium
+  category: docs
+  route_family: representation
+  load: 0.4
+  failure_modes:
+    - Skill SKILL.md files not synchronized across platforms
+  route_fit: examined
+  authorization: weak_prior
+  blocking: []
+  blockedBy: []
+  acceptance:
+    - All 9 bundled platform skill files updated
+    - acptoapi mentioned as default provider
+    - Fallback documented
+
+- id: antigravity-bundled-skills-audit
+  subject: Audit antigravity extension for bundled skills completeness
+  status: pending
+  description: Verify all 4 core skills (gm, gm-execute, gm-emit, gm-complete) present in antigravity generated output. Compare against gm-cc.
+  effort: medium
+  category: infra
+  route_family: representation
+  load: 0.5
+  failure_modes:
+    - One or more core skills missing from antigravity
+  route_fit: unexamined
+  authorization: none
+  blocking: []
+  blockedBy: []
+  mutables:
+    - antigravity-skill-presence
+  acceptance:
+    - All 4 core skills present in build/gm-antigravity
+    - Skill SKILL.md files match gm-cc versions
+    - manifest.js returns correct skill count
+
+- id: all-extension-bundled-skills-audit
+  subject: Audit all 12 downstream extensions for skill completeness
+  status: pending
+  description: Verify all 12 platforms have complete skill bundling. Platforms: gm-cc, gm-gc, gm-oc, gm-kilo, gm-codex, gm-qwen, gm-copilot-cli, gm-hermes, gm-vscode, gm-cursor, gm-zed, gm-jetbrains.
+  effort: large
+  category: infra
+  route_family: representation
+  load: 0.6
+  failure_modes:
+    - Skills missing from one or more extensions
+  route_fit: examined
+  authorization: weak_prior
+  blocking: []
+  blockedBy:
+    - antigravity-bundled-skills-audit
+  acceptance:
+    - All 12 platforms have 4+ core skills present
+    - Skill manifests align across platforms
+    - Clean rebuild produces consistent skills
+
+- id: gm-skill-spool-helpers-export
+  subject: Export spool dispatch helpers from gm-skill for public use
+  status: pending
+  description: Verify gm-starter/lib/spool.js exists and exports writeSpool, readSpoolOutput, waitForCompletion, getAllOutputs. Document in README.md.
+  effort: small
+  category: feature
+  route_family: representation
+  load: 0.3
+  failure_modes:
+    - spool.js module does not exist
+    - Exported functions have incorrect signatures
+  route_fit: unexamined
+  authorization: none
+  blocking: []
+  blockedBy: []
+  mutables:
+    - spool-module-exists
+  acceptance:
+    - spool module exports all four helper functions
+    - Windows path handling verified
+    - README documents spool API
+
+- id: gm-skill-spool-helpers-smoke-test
+  subject: Add smoke test for spool dispatch helpers
+  status: pending
+  description: Test writeSpool, readSpoolOutput, waitForCompletion with real spool execution. Verify nodejs task dispatch works end-to-end.
+  effort: small
+  category: infra
+  route_family: observability
+  load: 0.4
+  failure_modes:
+    - Task timeout before output written
+    - Metadata JSON malformed
+  route_fit: unexamined
+  authorization: none
+  blocking: []
+  blockedBy:
+    - gm-skill-spool-helpers-export
+  acceptance:
+    - Test writes spool task, waits for completion
+    - Output matches expected format
+    - Test passes in both Windows and Unix
+
+- id: acptoapi-pure-api-contract-verify
+  subject: Verify acptoapi runs as pure API with no internal tooling
+  status: pending
+  description: Investigate acptoapi behavior to confirm it accepts JSON-RPC over stdio, does not access filesystem, does not invoke subprocesses, delegates all state to caller.
+  effort: medium
+  category: infra
+  route_family: boundary
+  load: 0.6
+  failure_modes:
+    - acptoapi requires filesystem access
+    - acptoapi forks subprocesses
+  route_fit: unexamined
+  authorization: none
+  blocking: []
+  blockedBy: []
+  mutables:
+    - acptoapi-pure-api-witness
+  acceptance:
+    - acptoapi listens on 127.0.0.1:4800
+    - No filesystem operations observed
+    - No subprocess spawning from acptoapi core
+    - State is caller-managed
+
+- id: install-gm-gc-gemini
+  subject: Install gm-gc with Gemini provider support
+  status: pending
+  description: Set up gm-gc repository with Gemini LLM provider integration. Verify Gemini SDK wired, auth configured, provider selection works with fallback.
+  effort: large
+  category: feature
+  route_family: boundary
+  load: 0.7
+  failure_modes:
+    - Gemini SDK not installed or wired
+    - Auth token not configured
+  route_fit: unexamined
+  authorization: none
+  blocking: []
+  blockedBy: []
+  mutables:
+    - gm-gc-gemini-provider-shape
+    - gemini-auth-environment
+  acceptance:
+    - gm-gc repository available and initialized
+    - Gemini SDK integrated as primary provider
+    - LLM fallback chain: Gemini → acptoapi → Anthropic
+    - gm-gc CLI launches and recognizes Gemini model
+
+- id: comprehensive-gm-gc-validation
+  subject: Full validation of gm-gc with Gemini and all features
+  status: pending
+  description: Test suite for gm-gc; skill execution, daemon bootstrap, spool dispatch, Gemini API calls, provider fallback, error handling, cross-platform compatibility.
+  effort: large
+  category: infra
+  route_family: observability
+  load: 0.8
+  failure_modes:
+    - Skills fail to load in gm-gc
+    - Gemini API timeout or error
+    - Provider fallback does not trigger
+  route_fit: unexamined
+  authorization: none
+  blocking: []
+  blockedBy:
+    - install-gm-gc-gemini
+  acceptance:
+    - All 4 core skills load and execute
+    - Gemini API calls succeed with valid auth
+    - Provider fallback chain works end-to-end
+    - Spool dispatch (nodejs, bash, python) functional
+    - CI green on gm-gc validation (win32, darwin, linux)
+
+- id: memorize-agent-rslearn-failure-handling
+  subject: Add explicit rs-learn failure handling to memorize agent
+  status: completed
+  description: Update gm-starter/agents/memorize.md STEP 2 to document critical requirement; if exec:memorize fails, report error details to user, fallback immediately to AGENTS.md (STEP 3), never silently absorb errors. Memory preservation requires explicit fallback path when socket/network unavailable.
+  effort: small
+  category: docs
+  route_family: representation
+  load: 0.9
+  failure_modes:
+    - rs-learn failures silently absorbed, leaving no trace
+    - Agent proceeds as if memorize succeeded when it failed
+    - User unaware learning store is unavailable
+    - Memory lost because fallback not documented
+  route_fit: examined
+  authorization: witnessed
+  blocking:
+    - gm-skill-rslearn-failure-contract
+  blockedBy: []
+  acceptance:
+    - memorize.md STEP 2 includes explicit failure handling section
+    - Text states "If exec:memorize fails, report error details to user, fallback to STEP 3 (AGENTS.md), never proceed as if succeeded"
+    - Always-on context buffer preservation is emphasized
+    - Pattern is actionable for all downstream agents
+  edge_cases:
+    - AGENTS.md reach-check must not block fallback
+
+- id: gm-skill-rslearn-failure-contract
+  subject: Document rs-learn failure contract in gm SKILL.md
+  status: completed
+  description: Add explicit rule to gm SKILL.md stating "rs-learn and exec:memorize failures must be reported explicitly with error details; fallback to AGENTS.md; never silently absorb." Cross-cutting policy enforced across all phases.
+  effort: small
+  category: docs
+  route_family: representation
+  load: 0.9
+  failure_modes:
+    - Failure contract unclear to downstream skills
+    - Inconsistent handling across phases
+    - Users unaware of rs-learn state
+  route_fit: examined
+  authorization: witnessed
+  blocking:
+    - gm-execute-utility-verb-failure-doc
+  blockedBy: []
+  acceptance:
+    - gm SKILL.md includes explicit rs-learn failure rule
+    - Rule covers all phases (PLAN → UPDATE-DOCS)
+    - Pattern documented: "Report with error details → fallback to AGENTS.md → continue"
+    - Fallback is mandatory when socket/network fails
+  edge_cases:
+    - Must apply to all 10 downstream bundled platforms
+
+- id: gm-execute-utility-verb-failure-doc
+  subject: Document utility verb failure reporting in gm-execute SKILL.md
+  status: completed
+  description: Add section to gm-execute SKILL.md explaining utility verb failures (exec:memorize, exec:recall, exec:codesearch) must be reported to user; failures do not block witness completion but must surface with error context.
+  effort: small
+  category: docs
+  route_family: representation
+  load: 0.7
+  failure_modes:
+    - Utility verb failures silently dropped
+    - Witness proceeds despite unavailable rs-learn
+  route_fit: examined
+  authorization: witnessed
+  blocking: []
+  blockedBy: []
+  acceptance:
+    - gm-execute SKILL.md documents utility verb error handling
+    - Section explains "Failures reported, witness completion continues, fallback ensures memory safety"
+    - Pattern consistent with memorize agent rule
+  edge_cases:
+    - Timeout vs network error distinction (both require fallback)

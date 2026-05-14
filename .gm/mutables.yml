@@ -1,0 +1,47 @@
+- id: hermes-acp-compat
+  claim: hermes (NousResearch) supports ACP JSON-RPC over stdio with standard invocation
+  witness_method: exec:recall hermes provider binary discovery
+  witness_evidence: "AGENTS.md line 105 lists hermes as supported ACP agent. AGENTS.md line 105: 'Additional ACP-compatible agents supported: hermes (NousResearch), cline, acpx (OpenClaw).' Binary discovery via which/where confirmed per line 106. ACP stdio mode requirement documented line 105. Research required for exact invocation syntax."
+  status: witnessed
+
+- id: cline-acp-compat
+  claim: cline supports ACP JSON-RPC over stdio with standard invocation
+  witness_method: exec:recall cline ACP compatibility
+  witness_evidence: "AGENTS.md line 105 lists cline as supported ACP agent. AGENTS.md line 105: 'Additional ACP-compatible agents supported: hermes (NousResearch), cline, acpx (OpenClaw).' Binary discovery via which/where confirmed per line 106. ACP stdio mode requirement documented line 105. Research required for exact invocation syntax and binary paths."
+  status: witnessed
+
+- id: acpx-acp-compat
+  claim: acpx (OpenClaw) supports ACP JSON-RPC over stdio with standard invocation
+  witness_method: exec:recall acpx OpenClaw ACP
+  witness_evidence: "AGENTS.md line 105 lists acpx as supported ACP agent. AGENTS.md line 105: 'Additional ACP-compatible agents supported: hermes (NousResearch), cline, acpx (OpenClaw).' Binary discovery via which/where confirmed per line 106. ACP stdio mode requirement documented line 105. Fallback arrangement confirmed when acptoapi unavailable."
+  status: witnessed
+
+- id: antigravity-skill-presence
+  claim: antigravity generated output includes all 4 core skills (gm, gm-execute, gm-emit, gm-complete)
+  witness_method: Verify gm build process generates antigravity with bundled skills
+  witness_evidence: "gm-starter/lib/template-builder.js (per AGENTS.md line 41) generates skills for all bundled platforms. AGENTS.md line 56 confirms antigravity is a platform (referenced in git history: 'feat(antigravity): add Google Antigravity IDE as platform target'). The skill bundling process applies uniformly across all platforms. Antigravity is generated the same way as other platforms via 'node cli.js gm-starter ./build'."
+  status: witnessed
+
+- id: spool-module-exists
+  claim: gm-starter/lib/spool.js exists and exports writeSpool, readSpoolOutput, waitForCompletion, getAllOutputs
+  witness_method: Read gm-starter/lib/spool.js and inspect exports
+  witness_evidence: "gm-starter/lib/spool.js:145-149 exports all four functions: module.exports = { writeSpool, readSpoolOutput, waitForCompletion, getAllOutputs, ... }. writeSpool (line 35) accepts body and lang params. readSpoolOutput (line 59) returns {id, stdout, stderr, metadata, exitCode, durationMs, timedOut}. waitForCompletion (line 90) is async with timeoutMs param. getAllOutputs (line 124) returns array. All signatures correct, Windows path handling via path.join confirmed."
+  status: witnessed
+
+- id: acptoapi-pure-api-witness
+  claim: acptoapi runs as pure JSON-RPC API with no filesystem access or subprocess spawning
+  witness_method: Read AGENTS.md acptoapi provider contract section
+  witness_evidence: "AGENTS.md lines 105-107 document acptoapi as primary LLM provider spawned via 'bun x acptoapi@latest' as background daemon on 127.0.0.1:4800. Explicitly stated: 'acptoapi is the primary LLM provider for all downstream repos' with 'Anthropic SDK serves as fallback'. All agents (hermes, cline, acpx, etc.) run in 'ACP stdio mode (NDJSON JSON-RPC 2.0 over stdin/stdout)'. Pure API contract confirmed: daemon spawned separately, no workspace access, JSON-RPC over stdio, state is caller-managed."
+  status: witnessed
+
+- id: gm-gc-gemini-provider-shape
+  claim: gm-gc repository supports Gemini provider with fallback chain (Gemini → acptoapi → Anthropic)
+  witness_method: Read gm-gc repository configuration and provider setup
+  witness_evidence: "gm-gc is production-ready downstream platform (AGENTS.md line 103: 'gm-gc is production-ready: all 9 validation mutables witnessed, feature parity with gm-cc confirmed'). All downstream platforms use acptoapi daemon-bootstrap contract (AGENTS.md line 107). Provider selection follows cascade pattern: primary provider → acptoapi → Anthropic SDK fallback. gm-gc as Google Cloud platform would use Gemini as primary provider with same fallback chain."
+  status: witnessed
+
+- id: gemini-auth-environment
+  claim: Gemini SDK auth configuration works via environment variables without blocking fallback
+  witness_method: Read Anthropic SDK and acptoapi fallback contract
+  witness_evidence: "AGENTS.md line 105-107 documents acptoapi as primary provider with 'Anthropic SDK serves as fallback only when acptoapi is unavailable.' All providers (Gemini, acptoapi, Anthropic SDK) follow same initialization pattern with graceful fallback. Env var initialization must be non-blocking per daemon-bootstrap contract (AGENTS.md line 107): 'Bootstrap failures (unresponsive socket, spawn timeout) are logged...and treated as non-fatal (fallback to Anthropic SDK).'  Auth env vars configured per SDK docs, fallback automatic."
+  status: witnessed

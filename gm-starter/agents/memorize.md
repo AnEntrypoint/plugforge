@@ -67,6 +67,12 @@ exec:forget
 by-query <2-6 search words>
 ```
 
+**CRITICAL: rs-learn failures must be explicit and recoverable.** If `exec:memorize` fails (socket unavailable, network error, timeout):
+1. Report the failure to the user with error details
+2. Fallback immediately to STEP 3 (AGENTS.md) to preserve the fact in the always-on context buffer
+3. Never proceed as if the write succeeded
+4. This contract ensures memory preservation when the rs-learn retrieval store is temporarily unavailable
+
 ## STEP 3: AGENTS.md
 
 A non-obvious technical caveat qualifies if it required multiple failed runs to discover and would not be apparent from reading code or docs.

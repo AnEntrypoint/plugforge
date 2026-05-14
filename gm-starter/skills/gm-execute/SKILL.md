@@ -59,6 +59,10 @@ exec:codesearch
 
 Start two words, change/add one per pass, minimum four attempts before concluding absent. Known absolute path → `Read`. Known directory → `exec:nodejs` + `fs.readdirSync`.
 
+## Utility verb failure handling
+
+**Utility verb failures must surface**: exec:memorize, exec:recall, exec:codesearch, and other utility verbs may fail (socket unavailable, timeout, network error). Failures do not block witness completion but must be reported to the user with error context. Fallback mechanisms (AGENTS.md for memorize) ensure memory preservation even when rs-learn is temporarily unavailable.
+
 ## Import-based execution
 
 Hypotheses become real by importing actual modules from disk. Reimplemented behavior is UNKNOWN. Write the import probe to the spool:
