@@ -2,14 +2,14 @@
   "binary_version": "0.1.365",
   "errors_last_5": [],
   "last_dispatched_task": {
-    "at": "2026-05-14T12:25:02.248Z",
-    "id": 12,
-    "input_path": "C:/dev/gm\\.gm\\exec-spool\\in\\nodejs\\12.js",
-    "lang_or_verb": "nodejs"
+    "at": "2026-05-14T13:06:35.279Z",
+    "id": 2,
+    "input_path": "C:/dev/gm\\.gm\\exec-spool\\in\\codesearch\\2.txt",
+    "lang_or_verb": "codesearch"
   },
-  "last_tick_at": "2026-05-14T12:26:10.129Z",
-  "pending_in_inbox": 60,
-  "pid": 10544,
-  "started_at": "2026-05-14T08:19:50.834Z",
-  "tasks_dispatched_this_session": 582
+  "last_tick_at": "2026-05-14T13:17:18.383Z",
+  "pending_in_inbox": 68,
+  "pid": 78220,
+  "started_at": "2026-05-14T10:23:41.953Z",
+  "tasks_dispatched_this_session": 81
 }

@@ -1,6 +1,7 @@
-ERROR: Expected CommonJS module to have a function wrapper. If you weren't messing around with Bun's internals, this is a bug in Bun
-TypeError: Expected CommonJS module to have a function wrapper. If you weren't messing around with Bun's internals, this is a bug in Bun
-    at anonymous (unknown)
-    at <anonymous> (C:\dev\gm\[eval]:5:9)
-    at C:\dev\gm\[eval]:40:102
-    at <anonymous> (native:11:43)
+warning: in the working copy of '.gm/mutables.yml', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '.gm/prd.yml', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'gm-skill/skills/gm-complete/index.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'gm-skill/skills/update-docs/index.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'gm-skill/lib/git.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'gm-starter/lib/git.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'lib/git.js', LF will be replaced by CRLF the next time Git touches it

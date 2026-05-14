@@ -1,1 +1,50 @@
-slept 3s
+[discipline:default] AGENTS.md:91-150 [169L] (100.0%)
+   >       bumps gm-starter/gm.json::plugkitVersion + gm-starter/bin/plugkit.version 
+   >       NEVER pushes binaries into gm history
+   >   → that commit triggers gm publish.yml
+
+[discipline:default] CHANGELOG.md:1-60 [157L] (74.6%)
+   > ## 2026-05-14 - gm-skill: daemon-bootstrap.js for standalone daemon orchestratio
+   > 
+   > gm-skill now provides gm-skill/lib/daemon-bootstrap.js, a standalone daemon orch
+
+[discipline:default] gm-starter/prompts/prompt-submit.txt:1-60 [84L] (24.7%)
+   > BLOCKING REQUIREMENT — YOUR FIRST ACTION MUST BE: invoke gm. Two equivalent fo
+   > 
+   > IMPORTANT: Invoke skill: "gm:gm" EVERY TIME, even if you have already invoked it
+
+[discipline:default] docs/paper.html:766-825 [871L] (in: like) (23.4%)
+   > 
+   > <h2 id="s35">35. CI Is the Build</h2>
+   > 
+
+[discipline:default] gm-starter/skills/gm-complete/SKILL.md:1-60 [107L] (21.5%)
+   > ---
+   > name: gm-complete
+   > description: VERIFY and COMPLETE phase. End-to-end system verification and git e
+
+[discipline:default] gm-skill/skills/gm-complete/SKILL.md:1-60 [107L] (21.5%)
+   > ---
+   > name: gm-complete
+   > description: VERIFY and COMPLETE phase. End-to-end system verification and git e
+
+[discipline:default] devgm-gc-src/prompts/prompt-submit.txt:1-60 [84L] (20.3%)
+   > BLOCKING REQUIREMENT — YOUR FIRST ACTION MUST BE: invoke gm. Two equivalent fo
+   > 
+   > IMPORTANT: Invoke skill: "gm:gm" EVERY TIME, even if you have already invoked it
+
+[discipline:default] gm-starter/README.md:1-60 [135L] (19.6%)
+   > # glootius maximus (gm)
+   > 
+   > > **more coushin' for the puhin'**
+
+[discipline:default] gm-skill/skills/gm-execute/SKILL.md:1-60 [89L] (19.0%)
+   > ---
+   > name: gm-execute
+   > description: EXECUTE phase AND the foundational execution contract for every ski
+
+[discipline:default] gm-starter/skills/gm-execute/SKILL.md:1-60 [89L] (19.0%)
+   > ---
+   > name: gm-execute
+   > description: EXECUTE phase AND the foundational execution contract for every ski
+

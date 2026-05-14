@@ -1,1 +1,50 @@
-slept 4s
+[discipline:default] AGENTS.md:91-150 [169L] (100.0%)
+   >       bumps gm-starter/gm.json::plugkitVersion + gm-starter/bin/plugkit.version 
+   >       NEVER pushes binaries into gm history
+   >   → that commit triggers gm publish.yml
+
+[discipline:default] CHANGELOG.md:1-60 [157L] (72.2%)
+   > ## 2026-05-14 - gm-skill: daemon-bootstrap.js for standalone daemon orchestratio
+   > 
+   > gm-skill now provides gm-skill/lib/daemon-bootstrap.js, a standalone daemon orch
+
+[discipline:default] docs/paper.html:631-690 [871L] (47.8%)
+   > 
+   > <h2 id="s25">25. Web-Search Before Pause</h2>
+   > 
+
+[discipline:default] devgm-gc-src/hooks/prompt-submit-hook.js:1-41 [41L] (44.1%)
+   > #!/usr/bin/env node
+   > const fs = require('fs');
+   > const path = require('path');
+
+[discipline:default] platforms/cli-config-shared.js:1261-1320 [2242L] (in: createGcStopHook) (43.5%)
+   >     console.log(JSON.stringify({ decision: 'deny', reason: result.reason }));
+   >     process.exit(0);
+   >   }
+
+[discipline:default] docs/crates.html:226-285 [300L] (32.2%)
+   >   <ul>
+   >     <li><span class="tag danger">tracked</span> <code>.gm/rs-learn.db</code> is 
+   >     <li><span class="tag">classified</span> facts route to AGENTS.md (top-level 
+
+[discipline:default] gm-starter/lib/codeinsight.js:1-60 [152L] (28.5%)
+   > const fs = require('fs');
+   > const path = require('path');
+   > const net = require('net');
+
+[discipline:default] platforms/cli-config-factory.js:1-44 [44L] (in: factory) (21.9%)
+   > const factory = (name, label, configFile, contextFile, overrides = {}) => {
+   >   const hookEvents = {
+   >     cc: { sessionStart: 'SessionStart', preTool: 'PreToolUse', promptSubmit: 'Us
+
+[discipline:default] lib/strict-validator.js:136-195 [351L] (18.9%)
+   >       const path = require('path');
+   >       const hooksJson = path.join(loaded.hooksDir || '', 'hooks.json');
+   >       if (fs.existsSync(hooksJson)) {
+
+[discipline:default] gm-starter/skills/create-lang-plugin/SKILL.md:1-60 [122L] (18.2%)
+   > ---
+   > name: create-lang-plugin
+   > description: Create a lang/ plugin that wires any CLI tool or language runtime i
+

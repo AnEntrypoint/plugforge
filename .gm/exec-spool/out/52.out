@@ -1,0 +1,9 @@
+ M .gm/exec-spool/.status.json
+ M .gm/exec-spool/.watcher.heartbeat
+ M .gm/exec-spool/out/1.json
+ M .gm/exec-spool/out/1.out
+ M .gm/exec-spool/out/2.out
+ M .gm/prd.yml
+?? .gm/exec-spool/out/52.err
+?? .gm/exec-spool/out/52.out
+?? lib/git.js

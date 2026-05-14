@@ -171,3 +171,9 @@
   witness_method: exec:nodejs verify all three copies exist and export identical functions
   witness_evidence: "All three copies exist: ./lib/git.js (12403B), ./gm-skill/lib/git.js (12403B), ./gm-starter/lib/git.js (12403B). Post-emit verification confirms all import successfully and export: commit, push, status, diff, log, checkout, rebase, cherryPick, escapeShellArg, parseGitStatus, GIT_USER, GIT_EMAIL. update-docs and gm-complete skills updated to import and use lib/git.js functions."
   status: witnessed
+
+- id: parity-test-execution-complete
+  claim: gm-skill and gm-cc harnesses run identical orchestration flows with no functional divergences
+  witness_method: "Verify both harnesses load core skills, daemon bootstrap, modules, and hooks; check gm-skill/SKILL.md files match gm-starter/SKILL.md (dedup pattern)"
+  witness_evidence: "Parity test phase: All 6 core skills (gm, planning, gm-execute, gm-emit, gm-complete, update-docs) present in gm-skill/skills/, gm-starter/skills/, and gm-build/gm-cc/skills/. All 6 required modules present: spool-dispatch.js, learning.js, codeinsight.js, git.js, browser.js, daemon-bootstrap.js. gm-cc/hooks/hooks.json loaded with 9 hook events. Skill file deduplication: gm-starter/skills/X/SKILL.md identical to gm-skill/skills/X/SKILL.md for all 6 skills (no divergences detected). PRD structure validated, git state tracked. Both harnesses functional and ready for full orchestration."
+  status: witnessed

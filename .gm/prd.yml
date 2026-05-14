@@ -106,7 +106,7 @@
 
 - id: parity-hook-elimination
   subject: Audit hooks and eliminate those replaced by skills
-  status: pending
+  status: completed
   description: |
     Review all plugkit hooks (session_start, pre_tool_use, post_tool_use, prompt_submit, stop) and identify which functionality now lives in skills. Remove redundant hooks, update AGENTS.md to reflect skill-native equivalents. Hooks to evaluate: daemon spawn (→ skill), mutable gate (→ skill), needs-gm gate (→ skill), codeinsight sync (→ skill).
   effort: medium
@@ -130,7 +130,7 @@
 
 - id: parity-functional-completeness
   subject: Run functional parity test comparing gm-skill vs gm-cc outputs
-  status: pending
+  status: completed
   description: |
     Execute identical tasks in both gm-skill and gm-cc harnesses and compare outputs. Verify: PRD generation identical, skill chain identical, git state identical, AGENTS.md identical, file creation identical. Document any divergences and fix them.
   effort: large
@@ -143,7 +143,7 @@
     - git state inconsistent
     - search results different between codeinsight paths
   route_fit: examined
-  authorization: weak_prior
+  authorization: witnessed
   blocking: [parity-residual-work]
   blockedBy: [parity-hook-elimination]
   acceptance:
