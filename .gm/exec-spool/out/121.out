@@ -1,0 +1,19 @@
+=== Checking context files in extension ===
+
+Found: AGENTS.md (171 lines)
+Found: GEMINI.md (0 lines)
+Found: AGENTS.MD (171 lines)
+Found: agents.md (171 lines)
+
+=== Current gemini-extension.json contextFileName ===
+  "contextFileName": "GEMINI.md"
+
+=== Full gemini-extension.json ===
+{
+  "name": "gm",
+  "version": "2.0.727",
+  "description": "State machine agent with hooks, skills, and automated git enforcement",
+  "author": "AnEntrypoint",
+  "homepage": "https://github.com/AnEntrypoint/gm",
+  "contextFileName": "GEMINI.md"
+}

@@ -1,0 +1,13 @@
+1. [discipline:default] [reference/exec-pause-verb]
+   Atomic rename .gm/prd.yml → .gm/prd.paused.yml; question text from body becomes header comment. Returns permission deny to halt tool call. prompt_submit.rs auto-renames back at next user turn. Added 2026-04-25 rs-plugkit commit 13fa81d.
+2. [discipline:default] [feedback/no-bun-x-rs-learn-from-plugkit]
+   feedback/no-bun-x-rs-learn-from-plugkit
+Hard rule for any new rs-plugkit hook code needing rs-learn: route through run_with_timeout / spawn_detached helpers in src/hook/rs_learn.rs which now call the rs-learn lib directly via a shared tokio Runtime. Never invoke `bun x rs-learn` from rs-plugkit, never Command::new("bun") for rs-learn ops — the scoop bun.exe shim opens its own visible console windo…
+3. [discipline:default] [project/rs-plugkit-rs-learn-direct-calls]
+   project/rs-plugkit-rs-learn-direct-calls
+rs-plugkit commit 62554dc on main replaced run_bun_rs_learn / spawn_detached_bun_rs_learn in src/hook/rs_learn.rs with direct rs-learn lib calls via a shared tokio::runtime::Runtime (OnceLock, 2 worker threads). Added Cargo deps: rs-learn = git AnEntrypoint/rs-learn branch main, and libsql = "0.9" default-features=false features=["core","serde"] (needed for…
+4. [discipline:default] [project/benchmark-detection-recall-gate]
+   rs-plugkit pre_tool_use.rs hook reads .gm/turn-state.json recallFiredThisTurn flag to gate benchmark-pattern exec:bash blocks. When benchmark heuristic fires (date +%s, time-related patterns, "why is X slow", performance.now, process.hrtime) and no recall fired this turn, hook blocks with redirect to exec:recall.
+5. [discipline:default] [project/autonomy-policy]
+   gm autonomy policy (committed 2026-04-25): once a PRD is written, agents EXECUTE through to COMPLETE without asking the user. Forbidden patterns: "should I continue", "want me to do X", offering to split work, pre-confirmation before multi-file edits. Asking permitted ONLY as last resort for destructive-irreversible decisions or genuinely ambiguous user intent. Prefer exec:pause (renames .gm/prd.y…
+

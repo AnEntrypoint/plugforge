@@ -1,0 +1,16 @@
+=== Cloning main gm repo ===
+Cloning into 'gm'...
+
+=== Looking for Gemini references in main gm repo ===
+gm/AGENTS.md:**acptoapi provider and ACP agent auto-spawn**: rs-plugkit `session_start` hook checks if 127.0.0.1:4800 is reachable; if not, spawns `bun x acptoapi@latest` as a background daemon and auto-detects available ACP agents (opencode, kilo-code, codex, gemini-cli, qwen-code) to run invisibly as subprocesses. Binary detection uses `where` (Windows) / `which` (Unix); agents not found are skipped gracefully. Daemon and agent spawning runs in a detached thread to avoid blocking session_start completion. On Windows, agents spawn with DETACHED_PROCESS flag (0x08000000) and no console window. acptoapi is the primary LLM provider for all downstream repos (rs-learn, freddie, acptoapi itself); the Anthropic SDK serves as fallback only when acptoapi is unavailable. Additional ACP-compatible agents supported: hermes (NousResearch), cline, acpx (OpenClaw). All agents run in ACP stdio mode (NDJSON JSON-RPC 2.0 over stdin/stdout). See rs-learn.db for per-agent binary paths, install methods, and invocation details.
+gm/CHANGELOG.md:- Deploy GC bin/ (plugkit.js + binaries) to ~/.gemini/extensions/gm/bin/
+gm/CHANGELOG.md:- Deploy updated GC hooks with exec dispatch to ~/.gemini/extensions/gm/hooks/
+gm/gm-starter/README.md:- 6 CLI platforms: claude code, gemini cli, opencode, kilocode, codex, github copilot cli
+gm/gm-starter/README.md:- the gemini and opencode adapters are functional but less battle-tested than claude code
+gm/gm-starter/skills/gm/SKILL.md:**LLM provider**: acptoapi (127.0.0.1:4800) is the preferred provider when available. rs-plugkit session_start spawns acptoapi daemon and auto-detects ACP agents (opencode, kilo-code, codex, gemini-cli, qwen-code). All downstream platforms (rs-learn, freddie, gm-skill daemon mode) read OPENAI_BASE_URL environment variable and default to 127.0.0.1:4800. Anthropic SDK is fallback only when acptoapi socket is unavailable (CI, headless mode).
+gm/package.json:  "description": "Unified multi-plugin builder for gm plugins across Claude Code, Gemini CLI, and OpenCode",
+gm/package.json:    "gemini-cli",
+gm/README.md:| Gemini CLI | https://AnEntrypoint.github.io/gm-gc | https://github.com/AnEntrypoint/gm-gc |
+gm/site/platforms.json:    "label": "Gemini CLI",
+
+=== Checking what repos exist in AnEntrypoint ===

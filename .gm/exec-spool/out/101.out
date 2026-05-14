@@ -1,0 +1,30 @@
+  ⚠️  antigravity: Missing hooks configuration
+  ⚠️  windsurf: Missing hooks configuration
+
+HOOK VALIDATION:
+
+  cc: ✅ hooks.json valid with 4 event types
+  gc: ⚠️  Hook "BeforeTool" doesn't use path variables: node ${extensionPath}/hooks/pre-tool-use-hook.js
+  gc: ⚠️  Hook "SessionStart" doesn't use path variables: node ${extensionPath}/hooks/session-start-hook.js
+  gc: ⚠️  Hook "BeforeAgent" doesn't use path variables: node ${extensionPath}/hooks/prompt-submit-hook.js
+  gc: ⚠️  Hook "SessionEnd" doesn't use path variables: node ${extensionPath}/hooks/stop-hook.js
+  gc: ⚠️  Hook "SessionEnd" doesn't use path variables: node ${extensionPath}/hooks/stop-hook-git.js
+  oc: ✅ hooks.json valid with 3 event types
+  codex: ✅ hooks.json valid with 5 event types
+  kilo: ✅ hooks.json valid with 3 event types
+  qwen: ✅ hooks.json valid with 4 event types
+  hermes: ✅ hooks.json valid with 0 event types
+  thebird: ✅ hooks.json valid with 4 event types
+  vscode: ⚠️  No hooks directory found
+  cursor: ⚠️  No hooks directory found
+  zed: ⚠️  No hooks directory found
+  jetbrains: ⚠️  No hooks directory found
+  copilot-cli: ❌ Referenced hook file missing: plugkit
+  copilot-cli: ❌ Referenced hook file missing: plugkit
+  copilot-cli: ❌ Referenced hook file missing: plugkit
+  copilot-cli: ❌ Referenced hook file missing: plugkit
+  copilot-cli: ❌ Referenced hook file missing: plugkit
+  copilot-cli: ❌ Referenced hook file missing: plugkit
+  antigravity: ⚠️  No hooks directory found
+  windsurf: ⚠️  No hooks directory found
+

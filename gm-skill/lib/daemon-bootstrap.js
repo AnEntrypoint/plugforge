@@ -131,7 +131,7 @@ async function checkState(daemonName) {
   }
 }
 
-async function spawn(daemonName, cmd) {
+async function spawnDaemon(daemonName, cmd) {
   const sessionId = getSessionId();
   const startTime = Date.now();
 
@@ -304,7 +304,7 @@ async function shutdown(daemonName) {
 
 module.exports = {
   checkState,
-  spawn,
+  spawnDaemon,
   waitForReady,
   getSocket,
   shutdown,

@@ -142,6 +142,15 @@ function getAllOutputs() {
   return Array.from(taskIds).map(id => readSpoolOutput(id));
 }
 
+async function getEvents(sessionId, cwd) {
+  try {
+    const { getSnapshot } = require('./skill-bootstrap');
+    return await getSnapshot(sessionId, cwd);
+  } catch (e) {
+    return { error: e.message };
+  }
+}
+
 module.exports = {
   writeSpool,
   readSpoolOutput,
@@ -150,5 +159,6 @@ module.exports = {
   getSpoolBaseDir,
   generateTaskId,
   validateLang,
-  getExtForLang
+  getExtForLang,
+  getEvents
 };

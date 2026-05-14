@@ -1,0 +1,8 @@
+=== Checking Gemini CLI installation ===
+/c/Users/user/AppData/Roaming/npm/gemini
+0.42.0
+
+=== Checking for Gemini in node_modules (global) ===
+
+=== Checking gm-gc/bin directory ===
+bin dir not found

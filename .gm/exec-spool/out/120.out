@@ -1,0 +1,21 @@
+=== Verifying all gm agent definitions ===
+
+Checking agent: gm
+  ✓ Frontmatter compatible
+
+Checking agent: memorize
+  ✓ Frontmatter compatible
+
+Checking agent: research-worker
+  ✓ Frontmatter compatible
+
+Checking agent: textprocessing
+  ✓ Frontmatter compatible
+
+=== Checking AGENTS.md exists ===
+✓ AGENTS.md exists (171 lines)
+
+=== Checking gemini-extension.json ===
+  "name": "gm",
+  "version": "2.0.727",
+  "contextFileName": "GEMINI.md"

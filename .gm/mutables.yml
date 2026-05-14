@@ -34,14 +34,56 @@
   witness_evidence: "AGENTS.md lines 105-107 document acptoapi as primary LLM provider spawned via 'bun x acptoapi@latest' as background daemon on 127.0.0.1:4800. Explicitly stated: 'acptoapi is the primary LLM provider for all downstream repos' with 'Anthropic SDK serves as fallback'. All agents (hermes, cline, acpx, etc.) run in 'ACP stdio mode (NDJSON JSON-RPC 2.0 over stdin/stdout)'. Pure API contract confirmed: daemon spawned separately, no workspace access, JSON-RPC over stdio, state is caller-managed."
   status: witnessed
 
-- id: gm-gc-gemini-provider-shape
-  claim: gm-gc repository supports Gemini provider with fallback chain (Gemini → acptoapi → Anthropic)
-  witness_method: Read gm-gc repository configuration and provider setup
-  witness_evidence: "gm-gc is production-ready downstream platform (AGENTS.md line 103: 'gm-gc is production-ready: all 9 validation mutables witnessed, feature parity with gm-cc confirmed'). All downstream platforms use acptoapi daemon-bootstrap contract (AGENTS.md line 107). Provider selection follows cascade pattern: primary provider → acptoapi → Anthropic SDK fallback. gm-gc as Google Cloud platform would use Gemini as primary provider with same fallback chain."
+- id: gemini-sdk-wired
+  claim: Gemini SDK (@google/generative-ai or google-generativeai) is in gm-gc dependencies
+  witness_method: exec:nodejs read gm-gc/package.json dependencies + npm root verification
+  witness_evidence: "gm-gc 2.0.85 installed globally at C:\\Users\\user\\AppData\\Roaming\\npm\\node_modules\\gm-gc. Verified via npm root -g + fs.existsSync + JSON.parse. gm-gc package.json examined: hasGeminiSDK = false. Neither @google/generative-ai nor google-generativeai present in dependencies. BLOCKING ISSUE: Gemini SDK is missing from gm-gc 2.0.85 release."
   status: witnessed
 
-- id: gemini-auth-environment
-  claim: Gemini SDK auth configuration works via environment variables without blocking fallback
-  witness_method: Read Anthropic SDK and acptoapi fallback contract
-  witness_evidence: "AGENTS.md line 105-107 documents acptoapi as primary provider with 'Anthropic SDK serves as fallback only when acptoapi is unavailable.' All providers (Gemini, acptoapi, Anthropic SDK) follow same initialization pattern with graceful fallback. Env var initialization must be non-blocking per daemon-bootstrap contract (AGENTS.md line 107): 'Bootstrap failures (unresponsive socket, spawn timeout) are logged...and treated as non-fatal (fallback to Anthropic SDK).'  Auth env vars configured per SDK docs, fallback automatic."
+- id: gm-extension-loadable
+  claim: gm extension is present at ~/.gemini/extensions/gm and contains required components
+  witness_method: exec:nodejs fs.readdirSync ~/.gemini/extensions/gm and inspect contents
+  witness_evidence: "gm extension exists at C:\\Users\\user\\.gemini\\extensions\\gm (fs.existsSync confirmed true). Contents: ['.mcp.json', 'agents', 'gemini-extension.json', 'GEMINI.md', 'hooks', 'README.md']. Bundled agents present: [gm.md, memorize.md, research-worker.md, textprocessing.md]. Extension metadata version 2.0.727 loaded from gemini-extension.json. Extension is loadable and discoverable by Gemini CLI."
+  status: witnessed
+
+- id: gemini-auth-token
+  claim: GOOGLE_API_KEY or GEMINI_API_KEY environment variable is set and non-empty
+  witness_method: exec:nodejs check process.env for auth token
+  witness_evidence: "GOOGLE_API_KEY environment variable checked via process.env.GOOGLE_API_KEY. Result: NOT SET (false). BLOCKING ISSUE: GOOGLE_API_KEY must be set to enable Gemini API calls. User must provide valid API key."
+  status: witnessed
+
+- id: gm-skill-repo-state
+  claim: gm-skill repo has skeleton directories but no actual SKILL.md files or implementations
+  witness_method: "Direct clone from https://github.com/anEntrypoint/gm-skill and file inspection"
+  witness_evidence: "skills/{gm,planning,gm-execute,gm-emit,gm-complete,update-docs}/ exist with only index.js stubs; no SKILL.md files present; lib/bootstrap-compat.js exists but is minimal shim (391B)"
+  status: witnessed
+
+- id: daemon-bootstrap-pattern-exists
+  claim: gm-starter has working daemon-bootstrap.js pattern for spawning acptoapi, rs-learn, rs-codeinsight
+  witness_method: Read C:\dev\gm\gm-starter\lib\daemon-bootstrap.js
+  witness_evidence: "functions ensureAcptoapiRunning(), ensureRsLearningDaemonRunning(), ensureRsCodeinsightDaemonRunning() with platform detection (Windows tasklist, Unix pgrep), socket checks, JSONL logging, status files"
+  status: witnessed
+
+- id: end-to-end-skill-chaining-spec
+  claim: gm SKILL.md defines end-to-end JSON output format and skill chaining protocol
+  witness_method: Read C:\dev\gm\gm-starter\skills\gm\SKILL.md lines 49-63
+  witness_evidence: "frontmatter end-to-end: true, JSON output {nextSkill, context, phase}, platform adapters must parse and chain until nextSkill=null"
+  status: witnessed
+
+- id: spool-dispatch-documented
+  claim: gm SKILL.md documents spool dispatch execution model
+  witness_method: Read C:\dev\gm\gm-starter\skills\gm\SKILL.md lines 35-38
+  witness_evidence: ".gm/exec-spool/in/<lang>/<N>.<ext> format, languages nodejs/python/bash/typescript/go/rust/c/cpp/java/deno, verbs codesearch/recall/memorize/wait/sleep/status/close/browser/runner/type/kill-port/forget/feedback/learn-status/learn-debug/learn-build/discipline/pause/health"
+  status: witnessed
+
+- id: gm-starter-skills-complete
+  claim: All 6 core skills (gm, planning, gm-execute, gm-emit, gm-complete, update-docs) exist in gm-starter/skills/
+  witness_method: ls -la C:\dev\gm\gm-starter\skills\
+  witness_evidence: "gm/SKILL.md, planning/SKILL.md, gm-execute/SKILL.md, gm-emit/SKILL.md, gm-complete/SKILL.md, update-docs/SKILL.md all present"
+  status: witnessed
+
+- id: npm-publish-workflow-pattern
+  claim: gm/.github/workflows has publish patterns and CI cascade
+  witness_method: codesearch gm skill publish workflow
+  witness_evidence: "publish.yml and cascade.yml patterns exist; auto-version-bump and npm publish flows documented"
   status: witnessed

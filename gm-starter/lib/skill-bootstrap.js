@@ -4,6 +4,7 @@ const https = require('https');
 const { execSync, spawn } = require('child_process');
 const crypto = require('crypto');
 const os = require('os');
+const net = require('net');
 
 const PLUGKIT_TOOLS_DIR = path.join(os.homedir(), '.claude', 'gm-tools');
 const PLUGKIT_VERSION_FILE = path.join(PLUGKIT_TOOLS_DIR, 'plugkit.version');
@@ -353,4 +354,69 @@ async function bootstrapPlugkit() {
   }
 }
 
-module.exports = { bootstrapPlugkit };
+async function checkPortReachable(host, port, timeoutMs = 500) {
+  return new Promise((resolve) => {
+    const socket = new net.Socket();
+    const timeoutHandle = setTimeout(() => {
+      socket.destroy();
+      resolve(false);
+    }, timeoutMs);
+
+    socket.connect(port, host, () => {
+      clearTimeout(timeoutHandle);
+      socket.destroy();
+      resolve(true);
+    });
+
+    socket.on('error', () => {
+      clearTimeout(timeoutHandle);
+      resolve(false);
+    });
+  });
+}
+
+async function bootstrapAcptoapi() {
+  const port = 4800;
+  const running = await checkPortReachable('127.0.0.1', port);
+  if (running) return { ok: true, status: 'already-running' };
+
+  emitBootstrapEvent('info', 'Spawning acptoapi daemon');
+  try {
+    const child = spawn('bun', ['x', 'acptoapi@latest'], {
+      detached: true,
+      stdio: 'ignore',
+      windowsHide: true,
+    });
+    child.unref();
+    emitBootstrapEvent('info', 'acptoapi spawned', { pid: child.pid });
+    return { ok: true, status: 'spawned', pid: child.pid };
+  } catch (e) {
+    emitBootstrapEvent('error', 'Failed to spawn acptoapi', { error: e.message });
+    return { ok: false, error: e.message };
+  }
+}
+
+async function getSnapshot(sessionId, cwd) {
+  const plugkitPath = getPlugkitPath();
+  if (!fs.existsSync(plugkitPath)) {
+    return { git: { ok: false }, tasks: [], error: 'plugkit not found' };
+  }
+
+  try {
+    const sid = sessionId || process.env.CLAUDE_SESSION_ID || 'default';
+    const c = cwd || process.cwd();
+    const cmd = `"${plugkitPath}" snapshot --session "${sid}" --cwd "${c}"`;
+    const output = execSync(cmd, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
+    return JSON.parse(output);
+  } catch (e) {
+    emitBootstrapEvent('warn', 'Failed to get snapshot', { error: e.message });
+    return { git: { ok: false }, tasks: [], error: e.message };
+  }
+}
+
+module.exports = { 
+  bootstrapPlugkit,
+  bootstrapAcptoapi,
+  getSnapshot,
+  checkPortReachable
+};

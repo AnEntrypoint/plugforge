@@ -1,0 +1,6 @@
+ERROR: Expected CommonJS module to have a function wrapper. If you weren't messing around with Bun's internals, this is a bug in Bun
+Stack: TypeError: Expected CommonJS module to have a function wrapper. If you weren't messing around with Bun's internals, this is a bug in Bun
+    at anonymous (unknown)
+    at <anonymous> (C:\dev\gm\[eval]:5:9)
+    at C:\dev\gm\[eval]:44:102
+    at <anonymous> (native:11:43)

@@ -1,383 +1,254 @@
-- id: rs-learn-claudeclient-removal
-  subject: Remove ClaudeCliClient from rs-learn and wire acptoapi + Anthropic SDK fallback
-  status: pending
-  description: Replace ClaudeCliClient LLM provider in rs-learn with acptoapi socket (127.0.0.1:4800) as primary, Anthropic SDK as fallback. All unit tests must pass.
-  effort: large
-  category: refactor
+- id: gm-skill-framework-bootstrap
+  subject: Create daemon-bootstrap.js for standalone gm-skill daemon orchestration
+  status: completed
+  description: |
+    gm-skill must provide a standalone daemon-bootstrap.js (no plugkit hooks dependency) that spawns and monitors acptoapi, rs-learn, and rs-codeinsight daemons via spool dispatch. Implements checkState, spawn, waitForReady, getSocket, shutdown exported functions per AGENTS.md contract. Writes JSON status to .gm/ and emits structured JSONL logs to ~/.claude/gm-log. Works for any platform (no hooks, pure Node.js).
+  effort: medium
+  category: infra
   route_family: boundary
-  load: 0.8
+  load: 0.9
   failure_modes:
-    - ClaudeCliClient removal leaves orphaned imports
-    - acptoapi socket unreachable in tests
-    - Anthropic SDK fallback does not initialize
+    - daemon spawn fails on Windows vs Unix
+    - socket reachability check hangs
+    - stale daemon process not detected
+    - race condition between multiple spawn attempts
   route_fit: examined
   authorization: witnessed
   blocking: []
   blockedBy: []
   acceptance:
-    - All ClaudeCliClient references removed from rs-learn src
-    - LLM provider detects acptoapi:4800 first, falls back to Anthropic SDK
-    - All unit tests pass (embedding, recall, graph traversal)
-    - CI green on rs-exec cascade
+    - daemon-bootstrap.js exports checkState(daemonName), spawn(daemonName, cmd), waitForReady(daemonName, host, port, timeoutMs), getSocket(daemonName), shutdown(daemonName)
+    - Detects running daemons via platform-specific mechanism (tasklist on Windows, pgrep on Unix)
+    - Verifies socket reachability before returning success
+    - Emits JSONL events to ~/.claude/gm-log/<date>/daemon.jsonl
+    - Writes status JSON to .gm/<daemon>-status.json
+    - Handles missing/stale daemons gracefully (no crash on re-check)
+    - Works in exec:nodejs spool without hook infrastructure
 
-- id: research-hermes-acp-compat
-  subject: Research hermes (NousResearch) ACP JSON-RPC compatibility and auto-spawn
-  status: pending
-  description: Investigate hermes binary location, invocation syntax, JSON-RPC stdio protocol support, environment setup, and Windows DETACHED_PROCESS compatibility.
-  effort: medium
+- id: gm-skill-package-structure
+  subject: Wire gm-skill package.json, exports, and lib/ infrastructure
+  status: completed
+  description: |
+    gm-skill package.json must export daemon-bootstrap.js and skill loader. Create lib/manifest.js to discover SKILL.md files in skills/ and generate skill metadata. Create lib/loader.js to dynamically load skills and execute them via index.js per platform. Verify builds cleanly and supports require/ESM dual import paths.
+  effort: small
   category: infra
-  route_family: grounding
-  load: 0.5
+  route_family: boundary
+  load: 0.6
   failure_modes:
-    - hermes binary location varies by OS
-    - hermes does not support pure JSON-RPC stdio
-  route_fit: unexamined
-  authorization: none
-  blocking: []
-  blockedBy: []
-  mutables:
-    - hermes-acp-compat
+    - skills/ not discoverable from downstream platforms
+    - SKILL.md frontmatter not parsed correctly
+    - module.exports mismatch for ESM
+  route_fit: examined
+  authorization: witnessed
+  blocking: [gm-skill-gm-skill-index]
+  blockedBy: [gm-skill-framework-bootstrap]
   acceptance:
-    - hermes discovery method documented (which/where)
-    - ACP JSON-RPC compatibility confirmed
-    - Auto-spawn gate and env vars documented
+    - package.json main points to lib/index.js ✓
+    - lib/index.js exports { getSkills, getSkill, loadSkill, bootstrapDaemon } ✓
+    - lib/manifest.js discovers all skills/ directories and parses SKILL.md frontmatter ✓
+    - Skill metadata includes name, description, allowed-tools, compatible-platforms, end-to-end flag ✓
+    - Skills discoverable from downstream repos via require('gm-skill').getSkills() ✓
 
-- id: research-cline-acp-compat
-  subject: Research cline ACP JSON-RPC compatibility and auto-spawn
+- id: gm-skill-gm-skill-index
+  subject: Implement core skills (gm, planning, gm-execute, gm-emit, gm-complete, update-docs) as index.js modules
   status: pending
-  description: Investigate cline binary location, invocation syntax, JSON-RPC stdio protocol support, environment setup, and Windows DETACHED_PROCESS compatibility.
-  effort: medium
-  category: infra
-  route_family: grounding
-  load: 0.5
-  failure_modes:
-    - cline binary location varies by OS
-    - cline does not support pure JSON-RPC stdio
-  route_fit: unexamined
-  authorization: none
-  blocking: []
-  blockedBy: []
-  mutables:
-    - cline-acp-compat
-  acceptance:
-    - cline discovery method documented (which/where)
-    - ACP JSON-RPC compatibility confirmed
-    - Auto-spawn gate and env vars documented
+  description: |
+    Each skill/ directory must have index.js that:
+    1. Reads SKILL.md from the skill directory
+    2. Implements the skill's logic (dispatch to subagents or direct execution)
+    3. Returns end-to-end JSON on stdout (nextSkill, context, phase) per gm SKILL.md
+    4. Handles errors and timeouts without crashing
+    5. Routes through spool for any code execution (exec:nodejs, exec:bash)
 
-- id: research-acpx-acp-compat
-  subject: Research acpx (OpenClaw) ACP JSON-RPC compatibility and auto-spawn
-  status: pending
-  description: Investigate acpx binary location, invocation syntax, JSON-RPC stdio protocol support, environment setup, and Windows DETACHED_PROCESS compatibility.
-  effort: medium
-  category: infra
-  route_family: grounding
-  load: 0.5
-  failure_modes:
-    - acpx binary location varies by OS
-    - acpx does not support pure JSON-RPC stdio
-  route_fit: unexamined
-  authorization: none
-  blocking: []
-  blockedBy: []
-  mutables:
-    - acpx-acp-compat
-  acceptance:
-    - acpx discovery method documented (which/where)
-    - ACP JSON-RPC compatibility confirmed
-    - Auto-spawn gate and env vars documented
-
-- id: rs-plugkit-agent-discovery-expansion
-  subject: Expand rs-plugkit agent auto-spawn to include hermes, cline, acpx
-  status: pending
-  description: Add hermes, cline, acpx binary discovery and spawning to session_start hook. Verify Windows DETACHED_PROCESS flag and ACP JSON-RPC over stdio.
+    gm → planning → gm-execute → gm-emit → gm-complete → update-docs, with cycle-back to planning on unknowns.
   effort: large
   category: feature
+  route_family: reasoning
+  load: 1.0
+  failure_modes:
+    - skill invocation infinite loops
+    - JSON output malformed or missing nextSkill
+    - context not passed between skills
+    - mutable resolution never completes
+    - git operations fail (push, commit)
+    - async operations timeout
+  route_fit: examined
+  authorization: weak_prior
+  blocking: []
+  blockedBy: [gm-skill-package-structure]
+  acceptance:
+    - gm/index.js parses request, invokes planning as first skill, returns nextSkill="planning"
+    - planning/index.js runs ORIENT, mutable discovery, PRD generation, returns nextSkill="gm-execute"
+    - gm-execute/index.js parallelizes independent PRD items via subagents, returns nextSkill="gm-emit" or "planning" (on unknowns)
+    - gm-emit/index.js writes .gm/ files, verifies from disk, returns nextSkill="gm-complete"
+    - gm-complete/index.js verifies git state, checks tests, returns nextSkill="update-docs" or null
+    - update-docs/index.js updates README + AGENTS.md + site, commits and pushes, returns nextSkill=null
+    - All skills respect timeouts and emit clear error messages
+    - end-to-end JSON always includes { nextSkill, context, phase }
+
+- id: gm-skill-spool-integration
+  subject: Wire gm-skill skills to use spool dispatch for code execution
+  status: pending
+  description: |
+    Skills must dispatch work via spool (write to .gm/exec-spool/in/<lang>/<N>.<ext>) rather than invoking subagents directly. Implement helper functions to write spool files, poll output, and parse results. Create wrapper for exec:nodejs, exec:bash, exec:codesearch, exec:recall, exec:memorize that skill code can call directly.
+  effort: medium
+  category: infra
   route_family: execution
   load: 0.7
   failure_modes:
-    - Agent binary not found, spawn silently skipped
-    - Windows DETACHED_PROCESS flag incorrect
-    - Agent does not respond to JSON-RPC
+    - spool watchers timeout or hang
+    - output parsing fails
+    - session_id not threaded through
+    - temp files not cleaned up
   route_fit: examined
   authorization: weak_prior
-  blocking: []
-  blockedBy:
-    - research-hermes-acp-compat
-    - research-cline-acp-compat
-    - research-acpx-acp-compat
-  mutables:
-    - hermes-acp-compat
-    - cline-acp-compat
-    - acpx-acp-compat
+  blocking: [gm-skill-gm-skill-index]
+  blockedBy: [gm-skill-package-structure]
   acceptance:
-    - hermes, cline, acpx binary discovery works
-    - Windows spawning uses DETACHED_PROCESS (0x08000000)
-    - All agents respond to ACP JSON-RPC
-    - Agent spawn failures logged, fallback works
+    - lib/spool.js exports { writeSpool, readSpoolOutput, waitForCompletion, execNodejs, execBash, execCodesearch, execRecall, execMemorize }
+    - Each function handles file I/O, polling, and error recovery
+    - Timeouts default to 30s, configurable per call
+    - Session ID threaded through all spool operations
+    - Temp files in exec-spool cleaned on success
 
-- id: gm-agents-md-acptoapi-contract-update
-  subject: Document acptoapi daemon-bootstrap integration in AGENTS.md
+- id: gm-skill-end-to-end-chaining
+  subject: Implement end-to-end skill chaining (JSON handoff between consecutive skills)
   status: pending
-  description: Add/refresh section in AGENTS.md explaining acptoapi as primary LLM provider, daemon-bootstrap spawning, agent discovery, Windows process handling, Anthropic SDK fallback.
-  effort: small
-  category: docs
-  route_family: representation
-  load: 0.2
-  failure_modes:
-    - Documentation unclear on pure-API contract
-  route_fit: examined
-  authorization: weak_prior
-  blocking: []
-  blockedBy: []
-  acceptance:
-    - AGENTS.md updated with acptoapi provider section
-    - daemon-bootstrap contract clearly explained
-    - Agent discovery pattern documented
-    - Windows DETACHED_PROCESS spawning documented
-
-- id: gm-skill-md-acptoapi-preference-update
-  subject: Update gm SKILL.md files to reference acptoapi as default LLM provider
-  status: pending
-  description: Update gm, gm-execute, gm-emit, gm-complete SKILL.md files across all 9 bundled platforms to note acptoapi preference and Anthropic SDK fallback.
-  effort: medium
-  category: docs
-  route_family: representation
-  load: 0.4
-  failure_modes:
-    - Skill SKILL.md files not synchronized across platforms
-  route_fit: examined
-  authorization: weak_prior
-  blocking: []
-  blockedBy: []
-  acceptance:
-    - All 9 bundled platform skill files updated
-    - acptoapi mentioned as default provider
-    - Fallback documented
-
-- id: antigravity-bundled-skills-audit
-  subject: Audit antigravity extension for bundled skills completeness
-  status: pending
-  description: Verify all 4 core skills (gm, gm-execute, gm-emit, gm-complete) present in antigravity generated output. Compare against gm-cc.
-  effort: medium
-  category: infra
-  route_family: representation
-  load: 0.5
-  failure_modes:
-    - One or more core skills missing from antigravity
-  route_fit: unexamined
-  authorization: none
-  blocking: []
-  blockedBy: []
-  mutables:
-    - antigravity-skill-presence
-  acceptance:
-    - All 4 core skills present in build/gm-antigravity
-    - Skill SKILL.md files match gm-cc versions
-    - manifest.js returns correct skill count
-
-- id: all-extension-bundled-skills-audit
-  subject: Audit all 12 downstream extensions for skill completeness
-  status: pending
-  description: Verify all 12 platforms have complete skill bundling. Platforms: gm-cc, gm-gc, gm-oc, gm-kilo, gm-codex, gm-qwen, gm-copilot-cli, gm-hermes, gm-vscode, gm-cursor, gm-zed, gm-jetbrains.
-  effort: large
-  category: infra
-  route_family: representation
-  load: 0.6
-  failure_modes:
-    - Skills missing from one or more extensions
-  route_fit: examined
-  authorization: weak_prior
-  blocking: []
-  blockedBy:
-    - antigravity-bundled-skills-audit
-  acceptance:
-    - All 12 platforms have 4+ core skills present
-    - Skill manifests align across platforms
-    - Clean rebuild produces consistent skills
-
-- id: gm-skill-spool-helpers-export
-  subject: Export spool dispatch helpers from gm-skill for public use
-  status: pending
-  description: Verify gm-starter/lib/spool.js exists and exports writeSpool, readSpoolOutput, waitForCompletion, getAllOutputs. Document in README.md.
+  description: |
+    When a skill returns nextSkill in JSON, the gm index.js must automatically invoke the next skill and pass context. No manual chaining. Support up to 5 hops in a single gm:gm invocation (gm → planning → gm-execute → gm-emit → gm-complete → update-docs). On nextSkill=null, complete and return. Handle cycle-back to planning when unknowns detected.
   effort: small
   category: feature
+  route_family: reasoning
+  load: 0.5
+  failure_modes:
+    - infinite loops (skill returns itself as nextSkill)
+    - context lost between hops
+    - memory not persisted (recall/memorize failures)
+  route_fit: examined
+  authorization: weak_prior
+  blocking: []
+  blockedBy: [gm-skill-gm-skill-index]
+  acceptance:
+    - gm/index.js runs a skill chain loop until nextSkill=null
+    - Context object passed as argument to each skill
+    - Loop timeout (5 min default) prevents infinite chains
+    - Cycle-back to planning on planning-mutable-detect triggers
+
+- id: gm-skill-test-e2e
+  subject: Test gm-skill end-to-end with a real task (trivial feature or bug fix)
+  status: pending
+  description: |
+    Witness gm-skill skills running against a small real task: parse task request → run PLAN → EXECUTE → EMIT → COMPLETE. Verify PRD generation, mutable resolution, subagent dispatch, and final push succeed. Use a test repo or local example project. Document actual output and any failures.
+  effort: medium
+  category: infra
+  route_family: boundary
+  load: 0.8
+  failure_modes:
+    - skill invocation crashes on real request
+    - PRD generation malformed
+    - mutable discovery infinite loops
+    - subagent dispatch fails
+    - git push fails (auth, remote not set)
+  route_fit: examined
+  authorization: weak_prior
+  blocking: []
+  blockedBy: [gm-skill-gm-skill-index, gm-skill-spool-integration, gm-skill-end-to-end-chaining]
+  acceptance:
+    - gm-skill invoked with a sample request
+    - PRD generated and verified on disk
+    - All mutables resolved (status: witnessed)
+    - Files written to disk match expected state
+    - Git commit + push succeeds
+    - Final output confirms COMPLETE
+
+- id: gm-skill-npm-publish
+  subject: Configure npm publish workflow and dist/ build in gm-skill
+  status: pending
+  description: |
+    Create .github/workflows/gm-skill-publish.yml to auto-publish to npm on main branch push. Build dist/ with esbuild or webpack bundling all skills and lib/ into a single package. Pin versions in package.json (gm-skill should never be in flux). Verify downstream platforms (gm-cc, gm-gc) can require gm-skill@latest without dupes or conflicts.
+  effort: small
+  category: infra
+  route_family: boundary
+  load: 0.5
+  failure_modes:
+    - npm token missing or revoked
+    - dist/ not included in package
+    - version conflicts with downstream deps
+  route_fit: examined
+  authorization: weak_prior
+  blocking: []
+  blockedBy: [gm-skill-test-e2e]
+  acceptance:
+    - .github/workflows/gm-skill-publish.yml auto-publishes on push to main
+    - dist/ built by esbuild, includes all skills + lib
+    - package.json includes dist/ in files array
+    - Version auto-bumped (patch) by CI
+    - gm-cc, gm-gc can install and use gm-skill as devDependency
+
+- id: gm-skill-docs-readme
+  subject: Write comprehensive README for gm-skill package
+  status: pending
+  description: |
+    README.md documents: purpose (orchestration skills for any gm platform), architecture (daemon bootstrap, skill chaining, spool dispatch), API surface (exported functions + examples), platform integration (how downstream repos load and use gm-skill), troubleshooting (common failures, logs location).
+  effort: small
+  category: docs
   route_family: representation
   load: 0.3
   failure_modes:
-    - spool.js module does not exist
-    - Exported functions have incorrect signatures
-  route_fit: unexamined
-  authorization: none
+    - API docs missing examples
+    - platform integration steps unclear
+  route_fit: examined
+  authorization: weak_prior
   blocking: []
-  blockedBy: []
-  mutables:
-    - spool-module-exists
+  blockedBy: [gm-skill-test-e2e]
   acceptance:
-    - spool module exports all four helper functions
-    - Windows path handling verified
-    - README documents spool API
+    - README covers purpose, architecture, API, platform integration
+    - Example skill invocation shown
+    - Daemon bootstrap documented
+    - Spool dispatch pattern explained
+    - Troubleshooting section included
+    - Links to AGENTS.md and skill definitions
 
-- id: gm-skill-spool-helpers-smoke-test
-  subject: Add smoke test for spool dispatch helpers
+- id: gm-skill-integration-gm-cc
+  subject: Integrate gm-skill into gm-cc as devDependency
   status: pending
-  description: Test writeSpool, readSpoolOutput, waitForCompletion with real spool execution. Verify nodejs task dispatch works end-to-end.
+  description: |
+    gm-cc hooks must load gm-skill and use its skills (planning, gm-execute, etc.) instead of importing from gm-starter. Verify gm:gm and gm:planning skills load correctly from gm-skill. Test in Claude Code plugin.
   effort: small
-  category: infra
-  route_family: observability
-  load: 0.4
-  failure_modes:
-    - Task timeout before output written
-    - Metadata JSON malformed
-  route_fit: unexamined
-  authorization: none
-  blocking: []
-  blockedBy:
-    - gm-skill-spool-helpers-export
-  acceptance:
-    - Test writes spool task, waits for completion
-    - Output matches expected format
-    - Test passes in both Windows and Unix
-
-- id: acptoapi-pure-api-contract-verify
-  subject: Verify acptoapi runs as pure API with no internal tooling
-  status: pending
-  description: Investigate acptoapi behavior to confirm it accepts JSON-RPC over stdio, does not access filesystem, does not invoke subprocesses, delegates all state to caller.
-  effort: medium
   category: infra
   route_family: boundary
   load: 0.6
   failure_modes:
-    - acptoapi requires filesystem access
-    - acptoapi forks subprocesses
-  route_fit: unexamined
-  authorization: none
+    - skills not found in gm-skill
+    - version mismatch between gm-skill and gm-cc
+    - hook loading fails
+  route_fit: examined
+  authorization: weak_prior
   blocking: []
-  blockedBy: []
-  mutables:
-    - acptoapi-pure-api-witness
+  blockedBy: [gm-skill-npm-publish]
   acceptance:
-    - acptoapi listens on 127.0.0.1:4800
-    - No filesystem operations observed
-    - No subprocess spawning from acptoapi core
-    - State is caller-managed
+    - gm-cc package.json includes gm-skill as devDependency
+    - Skill loading in hooks points to gm-skill
+    - gm:gm and gm:planning skills work in Claude Code
+    - No duplication of skill code between gm-starter and gm-skill
 
-- id: install-gm-gc-gemini
-  subject: Install gm-gc with Gemini provider support
+- id: gm-skill-integration-gm-gc
+  subject: Integrate gm-skill into gm-gc as devDependency (Gemini CLI)
   status: pending
-  description: Set up gm-gc repository with Gemini LLM provider integration. Verify Gemini SDK wired, auth configured, provider selection works with fallback.
-  effort: large
-  category: feature
-  route_family: boundary
-  load: 0.7
-  failure_modes:
-    - Gemini SDK not installed or wired
-    - Auth token not configured
-  route_fit: unexamined
-  authorization: none
-  blocking: []
-  blockedBy: []
-  mutables:
-    - gm-gc-gemini-provider-shape
-    - gemini-auth-environment
-  acceptance:
-    - gm-gc repository available and initialized
-    - Gemini SDK integrated as primary provider
-    - LLM fallback chain: Gemini → acptoapi → Anthropic
-    - gm-gc CLI launches and recognizes Gemini model
-
-- id: comprehensive-gm-gc-validation
-  subject: Full validation of gm-gc with Gemini and all features
-  status: pending
-  description: Test suite for gm-gc; skill execution, daemon bootstrap, spool dispatch, Gemini API calls, provider fallback, error handling, cross-platform compatibility.
-  effort: large
+  description: |
+    gm-gc (Gemini CLI) must load and use gm-skill orchestration skills. Verify Gemini CLI can dispatch to gm:planning and upstream skills. Test in Gemini CLI environment.
+  effort: small
   category: infra
-  route_family: observability
-  load: 0.8
+  route_family: boundary
+  load: 0.6
   failure_modes:
-    - Skills fail to load in gm-gc
-    - Gemini API timeout or error
-    - Provider fallback does not trigger
-  route_fit: unexamined
-  authorization: none
+    - gm-skill not loadable in Gemini CLI env
+    - agent format incompatibility
+  route_fit: examined
+  authorization: weak_prior
   blocking: []
-  blockedBy:
-    - install-gm-gc-gemini
+  blockedBy: [gm-skill-npm-publish]
   acceptance:
-    - All 4 core skills load and execute
-    - Gemini API calls succeed with valid auth
-    - Provider fallback chain works end-to-end
-    - Spool dispatch (nodejs, bash, python) functional
-    - CI green on gm-gc validation (win32, darwin, linux)
-
-- id: memorize-agent-rslearn-failure-handling
-  subject: Add explicit rs-learn failure handling to memorize agent
-  status: completed
-  description: Update gm-starter/agents/memorize.md STEP 2 to document critical requirement; if exec:memorize fails, report error details to user, fallback immediately to AGENTS.md (STEP 3), never silently absorb errors. Memory preservation requires explicit fallback path when socket/network unavailable.
-  effort: small
-  category: docs
-  route_family: representation
-  load: 0.9
-  failure_modes:
-    - rs-learn failures silently absorbed, leaving no trace
-    - Agent proceeds as if memorize succeeded when it failed
-    - User unaware learning store is unavailable
-    - Memory lost because fallback not documented
-  route_fit: examined
-  authorization: witnessed
-  blocking:
-    - gm-skill-rslearn-failure-contract
-  blockedBy: []
-  acceptance:
-    - memorize.md STEP 2 includes explicit failure handling section
-    - Text states "If exec:memorize fails, report error details to user, fallback to STEP 3 (AGENTS.md), never proceed as if succeeded"
-    - Always-on context buffer preservation is emphasized
-    - Pattern is actionable for all downstream agents
-  edge_cases:
-    - AGENTS.md reach-check must not block fallback
-
-- id: gm-skill-rslearn-failure-contract
-  subject: Document rs-learn failure contract in gm SKILL.md
-  status: completed
-  description: Add explicit rule to gm SKILL.md stating "rs-learn and exec:memorize failures must be reported explicitly with error details; fallback to AGENTS.md; never silently absorb." Cross-cutting policy enforced across all phases.
-  effort: small
-  category: docs
-  route_family: representation
-  load: 0.9
-  failure_modes:
-    - Failure contract unclear to downstream skills
-    - Inconsistent handling across phases
-    - Users unaware of rs-learn state
-  route_fit: examined
-  authorization: witnessed
-  blocking:
-    - gm-execute-utility-verb-failure-doc
-  blockedBy: []
-  acceptance:
-    - gm SKILL.md includes explicit rs-learn failure rule
-    - Rule covers all phases (PLAN → UPDATE-DOCS)
-    - Pattern documented: "Report with error details → fallback to AGENTS.md → continue"
-    - Fallback is mandatory when socket/network fails
-  edge_cases:
-    - Must apply to all 10 downstream bundled platforms
-
-- id: gm-execute-utility-verb-failure-doc
-  subject: Document utility verb failure reporting in gm-execute SKILL.md
-  status: completed
-  description: Add section to gm-execute SKILL.md explaining utility verb failures (exec:memorize, exec:recall, exec:codesearch) must be reported to user; failures do not block witness completion but must surface with error context.
-  effort: small
-  category: docs
-  route_family: representation
-  load: 0.7
-  failure_modes:
-    - Utility verb failures silently dropped
-    - Witness proceeds despite unavailable rs-learn
-  route_fit: examined
-  authorization: witnessed
-  blocking: []
-  blockedBy: []
-  acceptance:
-    - gm-execute SKILL.md documents utility verb error handling
-    - Section explains "Failures reported, witness completion continues, fallback ensures memory safety"
-    - Pattern consistent with memorize agent rule
-  edge_cases:
-    - Timeout vs network error distinction (both require fallback)
+    - gm-gc loads gm-skill orchestration skills
+    - gm:planning and gm:gm work in Gemini CLI
+    - No format conflicts or agent validation errors

@@ -1,0 +1,24 @@
+{
+  "npm_root": "C:\\Users\\user\\AppData\\Roaming\\npm\\node_modules",
+  "gm_gc_global_path": "C:\\Users\\user\\AppData\\Roaming\\npm\\node_modules\\gm-gc",
+  "gm_gc_global_exists": true,
+  "gm_gc_package": {
+    "name": "gm-gc",
+    "version": "2.0.85",
+    "hasGeminiSDK": false
+  },
+  "gemini_extension_meta": {
+    "name": "gm",
+    "version": "2.0.727",
+    "description": "State machine agent with hooks, skills, and automated git enforcement",
+    "author": "AnEntrypoint",
+    "homepage": "https://github.com/AnEntrypoint/gm",
+    "contextFileName": "GEMINI.md"
+  },
+  "bundled_agents": [
+    "gm.md",
+    "memorize.md",
+    "research-worker.md",
+    "textprocessing.md"
+  ]
+}

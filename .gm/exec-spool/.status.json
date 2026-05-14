@@ -1,0 +1,15 @@
+{
+  "binary_version": "0.1.365",
+  "errors_last_5": [],
+  "last_dispatched_task": {
+    "at": "2026-05-14T12:25:02.248Z",
+    "id": 12,
+    "input_path": "C:/dev/gm\\.gm\\exec-spool\\in\\nodejs\\12.js",
+    "lang_or_verb": "nodejs"
+  },
+  "last_tick_at": "2026-05-14T12:26:10.129Z",
+  "pending_in_inbox": 60,
+  "pid": 10544,
+  "started_at": "2026-05-14T08:19:50.834Z",
+  "tasks_dispatched_this_session": 582
+}

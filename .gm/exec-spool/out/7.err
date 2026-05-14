@@ -1,0 +1,1 @@
+ERROR: Expected CommonJS module to have a function wrapper. If you weren't messing around with Bun's internals, this is a bug in Bun

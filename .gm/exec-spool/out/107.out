@@ -1,0 +1,13 @@
+{
+  "gm_gc_path": "C:\\Users\\user\\AppData\\Roaming\\npm\\node_modules\\gm-gc",
+  "name": "gm-gc",
+  "version": "2.0.85",
+  "dependencies": [
+    "mcp-thorns",
+    "codebasesearch"
+  ],
+  "devDependencies": [],
+  "gemini_sdk_in_dependencies": false,
+  "gemini_sdk_in_dev_dependencies": false,
+  "gemini_sdk_wired": false
+}
