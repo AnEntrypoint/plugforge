@@ -1,0 +1,182 @@
+- id: skill-bootstrap-plugkit
+  subject: Commit skill-bootstrap library to gm-starter
+  status: in_progress
+  description: Finalize and commit skill-bootstrap.js to gm-starter/lib/, ensure bootstrap runs on first skill invocation without hook dependency
+  effort: small
+  category: feature
+  route_family: execution
+  load: 0.7
+  blockedBy: []
+  acceptance:
+    - skill-bootstrap.js committed to gm-starter/lib/
+    - Exported bootstrapPlugkit() function callable from all 10 output skills
+    - Bootstrap detects plugkit binary, verifies SHA256, downloads on mismatch, spawns daemon
+    - .gm/bootstrap-status.json written on success, .gm/bootstrap-error.json on failure
+
+- id: skill-manifest-agentskills
+  subject: Create AgentSkills.io-compliant skill manifests
+  status: pending
+  description: Create gm-skill SKILL.md with AgentSkills.io frontmatter, create SKILL.md for all 10 platform output skills (gm-cc, gm-gc, gm-oc, gm-kilo, gm-codex, gm-copilot-cli, gm-vscode, gm-cursor, gm-zed, gm-jetbrains), ensure all call bootstrapPlugkit() on first invocation
+  effort: large
+  category: feature
+  route_family: representation
+  load: 0.9
+  blockedBy: [spool-watcher-daemon, skill-bootstrap-plugkit]
+  acceptance:
+    - gm-skill SKILL.md published with name, description, allowed-tools, compatible platforms
+    - All 10 output skills have SKILL.md with AgentSkills.io schema
+    - Each skill SKILL.md calls bootstrapPlugkit() before main logic
+    - Generated output builds include updated SKILL.md for each platform
+
+- id: hook-behavior-reimplement
+  subject: Reimplement major hooks as skill logic
+  status: pending
+  description: Convert 5 major hook modules (session_start, pre_tool_use, prompt_submit, post_tool_use, session_end) to skill-driven logic via .gm/exec-spool/ file markers and state tracking
+  effort: large
+  category: refactor
+  route_family: execution
+  load: 0.85
+  blockedBy: [skill-manifest-agentskills]
+  acceptance:
+    - session_start logic migrated to gm-skill init or first-prompt detection
+    - pre_tool_use gate logic moved to .gm/turn-state.json + gm-fired-this-turn marker
+    - prompt_submit recall + session-tracking moved to skill logic
+    - Equivalent behavior maintained, hooks become optional
+
+- id: rs-plugkit-spool-adapt
+  subject: Adapt rs-plugkit CLI for spool-driven execution
+  status: pending
+  description: Update rs-plugkit main.rs to integrate spool.rs module, add --once flag support, ensure Spool command dispatches correctly to runners
+  effort: small
+  category: refactor
+  route_family: execution
+  load: 0.6
+  blockedBy: [spool-watcher-daemon]
+  acceptance:
+    - plugkit spool command runs daemon by default, --once runs single pass
+    - All file I/O goes through spool (in/, out/)
+
+- id: skill-template-dedup
+  subject: Deduplicate skill generation templates
+  status: pending
+  description: Extract common SKILL.md boilerplate and bootstrap logic from all 10 output skills into gm-starter/lib/templates, update skill-generator to use deduplicated patterns
+  effort: medium
+  category: refactor
+  route_family: reasoning
+  load: 0.4
+  blockedBy: [skill-manifest-agentskills]
+  acceptance:
+    - Common SKILL.md fields moved to template
+    - skill-generator uses template for all 10 platforms
+    - No duplication across output skill manifests
+
+- id: rs-exec-task-lifecycle
+  subject: Add task lifecycle observability
+  status: pending
+  description: Ensure rs-exec RPC handlers emit structured JSONL to ~/.claude/gm-log/<date>/exec.jsonl, track task state transitions (spawn, start, complete, fail, timeout)
+  effort: small
+  category: feature
+  route_family: observability
+  load: 0.5
+  blockedBy: []
+  acceptance:
+    - Every task spawn, start, complete, fail, timeout emits JSONL event
+    - Event includes sessionId, taskId, action, result, durationMs
+
+- id: dedup-rs-binaries
+  subject: Extract shared Rust library from rs-* repos
+  status: pending
+  description: Create rs-shared crate with common types/patterns, refactor rs-exec, rs-codeinsight, rs-search, rs-learn to use shared library, reduce duplication
+  effort: large
+  category: refactor
+  route_family: reasoning
+  load: 0.6
+  blockedBy: []
+  acceptance:
+    - rs-shared crate created with common session/task/RPC types
+    - rs-exec depends on rs-shared
+    - rs-codeinsight and rs-search refactored to reduce code duplication
+
+- id: hook-removal-audit
+  subject: Audit and remove redundant hooks
+  status: pending
+  description: After hooks are reimplemented as skills, audit each hook module in rs-plugkit/src/hook/ for removal, ensure no behavior gaps remain
+  effort: medium
+  category: refactor
+  route_family: execution
+  load: 0.5
+  blockedBy: [hook-behavior-reimplement]
+  acceptance:
+    - All 11 hook modules audited
+    - Redundant hooks removed from rs-plugkit/src/hook/
+    - Remaining hooks (if any) justified in AGENTS.md
+
+- id: e2e-test-gm-skill
+  subject: Create end-to-end test for gm-skill
+  status: pending
+  description: Write integration test for gm-skill that exercises skill lifecycle (init → bootstrap → recall → codesearch → execute), verify spool watcher processes all dispatch types
+  effort: medium
+  category: feature
+  route_family: execution
+  load: 0.7
+  blockedBy: [skill-manifest-agentskills, spool-watcher-daemon]
+  acceptance:
+    - gm-skill invoked and bootstrap runs
+    - Spool processes nodejs, bash, python, codesearch, recall, memorize tasks
+    - All outputs match expected format
+
+- id: update-docs-skill-architecture
+  subject: Update documentation for skill-centric architecture
+  status: pending
+  description: Update AGENTS.md, site docs, skill READMEs to reflect new skill-centric design (no plugin dependency, spool-driven dispatch, AgentSkills.io compliance)
+  effort: small
+  category: feature
+  route_family: representation
+  load: 0.3
+  blockedBy: [hook-removal-audit]
+  acceptance:
+    - AGENTS.md updated with new architecture
+    - Site documentation reflects skill-centric model
+    - Skill READMEs in build/gm-<platform>/skills/ are current
+
+- id: test-all-10-platforms
+  subject: Build and test all 10 platform outputs
+  status: pending
+  description: Run full build matrix (gm-cc, gm-gc, gm-oc, gm-kilo, gm-codex, gm-copilot-cli, gm-vscode, gm-cursor, gm-zed, gm-jetbrains), verify skill invocation and spool dispatch work on each
+  effort: large
+  category: feature
+  route_family: execution
+  load: 0.8
+  blockedBy: [skill-manifest-agentskills, e2e-test-gm-skill]
+  acceptance:
+    - All 10 platforms build without errors
+    - gm-skill and output skills invoke successfully on each platform
+    - Spool watcher runs and processes dispatch on each platform
+
+- id: cascade-improvements-all-skills
+  subject: Apply gm improvements to all output skill templates
+  status: pending
+  description: Ensure all 10 output skills benefit from spool-driven dispatch, skill-manifest improvements, observability enhancements
+  effort: medium
+  category: refactor
+  route_family: reasoning
+  load: 0.5
+  blockedBy: [skill-template-dedup, rs-exec-task-lifecycle]
+  acceptance:
+    - All 10 output skills emit structured logs
+    - All 10 skills use bootstrapPlugkit()
+    - All 10 skills call skill-manifest-agentskills patterns
+
+- id: binary-deployment-rethink
+  subject: Rethink binary deployment for skill-based bootstrap
+  status: pending
+  description: Update bootstrap.js + plugkit release/publish logic to integrate with new skill-driven architecture, ensure plugkit binary auto-downloads via skill initialization (no plugin required)
+  effort: medium
+  category: refactor
+  route_family: execution
+  load: 0.6
+  blockedBy: [skill-bootstrap-plugkit, skill-manifest-agentskills]
+  acceptance:
+    - Bootstrap runs autonomously on skill invocation
+    - Binary versioning still tied to gm.json::plugkitVersion
+    - Plugkit binary auto-updates via skill init without user action
