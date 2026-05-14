@@ -26,6 +26,17 @@ node cli.js gm-starter ./build
 
 10 outputs in `build/gm-{cc,gc,oc,kilo,codex,copilot-cli,vscode,cursor,zed,jetbrains}`.
 
+## Functional Parity: gm-skill vs gm-cc
+
+Both `gm-skill` (skills-only harness) and `gm-cc` (hook-based harness) implement identical orchestration logic with zero functional divergences. Parity is verified across:
+
+- **6 Core Skills**: gm, planning, gm-execute, gm-emit, gm-complete, update-docs (identical SKILL.md files across both paths)
+- **6 Required Modules**: spool-dispatch.js, learning.js, codeinsight.js, git.js, browser.js, daemon-bootstrap.js (identical exports and behavior)
+- **Daemon Bootstrap**: Both harnesses spawn rs-learn, rs-codeinsight, and acptoapi identically
+- **Skill Chain Protocol**: JSON-based state transitions (nextSkill, context, phase) uniform across both paths
+
+See `PARITY_TEST_REPORT.md` for detailed verification evidence. All 12 downstream platforms (gm-oc, gm-kilo, gm-codex, gm-vscode, gm-cursor, gm-zed, gm-jetbrains, gm-gc, gm-cc, gm-qwen, gm-hermes, gm-copilot-cli) built from gm-starter inherit this parity guarantee.
+
 ## Core Rules
 
 **Shared memory & search index are tracked, never ignored**: `.gm/rs-learn.db` and `.gm/code-search/` are committed so memory and index state shares across machines, sessions, and CI. Tooling, scripts, and any agent editing `.gitignore` must NEVER add `.gm/`, `.gm/rs-learn.db`, `.gm/code-search/`, or legacy `.code-search/` to ignore rules. Per the gitignore parent-re-include caveat (re-including a path past an ignored parent dir is impossible), individual `.gm/*` entries (prd-state.json, lastskill, turn-state.json, trajectory-drafts/, ingest-drafts/, rslearn-counter.json) are listed one-by-one between `# >>> gm managed` markers, leaving `.gm/rs-learn.db` and `.gm/code-search/` un-ignored. Same rule for downstream repos: `lib/template-builder.js::generateGitignore()` must not emit any of those paths. Any project-local persistent state (chunk index, DB, embeddings) must write under `.gm/<name>/`, never to a top-level dotfile/dotdir.
