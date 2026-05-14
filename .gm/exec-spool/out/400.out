@@ -1,6 +1,0 @@
-SCAFFOLD_RESULTS: {"100":{"exitCode":0,"ok":true,"durationMs":9882,"output":"[scaffold] Creating temp directory: C:\\Users\\user\\AppData\\Local\\Temp\\gm-skill-1778750958550 | [scaffold] Setting up gm-skill repo structure in: C:\\Users\\user\\AppData\\Local\\Temp\\gm-skill-1778750958550\\gm-skill | [scaffold] Created package.json | [scaffold] Created index.js | [scaffold] Created README.md","error":"warning: in the working copy of 'README.md', LF will be replaced by CRLF the next time Git touches it | warning: in the working copy of 'index.js', LF will be replaced by CRLF the next time Git touches it | warning: in the working copy of 'package.json', LF will be replaced by CRLF the next time Git touches it"},"101":{"exitCode":1,"ok":false,"durationMs":714,"output":"","error":"[verify] SCAFFOLD_REPO_PATH env var not set"},"102":{"exitCode":1,"ok":false,"durationMs":611,"output":"","error":"[cleanup] SCAFFOLD_REPO_PATH env var not set"}}
-FAILED: Some tasks returned non-zero exit code
-Task 101 failed with exit code 1
-Error: [verify] SCAFFOLD_REPO_PATH env var not set
-Task 102 failed with exit code 1
-Error: [cleanup] SCAFFOLD_REPO_PATH env var not set

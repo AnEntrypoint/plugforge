@@ -1,9 +1,0 @@
-[verify] Finding scaffold repo...
-[verify] Verifying scaffold repo at: C:\Users\user\AppData\Local\Temp\gm-skill-1778750958550\gm-skill
-[verify] Found: package.json
-[verify] Found: index.js
-[verify] Found: README.md
-[verify] Found: .git
-[verify] package.json verified
-[verify] .git directory verified
-[verify] Scaffold repo structure is valid at: C:\Users\user\AppData\Local\Temp\gm-skill-1778750958550\gm-skill

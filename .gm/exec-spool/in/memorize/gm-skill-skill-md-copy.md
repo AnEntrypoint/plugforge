@@ -1,2 +1,0 @@
-project/gm-skill-skill-md-copy
-All 6 SKILL.md files (gm, planning, gm-execute, gm-emit, gm-complete, update-docs) are copied verbatim from gm-starter/skills/{id}/SKILL.md into gm-skill/skills/{id}/SKILL.md. Frontmatter (allowed-tools, gate conditions, transition arrows) remains unchanged. Each skill directory contains index.js that reads .gm/ markers for gate logic and index.mjs for ESM export.

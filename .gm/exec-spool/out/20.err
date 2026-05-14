@@ -1,3 +1,0 @@
-CHECK_ERROR: Command failed: gh repo view AnEntrypoint/gm-skill --json nameWithOwner
-GraphQL: Could not resolve to a Repository with the name 'AnEntrypoint/gm-skill'. (repository)
-

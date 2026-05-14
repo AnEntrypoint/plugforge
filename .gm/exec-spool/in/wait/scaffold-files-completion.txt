@@ -1,1 +1,0 @@
-WAIT for output/100.json AND output/101.json AND output/102.json to exist with exitCode 0

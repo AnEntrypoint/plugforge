@@ -1,2 +1,0 @@
-project/gm-skill-directory-structure
-@gm/gm-skill package structure: skills/{gm,planning,gm-execute,gm-emit,gm-complete,update-docs}/ (one dir per skill with index.js and SKILL.md); lib/bootstrap-compat.js re-exports bootstrap.js for skill-only use; bin/ contains bootstrap-only entry point (no full cli.js); root has package.json, .gitignore, README.md, .github/workflows/publish.yml for CI/CD.

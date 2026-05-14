@@ -1,1 +1,0 @@
-Waiting for residual scan execution to complete. Checking .gm/exec-spool/out/residual-scan-wave3.json for completion marker.

@@ -1,2 +1,0 @@
-project/gm-skill-handoff-and-isolation
-Skill-to-skill handoff via .gm/ markers (no hook coordination needed). SESSION_ID threaded to daemon spawns via env var or process-env fallback. Session state (.gm/prd.yml, .gm/mutables.yml) is per-session, enabling concurrent skill invocations in different contexts. Bootstrap-compat.js accepts optional sessionId param for daemon spawn tracking and context isolation in skill-only environments.

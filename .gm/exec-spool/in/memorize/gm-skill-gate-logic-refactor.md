@@ -1,2 +1,0 @@
-project/gm-skill-gate-logic-refactor
-Gate logic moves from hook pre_tool_use to .gm/ file reads in skill index.js: needs-gm (checks .gm/prd.yml exists), gm-fired-this-turn (marker written by gm skill), mutables.yml (unresolved entries block execution), turn-state.json (cross-skill state machine). Each skill's index.js gates execution without hook infrastructure; compatible with skill-only deployment model.

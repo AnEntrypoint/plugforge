@@ -1,8 +1,0 @@
-error: src refspec main does not match any
-error: failed to push some refs to 'https://github.com/AnEntrypoint/gm-skill.git'
-remote: 
-remote: Create a pull request for 'master' on GitHub by visiting:        
-remote:      https://github.com/AnEntrypoint/gm-skill/pull/new/master        
-remote: 
-To https://github.com/AnEntrypoint/gm-skill.git
- * [new branch]      master -> master

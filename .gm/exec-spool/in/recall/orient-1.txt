@@ -1,1 +1,0 @@
-gm-skill git commit push
