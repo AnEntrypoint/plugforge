@@ -1,0 +1,29 @@
+{
+  "name": "gm-skill",
+  "version": "1.0.0",
+  "description": "Unified skill library for gm platform implementations",
+  "main": "index.js",
+  "exports": {
+    ".": "./index.js",
+    "./daemon-bootstrap": "./index.js"
+  },
+  "scripts": {
+    "test": "node test.js"
+  },
+  "keywords": [
+    "gm",
+    "skills",
+    "daemon",
+    "bootstrap"
+  ],
+  "author": "AnEntrypoint",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/AnEntrypoint/gm.git"
+  },
+  "homepage": "https://github.com/AnEntrypoint/gm#readme",
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}
