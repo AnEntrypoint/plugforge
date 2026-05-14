@@ -1,0 +1,50 @@
+[discipline:default] gm-starter/agents/gm.md:1-25 [25L] (100.0%)
+   > ---
+   > name: gm
+   > description: Agent (not skill) - immutable programming state machine. Always inv
+
+[discipline:default] gm-starter/prompts/prompt-submit.txt:1-60 [84L] (92.2%)
+   > BLOCKING REQUIREMENT — YOUR FIRST ACTION MUST BE: invoke gm. Two equivalent fo
+   > 
+   > IMPORTANT: Invoke skill: "gm:gm" EVERY TIME, even if you have already invoked it
+
+[discipline:default] docs/skills.html:46-105 [289L] (77.4%)
+   > .gm-callout{margin:18px 0;padding:14px 18px;background:linear-gradient(90deg, va
+   > .gm-callout .who{display:block;font-family:var(--ff-mono);font-size:11px;text-tr
+   > .cross-footer{margin:32px 0 12px 0;padding:18px;background:var(--panel-1);border
+
+[discipline:default] gm-starter/skills/gm-emit/SKILL.md:1-60 [71L] (73.7%)
+   > ---
+   > name: gm-emit
+   > description: EMIT phase. Pre-emit debug, write files, post-emit verify from disk
+
+[discipline:default] gm-starter/skills/gm-execute/SKILL.md:1-60 [85L] (71.3%)
+   > ---
+   > name: gm-execute
+   > description: EXECUTE phase AND the foundational execution contract for every ski
+
+[discipline:default] gm-starter/skills/planning/SKILL.md:1-60 [117L] (70.1%)
+   > ---
+   > name: planning
+   > description: State machine orchestrator. Mutable discovery, PRD construction, an
+
+[discipline:default] gm-starter/skills/gm/SKILL.md:1-60 [61L] (68.9%)
+   > ---
+   > name: gm
+   > description: Orchestrator dispatching PLAN→EXECUTE→EMIT→VERIFY→UPDATE-DO
+
+[discipline:default] gm-starter/skills/gm-codex/SKILL.md:1-23 [23L] (61.1%)
+   > ---
+   > name: gm-codex
+   > description: AI-native software engineering via skill-driven orchestration on co
+
+[discipline:default] gm-starter/skills/gm-cursor/SKILL.md:1-23 [23L] (61.1%)
+   > ---
+   > name: gm-cursor
+   > description: AI-native software engineering via skill-driven orchestration on cu
+
+[discipline:default] gm-starter/skills/gm-vscode/SKILL.md:1-23 [23L] (61.1%)
+   > ---
+   > name: gm-vscode
+   > description: AI-native software engineering via skill-driven orchestration on vs
+

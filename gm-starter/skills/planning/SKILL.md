@@ -25,6 +25,8 @@ Cannot stop while `.gm/prd.yml` has items, git is dirty, or commits are unpushed
 
 Open every plan with one parallel pack of `exec:recall` + `exec:codesearch` against the request's nouns. Hits land as `weak_prior`; misses confirm the unknown is fresh. The pack runs in one message.
 
+**Auto-recall injection (skills-only platforms)**: derive a 2–6 word query from the request's nouns (subject, verb objects, key domain terms). Call `exec:recall <query>` at PLAN start before writing `.gm/prd.yml`, inline. This replaces the prompt-submit hook's auto-recall for platforms without hook infrastructure. Recall hits are injected as context into mutable discovery and PRD item acceptance criteria.
+
 ## Mutable discovery
 
 For each aspect of the work, ask: what do I not know, what could go wrong, what depends on what, what am I assuming. Unwitnessed assumptions are mutables.

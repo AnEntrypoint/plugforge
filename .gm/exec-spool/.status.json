@@ -1,10 +1,15 @@
 {
   "binary_version": "0.1.365",
   "errors_last_5": [],
-  "last_dispatched_task": null,
-  "last_tick_at": "2026-05-14T08:21:48.155Z",
+  "last_dispatched_task": {
+    "at": "2026-05-14T08:22:13.315Z",
+    "id": 71,
+    "input_path": "C:/dev/gm\\.gm\\exec-spool\\in\\codesearch\\71.txt",
+    "lang_or_verb": "codesearch"
+  },
+  "last_tick_at": "2026-05-14T08:22:41.868Z",
   "pending_in_inbox": 2,
   "pid": 10544,
   "started_at": "2026-05-14T08:19:50.834Z",
-  "tasks_dispatched_this_session": 0
+  "tasks_dispatched_this_session": 1
 }

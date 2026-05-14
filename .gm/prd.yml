@@ -89,35 +89,6 @@
     - No parse errors ✓
   witness_evidence: "Read C:\\dev\\gm\\build\\gm-cc\\skills\\gm\\SKILL.md, gm-oc\\skills\\gm\\SKILL.md, gm-vscode\\skills\\gm\\SKILL.md; all have valid frontmatter with name, description, allowed-tools=[Skill]. gc adapter at line 1415 of cli-config-shared.js confirms loadSkillsFromSource() returns {} by design."
 
-- id: binary-deployment-rethink
-  subject: Document rs-plugkit binary distribution and failure handling
-  status: pending
-  description: Current: bootstrap.js downloads from GitHub Releases, stores in ~/.claude/gm-tools/, runs as daemon. Plan: (1) plugkit.version source (rs-plugkit/Cargo.toml vs gm-starter/gm.json sync), (2) bootstrap fail-soft vs fail-loud policy, (3) timeout on first call if download hangs, (4) stale binary cleanup (kill process, rmSync, retry). Document in AGENTS.md.
-  effort: small
-  category: infra
-  route_family: execution
-  load: 0.3
-  authorization: weak_prior
-  acceptance:
-    - Version sync strategy documented ✓
-    - Failure modes handled (download fail, binary mismatch, process hangs) ✓
-    - Cleanup order correct (kill before rmSync) ✓
-    - Timeout strategy specified ✓
-
-- id: hook-removal-audit
-  subject: Audit hook removal impact on gm cascade workflow
-  status: pending
-  description: After converting hooks to skill gates, verify gm cascade still works: rs-exec/rs-codeinsight/rs-search push → trigger cascade.yml → build rs-plugkit binaries → update plugkit.version in gm-starter → push to gm → publish 12 downstream repos. Trace one full cycle. Document any breaks.
-  effort: medium
-  category: infra
-  route_family: boundary
-  load: 0.6
-  authorization: weak_prior
-  acceptance:
-    - Cascade workflow documented ✓
-    - One full cycle verified ✓
-    - No hook dependencies remain ✓
-    - Downstream repos successfully updated ✓
 
 - id: update-docs-and-changelog
   subject: Update AGENTS.md + CHANGELOG.md with WAVE 1 + WAVE 2 summary
