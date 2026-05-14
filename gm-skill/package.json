@@ -1,6 +1,6 @@
 {
   "name": "gm-skill",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "Unified skill library for gm platform implementations",
   "main": "index.js",
   "exports": {
