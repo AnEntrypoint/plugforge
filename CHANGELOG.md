@@ -1,3 +1,7 @@
+## 2026-05-14 - bootstrap: skill-bootstrap.js completed
+
+gm-starter/lib/skill-bootstrap.js now provides shared bootstrap orchestration for all 10 output skills. Detects plugkit binary at ~/.claude/gm-tools/plugkit{.exe,}, verifies SHA256 against manifest (gm.json::plugkitVersion + bin/plugkit.sha256), downloads from AnEntrypoint/plugkit-bin Releases on mismatch, kills stale processes before re-spawn on Windows (honoring EBUSY precedent), spawns daemon in detached mode with stdio:'ignore', and emits structured JSONL events to ~/.claude/gm-log/<date>/bootstrap.jsonl. Returns Promise<{ ok, error? }> for graceful error handling in skill setup. Removed abandoned refactoring modules (plugkit-platform.js, plugkit-manifest.js) created during failed modularization attempt—skill-bootstrap.js remains single coherent concern.
+
 ## 2026-05-12 - bootstrap: kill-before-rename on busy gm-tools targets
 
 Fixed silent stale-binary loop where `gm-starter/bin/bootstrap.js::copyToGmTools` swallowed `EBUSY`/`EPERM`/`EEXIST` on `renameSync(plugkit.exe.new → plugkit.exe)` and trusted an in-Rust self-update that the same hold-open also blocked. Result: bootstrap returned ok, but `plugkit.js::isReady()` sha-checked the stale `plugkit.exe`, mismatched the manifest, and emitted `[plugkit] bootstrap failed; aborting hook` on every prompt-submit. Orphan `plugkit.0.1.*.new` files accumulated across days.
