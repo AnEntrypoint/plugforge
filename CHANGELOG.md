@@ -113,6 +113,10 @@ ccsniff audit (7d, gm sessions): 145 narrate-before-tool violations, 41/74 turns
 - Propagated "PDFs searchable as code" capability through skills: code-search, planning, gm-execute, gm-emit, gm-complete.
 - AGENTS.md: new caveat documenting rs-search PDF ingestion (pdf-extract crate, pdf-cache dir, ignore.rs changes).
 
+## 2026-05-14 - rs-plugkit: track acptoapi process PID for session cleanup
+
+Added PID tracking for dynamically spawned acptoapi daemon process. `session_start.rs::spawn_acptoapi_daemon()` now captures and returns the child process ID (u32) instead of discarding it. On successful spawn, the PID is written to `~/.claude/gm-tools/.acptoapi-pid`. `session_end.rs::kill_acptoapi_if_running()` reads the PID file, logs a cleanup event via `rs_exec::obs::event()`, and calls `rs_exec::kill::kill_tree()` to terminate the process tree. Cleanup runs on real-exit reasons only (clear/logout/prompt_input_exit); handoff/compaction preserves the acptoapi instance for the next session. Failure to kill (e.g., process already dead) is best-effort and does not block session cleanup.
+
 # Changelog
 
 ## [Unreleased]

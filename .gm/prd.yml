@@ -1,0 +1,73 @@
+- id: spool-watcher-daemon
+  subject: Upgrade spool watcher to use notify crate with 10ms debounce
+  status: in_progress
+  description: Replace polling-based watch_once() loop with notify-rs file watching (inotify on Unix, ReadDirectoryChangesW on Windows), implement 10ms debounce to coalesce rapid file writes, maintain session tracking from turn-state.json, preserve existing dispatch and output streaming logic.
+  effort: large
+  category: infra
+  route_family: execution
+  load: 0.9
+  failure_modes:
+    - file watch events missed due to race conditions
+    - debounce too aggressive (combined files into single dispatch)
+    - debounce too lenient (events not coalesced)
+    - session isolation broken (task session_id mismatch)
+    - spool watcher crash leaves tasks orphaned
+  route_fit: examined
+  authorization: witnessed
+  blocking: []
+  blockedBy: []
+  acceptance:
+    - notify crate added to rs-exec Cargo.toml with platform-gated features
+    - watch_once() refactored to use notify Watcher trait
+    - 10ms debounce implemented via channel with timed batch collection
+    - file_is_stable() check retained (250ms mtime check)
+    - session_id read from .gm/turn-state.json and tracked for each task
+    - dispatch_entry() unchanged (uses existing session-agnostic logic)
+    - metadata and streaming output paths unchanged
+    - spool.rs compiles on Windows and Unix without warnings
+    - daemon mode survives session boundaries (no new deps on Claude SDK)
+  edge_cases:
+    - file deleted before dispatch (already handled by run_request_raw)
+    - concurrent file writes (debounce+mtime handles)
+    - notify watcher exhaustion (fallback to polling on error)
+    - turn-state.json missing (no session_id tracked, task runs with spool-sid)
+    - Windows symlink behavior in exec-spool/in/
+- id: skill-bootstrap-plugkit
+  subject: Create gm-starter/lib/skill-bootstrap.js shared library
+  status: completed
+  description: Bootstrap entry point for all 10 output skills; detects plugkit binary, verifies version/SHA256, downloads if needed, spawns watcher daemon
+  effort: medium
+  category: feature
+  route_family: execution
+  load: 0.8
+  failure_modes:
+    - Binary version mismatch; hash verification fails
+    - Download from GitHub Releases fails; retry with cached fallback
+    - Process detection (Windows tasklist vs Unix ps) edge cases
+    - Permission denied on ~/.claude/gm-tools/ directory
+    - Concurrent process holds binary mapped (Windows rename EBUSY)
+    - Network timeout during GitHub API/download
+  route_fit: examined
+  authorization: witnessed
+  blocking: []
+  blockedBy: []
+  acceptance:
+    - bootstrapPlugkit() exports async function, zero args
+    - Returns Promise<{ ok: boolean, error?: string }>
+    - Detects binary at ~/.claude/gm-tools/plugkit{.exe,}
+    - Reads manifest from gm.json::plugkitVersion
+    - Verifies SHA256 vs manifest (gm.json::plugkitSha256)
+    - Downloads from AnEntrypoint/plugkit-bin Releases on mismatch/missing
+    - Spawns plugkit watch daemon if not running
+    - Writes .gm/bootstrap-status.json on success
+    - Writes .gm/bootstrap-error.json on failure
+    - Emits structured JSONL to ~/.claude/gm-log/<date>/bootstrap.jsonl
+    - Non-fatal errors log to stderr, do not block skill execution
+    - Windows process detection via tasklist /FI parsing
+    - Real code, no stubs; network failures graceful fallback
+  edge_cases:
+    - plugkit already running from prior session (verify health, skip spawn)
+    - Version mismatch found (download, kill old process, spawn new)
+    - Network unavailable during download (use cached binary if available)
+    - ~/. claude/gm-tools/ permission denied (log, continue)
+    - Concurrent process holds binary (Windows: kill process before rename, retry with backoff)
