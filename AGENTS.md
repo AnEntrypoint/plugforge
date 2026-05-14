@@ -100,7 +100,7 @@ rs-exec / rs-codeinsight / rs-search
   → /plugin detects new gm-cc HEAD → bootstrap.js downloads new binary
 ```
 
-Downstream repos (gm-cc, gm-gc, gm-oc, gm-kilo, gm-codex, gm-qwen, gm-copilot-cli, gm-hermes, gm-vscode, gm-cursor, gm-zed, gm-jetbrains) reset to a single orphan commit on every publish.
+Downstream repos (gm-cc, gm-gc, gm-oc, gm-kilo, gm-codex, gm-qwen, gm-copilot-cli, gm-hermes, gm-vscode, gm-cursor, gm-zed, gm-jetbrains) reset to a single orphan commit on every publish. gm-gc is production-ready: all 9 validation mutables witnessed, feature parity with gm-cc confirmed, ready for 12-platform cascade.
 
 **acptoapi provider and ACP agent auto-spawn**: rs-plugkit `session_start` hook checks if 127.0.0.1:4800 is reachable; if not, spawns `bun x acptoapi@latest` as a background daemon and auto-detects available ACP agents (opencode, kilo-code, codex, gemini-cli, qwen-code) to run invisibly as subprocesses. Binary detection uses `where` (Windows) / `which` (Unix); agents not found are skipped gracefully. Daemon and agent spawning runs in a detached thread to avoid blocking session_start completion. On Windows, agents spawn with DETACHED_PROCESS flag (0x08000000) and no console window. acptoapi is the primary LLM provider for all downstream repos (rs-learn, freddie, acptoapi itself); the Anthropic SDK serves as fallback only when acptoapi is unavailable. Additional ACP-compatible agents supported: hermes (NousResearch), cline, acpx (OpenClaw). All agents run in ACP stdio mode (NDJSON JSON-RPC 2.0 over stdin/stdout). See rs-learn.db for per-agent binary paths, install methods, and invocation details.
 
