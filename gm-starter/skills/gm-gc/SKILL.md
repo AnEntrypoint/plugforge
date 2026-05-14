@@ -1,8 +1,7 @@
 ---
 name: gm-gc
 description: AI-native software engineering via skill-driven orchestration on gc; bootstraps plugkit for task execution and session isolation
-allowed-tools:
-  - Skill
+allowed-tools: Skill
 compatible-platforms:
   - gm-gc
 ---

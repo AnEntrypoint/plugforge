@@ -1,7 +1,7 @@
 ---
 name: browser
 description: Browser automation via playwriter. Use when user needs to interact with websites, navigate pages, fill forms, click buttons, take screenshots, extract data, test web apps, or automate any browser task.
-allowed-tools: Skill, Bash, Read, Write, Edit, Agent
+allowed-tools: Skill
 ---
 
 # Browser automation

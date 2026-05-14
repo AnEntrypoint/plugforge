@@ -1,7 +1,7 @@
 ---
 name: textprocessing
 description: The required surface for any text task whose correctness depends on understanding. Code does mechanics; this skill does meaning. Invoked via Agent(subagent_type='gm:textprocessing', model='haiku', ...).
-allowed-tools: Agent, Read, Write, Edit, Bash, Skill
+allowed-tools: Skill
 ---
 
 # Textprocessing — Meaning goes through Haiku

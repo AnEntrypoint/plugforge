@@ -49,3 +49,18 @@ git add README.md docs/index.html gm-starter/agents/gm.md
 git commit -m "docs: update documentation to reflect session changes"
 git push -u origin HEAD
 ```
+
+## Exit: browser cleanup
+
+After docs push succeeds, close any browser sessions spawned during this or prior skill phases. Write a nodejs spool file calling rs-exec:
+
+```javascript
+const sessionId = process.env.CLAUDE_SESSION_ID;
+if (!sessionId) return;
+const rs = require('rs-exec');
+try {
+  rs.client().close_sessions_for(sessionId).catch(() => {});
+} catch (e) {}
+```
+
+Best-effort: session context or rs-exec unavailable → skip gracefully. No error thrown.

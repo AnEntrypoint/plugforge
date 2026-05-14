@@ -1,8 +1,7 @@
 ---
 name: gm
 description: Orchestrator dispatching PLAN→EXECUTE→EMIT→VERIFY→UPDATE-DOCS skill chain; spool-driven task execution with session isolation
-allowed-tools:
-  - Skill
+allowed-tools: Skill
 compatible-platforms:
   - gm-cc
   - gm-gc
