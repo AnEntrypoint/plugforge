@@ -3,6 +3,10 @@ const manifest = require('./manifest.js');
 const loader = require('./loader.js');
 const prepareModule = require('./prepare.js');
 const spool = require('./spool.js');
+const learning = require('./learning.js');
+const codeinsight = require('./codeinsight.js');
+const browser = require('./browser.js');
+const git = require('./git.js');
 
 function getSkills() {
   return manifest.getAllSkills();
@@ -35,5 +39,9 @@ module.exports = {
   manifest: manifest,
   loader: loader,
   prepare: prepareModule.prepare,
-  spool: spool
+  spool: spool,
+  learning: learning,
+  codeinsight: codeinsight,
+  browser: browser,
+  git: git
 };
