@@ -15,3 +15,15 @@
   witness_method: exec:nodejs test.js import + file read
   witness_evidence: "Executed task 60: test.js (167 lines) can fs.readFileSync both .gm/prd.yml and .gm/mutables.yml, parsing works. Pattern viable for E2E state observation."
   status: witnessed
+
+- id: bootstrap-contract-surface
+  claim: Skill-initiated bootstrapPlugkit() can download binary, verify sha256, start spool watcher without plugin hook
+  witness_method: exec:nodejs import gm-starter/bin/bootstrap.js + inspect source
+  witness_evidence: "bootstrap.js (gm-starter/bin/bootstrap.js:855) exports { bootstrap, resolveCachedBinary, resolveCachedRtk, platformKey, binaryName, rtkBinaryName, cacheRoot, obsEvent, killRunningDaemons, killStaleDaemonIfVersionChanged, killSpoolWatcherInCwd, proactiveKillForNewInstall }. bootstrap(opts) is async function accepting {wrapperDir, version} (line 445). Contract verified: (1) sha256OfFileSync() at line 466 verifies cache hits without hook; (2) downloadWithRetry() at line 393 is internal download+retry loop; (3) cacheRoot() at line ~190 resolves platform-specific cache without environment setup; (4) obsEvent() at line 56 writes to GM_LOG_DIR or ~/.claude/gm-log; (5) writeBootstrapError() at line 38 writes .gm/exec-spool/.bootstrap-error.json for spool awareness; (6) lock management (acquireLock/releaseLock, lines 281-310) is self-contained. Module requires only native Node modules. Skills can import and call bootstrap({wrapperDir, version}) directly."
+  status: witnessed
+
+- id: spool-refactor-scope
+  claim: Spool dispatch patterns can be refactored to skill-initiated (skill writes state, reads spool results) without hook gates
+  witness_method: "codesearch + gm-execute SKILL.md + exec:nodejs analysis"
+  witness_evidence: "gm-starter/skills/gm-execute/SKILL.md:43 documents spool dispatch contract: 'The spool watcher executes and streams stdout to out/<N>.out, stderr to out/<N>.err, then writes out/<N>.json metadata sidecar at completion (taskId, lang, ok, exitCode, durationMs, timedOut, startedAt, endedAt).' AGENTS.md:133 describes hook coordination: pre_tool_use reads .gm/needs-gm marker, prompt_submit manages needs-gm based on PRD. REFACTOR PATTERN: (1) Skill writes in/<lang>/<N>.<ext> to spool — no hook gate involved in dispatch; (2) Watcher auto-executes as hook-independent background process; (3) Skill polls out/ for .json completion metadata — no hook read needed; (4) Skill reads result, updates .gm/prd.yml and .gm/mutables.yml state. Gates (needs_gm, mutables check via hook pre_tool_use:178-191) remain orthogonal policy layer, not dispatch control. Pattern is viable: spool is already skill-facing async I/O. No architectural change required — just shift from hook-tail-result to skill-poll-result."
+  status: witnessed
