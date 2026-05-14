@@ -28,6 +28,8 @@ The user's request is authorization. When scope is unclear, pick the maximum rea
 
 **Every issue surfaces this turn**: pre-existing breaks, lint failures, drift, broken deps, stale generated files — all become PRD items and finish before COMPLETE.
 
+**LLM provider**: acptoapi (127.0.0.1:4800) is the preferred provider when available. rs-plugkit session_start spawns acptoapi daemon and auto-detects ACP agents (opencode, kilo-code, codex, gemini-cli, qwen-code). All downstream platforms (rs-learn, freddie, gm-skill daemon mode) read OPENAI_BASE_URL environment variable and default to 127.0.0.1:4800. Anthropic SDK is fallback only when acptoapi socket is unavailable (CI, headless mode).
+
 **Spool dispatch chain**: write to `.gm/exec-spool/in/<lang>/<N>.<ext>` or `in/<verb>/<N>.txt`. Watcher executes and streams `out/<N>.out` + `out/<N>.err` + `out/<N>.json` metadata. Languages: nodejs, python, bash, typescript, go, rust, c, cpp, java, deno. Verbs: codesearch, recall, memorize, wait, sleep, status, close, browser, runner, type, kill-port, forget, feedback, learn-status, learn-debug, learn-build, discipline, pause, health.
 
 **Session isolation**: SESSION_ID environment variable (or uuid fallback) threads through task dispatch for cleanup scope. rs-exec RPC handlers verify session_id match on all task-scoped operations.
