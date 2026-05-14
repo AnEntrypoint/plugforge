@@ -2,6 +2,7 @@ const daemon = require('./daemon-bootstrap.js');
 const manifest = require('./manifest.js');
 const loader = require('./loader.js');
 const prepareModule = require('./prepare.js');
+const spool = require('./spool.js');
 
 function getSkills() {
   return manifest.getAllSkills();
@@ -33,5 +34,6 @@ module.exports = {
   checkPortReachable: daemon.checkPortReachable,
   manifest: manifest,
   loader: loader,
-  prepare: prepareModule.prepare
+  prepare: prepareModule.prepare,
+  spool: spool
 };

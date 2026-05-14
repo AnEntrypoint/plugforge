@@ -30,6 +30,11 @@ jobs:
           node-version: '22'
           registry-url: 'https://registry.npmjs.org'
 
+      - name: Run tests
+        run: |
+          cd gm-skill
+          npm test
+
       - name: Check current version
         id: check-version
         run: |

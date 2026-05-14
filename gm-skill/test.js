@@ -14,8 +14,8 @@ function cleanup() {
 
 async function runTests() {
   cleanup();
-  process.chdir(testDir);
   fs.mkdirSync(testDir, { recursive: true });
+  process.chdir(testDir);
 
   console.log('Testing spool.writeSpool...');
   const writeResult = spool.writeSpool('console.log("test output")', 'nodejs');
@@ -78,11 +78,13 @@ async function runTests() {
   assert(baseDir2.includes('.gm'), 'spool path contains .gm directory');
   console.log('✓ Platform paths are set correctly');
 
+  process.chdir(__dirname);
   cleanup();
   console.log('\n✓✓✓ All tests passed ✓✓✓');
 }
 
 runTests().catch(e => {
+  process.chdir(__dirname);
   console.error('Test failed:', e.message);
   cleanup();
   process.exit(1);
