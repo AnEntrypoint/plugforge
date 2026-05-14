@@ -1,0 +1,70 @@
+
+
+- id: acptoapi-runner
+  subject: Set rs-plugkit to spawn acptoapi and ACP agents if not running
+  status: completed
+  description: Configure rs-plugkit bootstrap to spawn "bun x acptoapi@latest" if 127.0.0.1:4800 is not already listening. On Windows, auto-spawn available ACP agents (opencode, kilo-code, codex, gemini-cli, qwen-code) invisibly as subprocesses connected to acptoapi. Use netstat/lsof to detect existing listener before spawning. Spawn as daemon managed by rs-plugkit session lifecycle. Gracefully skip agents not installed on system.
+  effort: large
+  category: infra
+  route_family: execution
+  load: 0.8
+  failure_modes:
+    - Port already in use by non-acptoapi process - need safe conflict detection
+    - Daemon crash should trigger restart
+    - Cleanup on session end
+    - Missing agents should not block acptoapi startup
+    - ACP agent spawn should be invisible (no console windows on Windows)
+  route_fit: examined
+  authorization: witnessed
+  blocking: []
+  blockedBy: []
+  acceptance:
+    - rs-plugkit checks 127.0.0.1:4800 listening before spawning
+    - Spawns "bun x acptoapi@latest" as background daemon if not listening
+    - Auto-detects and spawns available ACP agents (opencode, kilo-code, codex, gemini-cli, qwen-code)
+    - ACP agents spawn invisibly on Windows (no console window)
+    - Daemon lifecycle tied to rs-plugkit session
+    - No error if acptoapi or any agent already running
+    - Gracefully skips agents not found on system
+  edge_cases:
+    - Race condition on port bind during spawn
+    - Cleanup of orphaned processes on ungraceful exit
+    - Agent binary detection across different install locations (PATH, npm global, scoop, cargo)
+
+- id: acptoapi-agents-research
+  subject: Document available ACP agents for auto-spawn
+  status: completed
+  description: Research and document all available ACP-compatible agents that can be auto-spawned from acptoapi (opencode, kilo-code, codex, gemini-cli, qwen-code, and any others). Document how to detect each agent's binary location, how to invoke it in ACP mode, and graceful skip behavior. Record findings in rs-learn.db or AGENTS.md for future reference.
+  effort: small
+  category: research
+  route_family: observability
+  load: 0.3
+  failure_modes: []
+  route_fit: examined
+  authorization: weak_prior
+  blocking: []
+  blockedBy: []
+  acceptance:
+    - Document agent names, detection methods, and ACP invocation signatures
+    - List install locations (PATH, npm global, scoop, cargo bins)
+    - Record in rs-learn knowledge store for future reference
+  edge_cases: []
+
+- id: acptoapi-docs
+  subject: Update documentation for acptoapi fallback
+  status: pending
+  description: Document the acptoapi fallback setup in AGENTS.md or README - explain that preferential access is removed and acptoapi is the primary provider, with SDK as fallback only. Include acptoapi auto-spawn behavior and agent ecosystem.
+  effort: small
+  category: refactor
+  route_family: observability
+  load: 0.2
+  failure_modes: []
+  route_fit: examined
+  authorization: witnessed
+  blocking: []
+  blockedBy: []
+  acceptance:
+    - AGENTS.md updated with acptoapi provider setup notes
+    - Document ACP agent auto-spawn behavior
+    - Explain graceful skip for missing agents
+  edge_cases: []
