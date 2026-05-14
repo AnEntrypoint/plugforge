@@ -19,9 +19,9 @@
   witness_evidence: freddie exists and has Cargo.toml with HTTP dependencies - HTTP client pattern present for endpoint communication
   status: witnessed
 - id: acp-agents-available
-  claim: OpenCode, Kilo Code, Codex, Gemini CLI are detectably installed and compatible with ACP protocol
-  witness_method: exec:recall ACP-compatible agents list or exec:codesearch acp protocol agents
-  witness_evidence: rs-plugkit/src/hook/session_start.rs:240-247 spawn_acp_agents() searches for opencode, kilo-code, codex, gemini-cli, qwen-code via where/which; spawns if found with ACP STDIO protocol
+  claim: OpenCode, Kilo Code, Codex, Gemini CLI are detectably installed and compatible with ACP protocol; additional agents hermes, cline, acpx support ACP
+  witness_method: WebSearch hermes/cline/acpx ACP compatibility + rs-plugkit agent spawn code
+  witness_evidence: rs-plugkit/src/hook/session_start.rs:240-247 spawn_acp_agents() searches for opencode, kilo-code, codex, gemini-cli, qwen-code via where/which; hermes v0.13 (May 2026) supports ACP via 'pip install -e .[acp]'; cline >2.0.0 has --acp flag; acpx is OpenClaw headless ACP client supporting custom --agent flag; all use piped STDIO with JSON-RPC 2.0
   status: witnessed
 - id: gm-direct-llm-calls
   claim: gm repo contains no direct Claude SDK LLM calls (delegates to downstream)
