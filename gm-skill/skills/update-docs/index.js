@@ -1,6 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-const { execSync } = require('child_process');
+const git = require('../../lib/git.js');
 
 async function updateDocsSkill(input, parentContext) {
   const context = parentContext || {
@@ -15,15 +15,19 @@ async function updateDocsSkill(input, parentContext) {
 
   try {
     try {
-      const recentCommits = execSync('git log -5 --oneline', { encoding: 'utf8' });
-      console.error(`[update-docs] Recent commits:\n${recentCommits}`);
+      const logResult = await git.log(context.sessionId, 5);
+      if (logResult.ok) {
+        console.error(`[update-docs] Recent commits:\n${logResult.commits.join('\n')}`);
+      }
     } catch (err) {
       console.error(`[update-docs] Could not get recent commits:`, err.message);
     }
 
     try {
-      const lastDiff = execSync('git diff HEAD~1 --stat', { encoding: 'utf8' });
-      console.error(`[update-docs] Changes in HEAD~1:\n${lastDiff}`);
+      const diffResult = await git.diff(context.sessionId);
+      if (diffResult.ok && diffResult.diff.length > 0) {
+        console.error(`[update-docs] Changes detected (${diffResult.diff.length} bytes)`);
+      }
     } catch (err) {
       console.error(`[update-docs] Could not get diff:`, err.message);
     }
@@ -69,8 +73,12 @@ async function updateDocsSkill(input, parentContext) {
     console.error(`[update-docs] Attempting git operations...`);
 
     try {
-      execSync('git status --porcelain', { encoding: 'utf8', timeout: 5000 });
-      console.error(`[update-docs] Repository is clean, no docs to commit`);
+      const statusResult = await git.status(context.sessionId);
+      if (statusResult.ok && !statusResult.isDirty) {
+        console.error(`[update-docs] Repository is clean, no docs to commit`);
+      } else if (statusResult.ok && statusResult.isDirty) {
+        console.error(`[update-docs] Repository has changes: ${statusResult.modified.length} modified, ${statusResult.untracked.length} untracked`);
+      }
     } catch (err) {
       console.error(`[update-docs] Git check failed:`, err.message);
     }

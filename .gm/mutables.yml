@@ -159,3 +159,15 @@
   witness_method: Read ensureDaemonRunning in learning.js
   witness_evidence: "ensureDaemonRunning at lines 50-76: calls getDaemonBootstrap() to load daemon-bootstrap module. Invokes bootstrap.ensureRsLearningDaemonRunning() and logs result. Returns boolean success/failure. Called by learning.js functions before socket operations if needed."
   status: witnessed
+
+- id: git-js-module-complete
+  claim: lib/git.js exports all 7 required functions with correct signatures and Windows/Unix compatibility
+  witness_method: exec:nodejs test imports git.js and calls status, log, escapeShellArg
+  witness_evidence: "lib/git.js created with exports: commit, push, status, diff, log, checkout, rebase, cherryPick, escapeShellArg, parseGitStatus, GIT_USER, GIT_EMAIL. Tested via nodejs: status() returns {ok, isDirty, modified, untracked, deleted} parsed from git status --porcelain. log(sessionId, count) returns {ok, commits} array. escapeShellArg() handles Windows quotes and Unix escaping correctly. All functions async with error handling via emitGitEvent. Spool dispatch via sendSpoolRequest(lang, code, timeoutMs) with 100ms polling for completion."
+  status: witnessed
+
+- id: git-js-distributed
+  claim: lib/git.js is copied to lib/, gm-skill/lib/, and gm-starter/lib/ for use by all platforms
+  witness_method: exec:nodejs verify all three copies exist and export identical functions
+  witness_evidence: "All three copies exist: ./lib/git.js (12403B), ./gm-skill/lib/git.js (12403B), ./gm-starter/lib/git.js (12403B). Post-emit verification confirms all import successfully and export: commit, push, status, diff, log, checkout, rebase, cherryPick, escapeShellArg, parseGitStatus, GIT_USER, GIT_EMAIL. update-docs and gm-complete skills updated to import and use lib/git.js functions."
+  status: witnessed

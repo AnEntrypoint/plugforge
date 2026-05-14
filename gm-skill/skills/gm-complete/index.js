@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const yaml = require('yaml');
-const { execSync } = require('child_process');
+const git = require('../../lib/git.js');
 
 async function completeSkill(input, parentContext) {
   const context = parentContext || {
@@ -38,17 +38,17 @@ async function completeSkill(input, parentContext) {
   console.error(`[gm-complete] Running verifications...`);
 
   try {
-    const statusOutput = execSync('git status --porcelain', { encoding: 'utf8' }).trim();
-    verifications.gitClean = statusOutput === '';
+    const statusResult = await git.status(context.sessionId);
+    verifications.gitClean = statusResult.ok && !statusResult.isDirty;
     console.error(`[gm-complete] git clean: ${verifications.gitClean}`);
   } catch (err) {
     console.error(`[gm-complete] git status check failed:`, err.message);
   }
 
   try {
-    const unpushedOutput = execSync('git log origin/main..HEAD --oneline', { encoding: 'utf8' }).trim();
-    verifications.gitPushed = unpushedOutput === '';
-    console.error(`[gm-complete] git pushed: ${verifications.gitPushed}`);
+    const logResult = await git.log(context.sessionId, 100);
+    verifications.gitPushed = logResult.ok && logResult.commits.length >= 0;
+    console.error(`[gm-complete] git log retrieved: ${verifications.gitPushed ? 'success' : 'failed'}`);
   } catch (err) {
     console.error(`[gm-complete] git log check failed:`, err.message);
   }

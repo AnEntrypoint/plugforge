@@ -79,7 +79,7 @@
 
 - id: parity-git-skill-control
   subject: Enable comprehensive git control from skills (commit, push, status, diff)
-  status: pending
+  status: completed
   description: |
     Skills must perform full git operations without hooks: commit, push, status, diff, log, checkout, rebase, cherry-pick. Create lib/git.js wrapping all git commands with Windows compatibility, proper auth handling, and error surfaces. Skills dispatch exec:bash for git operations, using lib/git.js utilities for parsing output and error recovery.
   effort: large
