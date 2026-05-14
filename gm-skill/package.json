@@ -16,8 +16,12 @@
   "keywords": [
     "gm",
     "skills",
+    "bun-skills",
+    "skills-cli",
     "daemon",
-    "bootstrap"
+    "bootstrap",
+    "orchestration",
+    "agent-skills"
   ],
   "author": "AnEntrypoint",
   "license": "MIT",

@@ -4,9 +4,29 @@ Unified skill library for gm platform implementations.
 
 ## Installation
 
+### Via npm
+
 ```bash
 npm install gm-skill
 ```
+
+### Via Bun Skills CLI
+
+Install the gm-skill package alongside other agents and frameworks:
+
+```bash
+bun x skills add AnEntrypoint/gm-skill
+```
+
+This installs all 6 core skills across your available AI agents and IDEs:
+- `gm` - Skill chain orchestrator
+- `planning` - PLAN phase: mutable discovery and PRD construction
+- `gm-execute` - EXECUTE phase: resolve unknowns by witness
+- `gm-emit` - EMIT phase: write files and verify from disk
+- `gm-complete` - COMPLETE phase: system verification and git enforcement
+- `update-docs` - UPDATE-DOCS phase: refresh documentation and push
+
+After installation, skills are available universally across 55+ agents (Cursor, Cline, Codex, Gemini CLI, Qwen Code, etc.).
 
 ## Usage
 
