@@ -1,172 +1,72 @@
-{
-  "hooks_audit": {
-    "session_start_hook": {
-      "current_responsibilities": [
-        "Writes .gm/needs-gm marker when .gm/ folder exists",
-        "Spawns acptoapi daemon (127.0.0.1:4800) if unavailable",
-        "Auto-detects available ACP agents (opencode, kilo-code, codex, gemini-cli, qwen-code)",
-        "Verifies rs-plugkit version on startup"
-      ],
-      "skill_equivalents": {
-        "daemon_spawn": "gm-starter/lib/daemon-bootstrap.js + skill-bootstrap.js (skills: planning, gm-execute, update-docs)",
-        "description": "skill-initiated bootstrap via gm-skill package; bootstrapPlugkit(sessionId) handles daemon spawn without hook infrastructure"
-      },
-      "redundancy": "PARTIAL - daemon spawn is being migrated to skill-driven bootstrap, but session_start hook still coordinates startup"
-    },
-    "pre_tool_use_hook": {
-      "current_responsibilities": [
-        "needs-gm gate: denies tool use if PRD exists but gm-fired-this-turn marker absent",
-        "Writes .gm/gm-fired-this-turn marker after gm:gm skill/subagent invocation",
-        "Mutables gate: denies Write/Edit/git commands if .gm/mutables.yml has unknown entries",
-        "Tracks session state in .gm/turn-state.json"
-      ],
-      "skill_equivalents": {
-        "mutable_resolution_witness": "gm-execute SKILL.md → every mutable resolution writes to .gm/mutables.yml with witness_evidence",
-        "gate_enforcement": "gm-emit SKILL.md § Mutables gate → reads .gm/mutables.yml, regresses to gm-execute if any status: unknown",
-        "description": "Skills explicitly check and update mutable state; hook enforces it"
-      },
-      "redundancy": "HIGH - Skills already witness and track mutable state. Hook gate is redundant enforcement of skill discipline"
-    },
-    "prompt_submit_hook": {
-      "current_responsibilities": [
-        "Deletes .gm/gm-fired-this-turn marker at turn start",
-        "Derives 2-6 word recall query from user prompt",
-        "Calls rs-learn Searcher directly; injects \"## Recall for this prompt\" into systemMessage",
-        "Auto-search (codeinsight) + auto-recall ensure every turn begins with prior memory loaded"
-      ],
-      "skill_equivalents": {
-        "recall": "exec:recall verb (gm-execute, planning) - explicitly called before any mutable is named per AGENTS.md",
-        "codesearch": "exec:codesearch verb (gm-execute) - start two words, iterate before naming unknown",
-        "memory_injection": "Agent(subagent_type=\"gm:memorize\", ...) fires alongside witness per gm SKILL.md"
-      },
-      "redundancy": "MODERATE - Auto-recall helps, but AGENTS.md ORIENT rule requires explicit multi-call pack. Implicit auto-injection may mask unwitnessed assumptions"
-    },
-    "post_tool_use_hook": {
-      "current_responsibilities": [
-        "Tracks turn state in .gm/turn-state.json",
-        "Monitors for tool failures and state changes"
-      ],
-      "skill_equivalents": {
-        "state_tracking": "gm-execute witnesses via exec: verbs and imports; state is captured in PRD + mutables YAML",
-        "failure_handling": "gm-execute § Utility verb failure handling → failures must surface with error context"
-      },
-      "redundancy": "LOW - Limited surface, state is primarily in PRD/mutables. Hook provides observability."
-    },
-    "stop_hook": {
-      "current_responsibilities": [
-        "Reads .gm/prd.yml; if empty/missing AND no open browser sessions, fires residual-scan challenge",
-        "Marker file .gm/residual-check-fired ensures one-shot per stopping window",
-        "Directs agent to enumerate in-spirit reachable residuals",
-        "Blocks second stop until residuals are handled or explicitly named out-of-spirit"
-      ],
-      "skill_equivalents": {
-        "residual_scan": "gm-complete SKILL.md § prd_empty mutable: agent must enumerate in-spirit residuals AND re-enter planning or state \"residual scan: none reachable\"",
-        "prd_enforcement": "planning + gm-complete both address PRD lifecycle; skills handle residual scope maximality",
-        "description": "Skills already encode the maximality obligation; hook enforces it at boundary"
-      },
-      "redundancy": "HIGH - Skills already encode the discipline. Hook is enforcement boundary, not discovery mechanism"
-    }
-  },
-  "lib_skill_equivalents": {
-    "gm-starter/lib/learning.js": {
-      "functionality": "Daemon spawn, rs-learn socket management, learning event logging",
-      "skill_user": "daemon-bootstrap.js (invoked by planning, gm-execute, update-docs)",
-      "hook_overlap": "session_start hook also spawns daemon, but skill-driven bootstrap is now primary"
-    },
-    "gm-starter/lib/daemon-bootstrap.js": {
-      "functionality": "Ensure rs-learning daemon running, check port reachability, handle spawn timeouts",
-      "skill_user": "skill-bootstrap.js wraps this for skill-driven initialization",
-      "hook_overlap": "session_start hook uses same daemon-spawn logic"
-    },
-    "gm-starter/lib/codeinsight.js": {
-      "functionality": "Check codeinsight socket, send requests, parse responses, timeout handling",
-      "skill_user": "gm-execute, planning skills call exec:codesearch which uses this",
-      "hook_overlap": "prompt_submit hook does auto-search before agent sees prompt"
-    },
-    "gm-starter/lib/spool-dispatch.js": {
-      "functionality": "File-spool execution dispatch for all languages/verbs",
-      "skill_user": "All skills dispatch via spool (exec: prefix)",
-      "hook_overlap": "Hooks do NOT use spool; they call daemons directly"
-    },
-    "gm-starter/lib/browser.js": {
-      "functionality": "Browser session management, exec:browser dispatch",
-      "skill_user": "gm-complete SKILL.md § Browser validation gate, gm-emit for post-emit browser verify",
-      "hook_overlap": "session_end hook manages browser cleanup for real-exit reasons"
-    }
-  },
-  "redundancy_patterns": [
-    {
-      "area": "Daemon spawn (acptoapi, rs-learn, rs-codeinsight)",
-      "hook_does": "session_start autonomously spawns all daemons",
-      "skill_does": "gm-starter/lib/skill-bootstrap.js + daemon-bootstrap.js; planning/gm-execute/update-docs call it explicitly",
-      "elimination": "Move spawn entirely to skill-driven bootstrap; session_start can verify reachability only"
-    },
-    {
-      "area": "Mutable gate enforcement",
-      "hook_does": "pre_tool_use denies Write/Edit/git if .gm/mutables.yml has unknown entries",
-      "skill_does": "gm-emit SKILL.md explicitly checks mutables before legitimacy gate; gm-execute witnesses resolution",
-      "elimination": "Hook gate is enforcement of skill discipline already encoded in skills. Remove hook, rely on skill discipline"
-    },
-    {
-      "area": "Auto-recall at prompt boundary",
-      "hook_does": "prompt_submit auto-derives recall query and injects into systemMessage",
-      "skill_does": "AGENTS.md ORIENT rule requires explicit parallel pack of 3-5 recall+codesearch before naming unknowns",
-      "elimination": "Hook auto-recall masks the explicit discipline. Remove auto-recall; skills are more intentional"
-    },
-    {
-      "area": "Residual scan at stop boundary",
-      "hook_does": "stop hook fires residual-scan challenge when PRD empty + no browsers",
-      "skill_does": "gm-complete SKILL.md § prd_empty mutable encodes agent obligation to enumerate residuals",
-      "elimination": "Hook is boundary enforcement. Skills already encode the obligation; remove hook, trust skill discipline"
-    },
-    {
-      "area": "needs-gm marker management",
-      "hook_does": "session_start writes needs-gm; prompt_submit deletes at turn start; pre_tool_use reads it",
-      "skill_does": "gm-execute SKILL.md and AGENTS.md encode PRD requirement; gate is implicit in skill sequencing",
-      "elimination": "Marker is implementation detail of skill gating. Can be removed if skills are always invoked in order"
-    }
-  ],
-  "hook_candidates_for_elimination": [
-    {
-      "hook": "session_start daemon spawn for acptoapi + ACP agents",
-      "reason": "gm-starter/lib/skill-bootstrap.js already provides bootstrapPlugkit() for skill-driven spawn",
-      "replacement": "Skills (planning, gm-execute, update-docs) call daemon-bootstrap autonomously before execution",
-      "impact": "Eliminates autonomous daemon spawn; requires skill explicit responsibility. Slight latency on first skill invocation (acceptable)"
-    },
-    {
-      "hook": "pre_tool_use mutables gate",
-      "reason": "gm-emit SKILL.md already checks mutables YAML and regresses if any unknown. Skills self-enforce the discipline.",
-      "replacement": "Remove hook check; trust skill sequencing (gm-execute witnesses all mutables before gm-emit runs)",
-      "impact": "Removes hard-block at tool boundary. Requires absolute discipline in skill invocation order."
-    },
-    {
-      "hook": "prompt_submit auto-recall injection",
-      "reason": "AGENTS.md ORIENT rule requires explicit PLAN-start recall pack. Auto-injection masks intentionality.",
-      "replacement": "planning skill MUST call recall pack explicitly per AGENTS.md. No implicit recall at boundary.",
-      "impact": "More explicit discipline. Loses convenience of auto-recall; gains clarity of explicit recall scope."
-    },
-    {
-      "hook": "stop hook residual-scan challenge",
-      "reason": "gm-complete SKILL.md § prd_empty mutable already encodes agent obligation",
-      "replacement": "Rely on gm-complete to enforce residual scan via skill discipline and PRD state",
-      "impact": "Removes stop-time challenge. Requires gm-complete discipline to be followed. No late-exit enforcement."
-    }
-  ],
-  "hooks_to_keep": [
-    {
-      "hook": "session_end cleanup",
-      "reason": "Cleanup (kill tasks, close browsers) on real-exit only. No skill equivalent for session lifecycle.",
-      "note": "Out-of-band from skill execution; remains purely infrastructural"
-    },
-    {
-      "hook": "pre_tool_use gm-fired-this-turn marker write",
-      "reason": "Synchronous side-effect of Skill(gm:gm) invocation. Enables other tools in same turn.",
-      "note": "Tight coupling to skill dispatch. If skills always run in sequence, marker becomes unnecessary."
-    },
-    {
-      "hook": "post_tool_use state tracking",
-      "reason": "Observability: tracks turn state for hook coordination. Low overhead.",
-      "note": "Keep for observability; not redundant with skills"
-    }
-  ]
-}
+
+=== gm/SKILL.md ===
+---
+name: gm
+description: Orchestrator dispatching PLAN→EXECUTE→EMIT→VERIFY→UPDATE-DOCS skill chain; spool-driven task execution with session isolation
+allowed-tools: Skill
+compatible-platforms:
+  - gm-cc
+  - gm-gc
+  - gm-oc
+  - gm-kilo
+  - gm-codex
+
+=== gm-complete/SKILL.md ===
+---
+name: gm-complete
+description: VERIFY and COMPLETE phase. End-to-end system verification and git enforcement. Any new unknown triggers immediate snake back to planning — restart chain.
+---
+
+# GM COMPLETE — Verify, then close
+
+Entry: EMIT gates clear, from `gm-emit`. Exit: `.prd` deleted + test.js green + pushed + CI green → `update-docs`.
+
+Cross-cutting dispositions live in `gm` SKILL.md.
+
+=== gm-emit/SKILL.md ===
+---
+name: gm-emit
+description: EMIT phase. Pre-emit debug, write files, post-emit verify from disk. Any new unknown triggers immediate snake back to planning — restart chain.
+---
+
+# GM EMIT — Write and verify from disk
+
+Entry: every mutable KNOWN, from `gm-execute` or re-entered from VERIFY. Exit: gates clear → `gm-complete`.
+
+Cross-cutting dispositions live in `gm` SKILL.md.
+
+=== gm-execute/SKILL.md ===
+---
+name: gm-execute
+description: EXECUTE phase AND the foundational execution contract for every skill. Every exec:<lang> run, every witnessed check, every code search, in every phase, follows this skill's discipline. Resolve all mutables via witnessed execution. Any new unknown triggers immediate snake back to planning — restart chain from PLAN.
+---
+
+# GM EXECUTE — Resolve every unknown by witness
+
+Entry: `.prd` with named unknowns. Exit: every mutable KNOWN → invoke `gm-emit`.
+
+A `@<discipline>` sigil propagates from PLAN through every recall, codesearch, and memorize call; reads without one fan across default plus enabled disciplines, writes without one go to default only.
+
+=== planning/SKILL.md ===
+---
+name: planning
+description: State machine orchestrator. Mutable discovery, PRD construction, and full PLAN→EXECUTE→EMIT→VERIFY→COMPLETE lifecycle. Invoke at session start and on any new unknown.
+allowed-tools: Skill
+---
+
+# Planning — PLAN phase
+
+Translate the request into `.gm/prd.yml` and hand to `gm-execute`. Re-enter on any new unknown in any phase.
+
+
+=== update-docs/SKILL.md ===
+---
+name: update-docs
+description: UPDATE-DOCS phase. Refresh README.md, AGENTS.md, and docs/index.html to reflect changes made this session. Commits and pushes doc updates. Terminal phase — declares COMPLETE.
+---
+
+# GM UPDATE-DOCS
+
+Entry: feature verified, committed, pushed. Exit: docs match disk, committed, pushed → COMPLETE. Unknown architecture change → `planning`.
+
+Every claim in docs is verifiable against disk. Phase names match frontmatter, platform names match `platforms/`, file paths exist, constraint counts are accurate. An unverifiable section is removed, not speculated.

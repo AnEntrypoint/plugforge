@@ -1,25 +1,34 @@
-Skills directories:
-browser
-code-search
-create-lang-plugin
-gm
-gm-cc
-gm-codex
-gm-complete
-gm-copilot-cli
-gm-cursor
-gm-emit
-gm-execute
-gm-gc
-gm-jetbrains
-gm-kilo
-gm-oc
-gm-vscode
-gm-zed
-governance
-pages
-planning
-research
-ssh
-textprocessing
-update-docs
+    index.js
+[D] lib
+      daemon-bootstrap.js
+      git.js
+      index.js
+      loader.js
+      manifest.js
+      prepare.js
+      spool.js
+    package.json
+    README.md
+[D] skills
+  [D] gm
+        index.js
+        SKILL.md
+  [D] gm-complete
+        index.js
+        SKILL.md
+  [D] gm-emit
+        index.js
+        SKILL.md
+  [D] gm-execute
+        index.js
+        SKILL.md
+  [D] planning
+        index.js
+        SKILL.md
+  [D] update-docs
+        index.js
+        SKILL.md
+    test-build.js
+    test-e2e.js
+    test-unified.js
+    test.js

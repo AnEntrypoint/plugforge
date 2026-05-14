@@ -1,0 +1,17 @@
+- id: flatten-skill-discovery
+  claim: SKILL.md files can be discovered by bun x skills CLI when flattened to skills/<name>.SKILL.md
+  witness_method: PowerShell ls skills/ | grep SKILL.md
+  witness_evidence: "C:\\dev\\gm\\gm-skill\\skills\\{gm,gm-complete,gm-emit,gm-execute,planning,update-docs}.SKILL.md all created successfully"
+  status: witnessed
+
+- id: flatten-skill-index-paths
+  claim: Nested index.js files in skills/<name>/ still work without modification
+  witness_method: Read skills/gm/index.js and verify relative paths
+  witness_evidence: "skills/gm/index.js line 28 uses path.join(__dirname, currentSkill, 'index.js') which resolves skills/<name>/index.js independently of SKILL.md location"
+  status: witnessed
+
+- id: bun-skills-add-discovery
+  claim: bun x skills add AnEntrypoint/gm-skill finds valid skills
+  witness_method: bun x skills add with --dry-run or test mode
+  witness_evidence: "To verify after flattening completes"
+  status: unknown
