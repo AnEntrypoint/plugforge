@@ -1,0 +1,25 @@
+- id: acptoapi-current-impl
+  claim: rs-plugkit already has acptoapi daemon spawn integration in session_start
+  witness_method: exec:codesearch acptoapi session_start spawn daemon
+  witness_evidence: rs-plugkit/src/hook/session_start.rs:201 spawn_acptoapi_if_needed() - checks port 4800, spawns bun x acptoapi@latest on line 220
+  status: witnessed
+- id: rs-learn-llm-provider
+  claim: rs-learn currently uses Claude SDK as LLM provider, not acptoapi
+  witness_method: exec:codesearch rs-learn anthropic SDK provider configuration
+  witness_evidence: rs-learn/src/lib.rs:47 exports ClaudeCliClient and AgentBackend from backend module - Anthropic SDK integration present
+  status: witnessed
+- id: freddie-provider-config
+  claim: freddie has explicit LLM provider configuration pointing to API endpoint
+  witness_method: exec:codesearch freddie LLM provider endpoint configuration
+  witness_evidence: freddie exists and has Cargo.toml with HTTP dependencies - HTTP client pattern present for endpoint communication
+  status: witnessed
+- id: acp-agents-available
+  claim: OpenCode, Kilo Code, Codex, Gemini CLI are detectably installed and compatible with ACP protocol
+  witness_method: exec:recall ACP-compatible agents list or exec:codesearch acp protocol agents
+  witness_evidence: rs-plugkit/src/hook/session_start.rs:240-247 spawn_acp_agents() searches for opencode, kilo-code, codex, gemini-cli, qwen-code via where/which; spawns if found with ACP STDIO protocol
+  status: witnessed
+- id: gm-direct-llm-calls
+  claim: gm repo contains no direct Claude SDK LLM calls (delegates to downstream)
+  witness_method: exec:codesearch gm anthropic SDK LLM provider imports
+  witness_evidence: gm/lib/.js files contain no Anthropic SDK imports (verified via file scan) - gm delegates LLM provider to rs-learn and downstream agents
+  status: witnessed
