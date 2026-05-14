@@ -1,6 +1,6 @@
 - id: rebuild-all-platforms
   subject: Rebuild all 10 platform outputs after scaffold completion
-  status: in_progress
+  status: completed
   description: Run node cli.js gm-starter ./build to regenerate all platform outputs (gm-cc, gm-gc, gm-oc, gm-kilo, gm-codex, gm-copilot-cli, gm-vscode, gm-cursor, gm-zed, gm-jetbrains) so they inherit any template changes and pick up scaffolded gm-skill integration.
   effort: small
   category: infra
