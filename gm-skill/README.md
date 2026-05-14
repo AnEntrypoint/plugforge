@@ -62,3 +62,38 @@ console.log(result.id);
 const output = await spool.waitForCompletion(result.id, 30000);
 console.log(output.stdout);
 ```
+
+### Skill Manifests
+
+```javascript
+const { manifest } = require('gm-skill');
+const { getManifest, getSkill, getAllSkills } = manifest;
+```
+
+#### Functions
+
+- `getManifest()` - Get full package manifest with all 4 core skills; returns `{ name, version, description, skills: [...] }`
+- `getSkill(name)` - Get individual skill manifest by name (gm, gm-execute, gm-emit, gm-complete); returns skill object with metadata
+- `getAllSkills()` - Get array of all 4 core skills with full metadata; returns `[{ name, description, allowedTools, compatiblePlatforms, endToEnd, skillMdContent }, ...]`
+
+Skill metadata includes:
+- `name` - Skill identifier
+- `description` - Human-readable skill purpose
+- `allowedTools` - Array of tool names the skill permits
+- `compatiblePlatforms` - Array of platforms this skill targets
+- `endToEnd` - Boolean flag indicating end-to-end skill vs helper
+- `skillMdContent` - Full SKILL.md file content
+
+#### Example
+
+```javascript
+const { manifest } = require('gm-skill');
+
+const allSkills = manifest.getAllSkills();
+allSkills.forEach(skill => {
+  console.log(`${skill.name}: ${skill.description}`);
+});
+
+const gmSkill = manifest.getSkill('gm');
+console.log('Allowed tools:', gmSkill.allowedTools);
+```
