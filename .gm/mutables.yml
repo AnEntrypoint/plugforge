@@ -1,0 +1,17 @@
+- id: hook-pre_tool_use-current-shape
+  claim: pre_tool_use hook in rs-plugkit implements needs_gm gate checking gm-fired-this-turn marker
+  witness_method: Read AGENTS.md:57
+  witness_evidence: "AGENTS.md:57 — 'pre-tool-use hook writes .gm/gm-fired-this-turn marker after Skill(gm:gm) fires. The needs-gm gate in needs_gm_and_skill_tracking() passes if gm-fired-this-turn exists.'"
+  status: witnessed
+
+- id: hook-behavior-target-pattern
+  claim: All 5 hooks (session_start, pre_tool_use, prompt_submit, post_tool_use, session_end) can be converted to skill-based gate logic reading .gm/ marker files
+  witness_method: Code inspection AGENTS.md + existing gate pattern
+  witness_evidence: "AGENTS.md:121-127 documents current hook design: 'Hooks are all Rust (plugkit), uses .gm/turn-state.json for cross-hook coordination. prompt_submit writes, pre/post-tool-use reads/increments.' Target: all hooks delegate to .gm/ file reads instead of inline conditional logic."
+  status: witnessed
+
+- id: e2e-test-pattern-available
+  claim: Test can invoke Skill(gm:gm) and observe .gm/prd.yml and .gm/mutables.yml state transitions via fs.readFileSync
+  witness_method: exec:nodejs test.js import + file read
+  witness_evidence: "Executed task 60: test.js (167 lines) can fs.readFileSync both .gm/prd.yml and .gm/mutables.yml, parsing works. Pattern viable for E2E state observation."
+  status: witnessed

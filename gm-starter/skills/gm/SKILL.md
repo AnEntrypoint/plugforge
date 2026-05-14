@@ -14,6 +14,7 @@ compatible-platforms:
   - gm-cursor
   - gm-zed
   - gm-jetbrains
+end-to-end: true
 ---
 
 # GM — Orchestrator
@@ -41,3 +42,19 @@ The user's request is authorization. When scope is unclear, pick the maximum rea
 **Parallel independent items**: up to 3 `gm:gm` subagents per message for independent PRD items. Serial for dependent items — no re-asking between them.
 
 **Terse response**: fragments OK. `[thing] [action] [reason]. [next step].` Code, commits, PRs use normal prose.
+
+## End-to-End Phase Chaining (Skills-Based Platforms)
+
+When `end-to-end: true` is present in SKILL.md frontmatter, skill output includes structured JSON on stdout (final line):
+
+```json
+{"nextSkill": "gm-execute" | "gm-emit" | "gm-complete" | "update-docs" | null, "context": {PRD and state dict}, "phase": "PLAN" | "EXECUTE" | "EMIT" | "COMPLETE"}
+```
+
+Platform adapters (vscode, cursor, zed, jetbrains) that support `end-to-end: true` detection:
+1. Invoke `Skill(skill="gm:gm")`
+2. Parse stdout for trailing JSON blob
+3. If `nextSkill` is non-null, invoke `Skill(skill="gm:<nextSkill>")` with context dict auto-passed
+4. Repeat until `nextSkill` is null
+
+This collapses 5 manual skill invocations into 1 user invocation + 4 transparent auto-dispatches, achieving perceived single-flow parity with gm-cc's subagent orchestration.
