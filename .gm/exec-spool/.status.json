@@ -2,14 +2,14 @@
   "binary_version": "0.1.365",
   "errors_last_5": [],
   "last_dispatched_task": {
-    "at": "2026-05-14T09:36:48.433Z",
-    "id": 206,
-    "input_path": "C:/dev/gm\\.gm\\exec-spool\\in\\wait\\206.txt",
+    "at": "2026-05-14T10:06:46.521Z",
+    "id": 9,
+    "input_path": "C:/dev/gm\\.gm\\exec-spool\\in\\wait\\9.txt",
     "lang_or_verb": "wait"
   },
-  "last_tick_at": "2026-05-14T09:36:54.956Z",
-  "pending_in_inbox": 148,
+  "last_tick_at": "2026-05-14T10:07:41.589Z",
+  "pending_in_inbox": 125,
   "pid": 10544,
   "started_at": "2026-05-14T08:19:50.834Z",
-  "tasks_dispatched_this_session": 315
+  "tasks_dispatched_this_session": 504
 }
