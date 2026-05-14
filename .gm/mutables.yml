@@ -1,3 +1,8 @@
+- id: acptoapi-impl-rs-plugkit
+  claim: rs-plugkit session_start already has spawn_acptoapi_if_needed() but may need agent expansion
+  witness_method: Read rs-plugkit/src/hook/session_start.rs
+  witness_evidence: rs-plugkit/src/hook/session_start.rs:201-280 - spawn_acptoapi_if_needed checks port 4800, spawns bun x acptoapi, spawn_acp_agents searches for opencode, kilo-code, codex, gemini-cli, qwen-code
+  status: witnessed
 - id: acptoapi-current-impl
   claim: rs-plugkit already has acptoapi daemon spawn integration in session_start
   witness_method: exec:codesearch acptoapi session_start spawn daemon
