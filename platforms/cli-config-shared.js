@@ -534,19 +534,24 @@ try {
   copyRecursive(path.join(srcDir, 'scripts'), path.join(ocConfigDir, 'scripts'));
 
   const ocJsonPath = path.join(ocConfigDir, 'opencode.json');
+  const configExisted = fs.existsSync(ocJsonPath);
   let ocConfig = {};
-  try {
-    const raw = fs.readFileSync(ocJsonPath, 'utf-8');
-    ocConfig = JSON.parse(raw);
-    if (ocConfig['']) { delete ocConfig['']; }
-  } catch (e) {}
-  delete ocConfig.mcp;
-  ocConfig['$schema'] = 'https://opencode.ai/config.json';
-  ocConfig.default_agent = 'gm';
+  if (configExisted) {
+    try {
+      const raw = fs.readFileSync(ocJsonPath, 'utf-8');
+      ocConfig = JSON.parse(raw);
+      if (ocConfig['']) { delete ocConfig['']; }
+    } catch (e) {}
+  }
+  if (!configExisted) {
+    ocConfig['$schema'] = 'https://opencode.ai/config.json';
+    ocConfig.default_agent = 'gm';
+  }
   const pluginMjsPath = path.join(ocConfigDir, 'plugins', 'gm-oc.mjs');
   if (!Array.isArray(ocConfig.plugin)) ocConfig.plugin = [];
-  ocConfig.plugin = ocConfig.plugin.filter(p => !p.includes('gm-oc'));
-  ocConfig.plugin.push(pluginMjsPath);
+  if (!ocConfig.plugin.some(p => typeof p === 'string' && p.includes('gm-oc'))) {
+    ocConfig.plugin.push(pluginMjsPath);
+  }
   fs.writeFileSync(ocJsonPath, JSON.stringify(ocConfig, null, 2) + '\\n');
 
   const oldDir = process.platform === 'win32'
@@ -595,19 +600,24 @@ try {
   copyRecursive(path.join(srcDir, 'scripts'), path.join(kiloConfigDir, 'scripts'));
 
   const kiloJsonPath = path.join(kiloConfigDir, 'kilocode.json');
+  const configExisted = fs.existsSync(kiloJsonPath);
   let kiloConfig = {};
-  try {
-    const raw = fs.readFileSync(kiloJsonPath, 'utf-8');
-    kiloConfig = JSON.parse(raw);
-    if (kiloConfig['']) { delete kiloConfig['']; }
-  } catch (e) {}
-  delete kiloConfig.mcp;
-  kiloConfig['$schema'] = 'https://kilo.ai/config.json';
-  kiloConfig.default_agent = 'gm';
+  if (configExisted) {
+    try {
+      const raw = fs.readFileSync(kiloJsonPath, 'utf-8');
+      kiloConfig = JSON.parse(raw);
+      if (kiloConfig['']) { delete kiloConfig['']; }
+    } catch (e) {}
+  }
+  if (!configExisted) {
+    kiloConfig['$schema'] = 'https://kilo.ai/config.json';
+    kiloConfig.default_agent = 'gm';
+  }
   const kiloPluginPath = path.join(kiloConfigDir, 'plugins', 'gm-kilo.mjs');
   if (!Array.isArray(kiloConfig.plugin)) kiloConfig.plugin = [];
-  kiloConfig.plugin = kiloConfig.plugin.filter(p => !p.includes('gm-kilo'));
-  kiloConfig.plugin.push(kiloPluginPath);
+  if (!kiloConfig.plugin.some(p => typeof p === 'string' && p.includes('gm-kilo'))) {
+    kiloConfig.plugin.push(kiloPluginPath);
+  }
   fs.writeFileSync(kiloJsonPath, JSON.stringify(kiloConfig, null, 2) + '\\n');
 
   const oldDir = process.platform === 'win32'
@@ -699,6 +709,14 @@ function pluginMjsSource(pluginFile) {
     "  const injectedSessions = new Set();",
     "",
     "  return {",
+    "    'session.created': async () => {",
+    "      if (!sessionStarted) {",
+    "        sessionStarted = true;",
+    "        try { runPlugkit(['hook', 'session-start']); } catch(e) {}",
+    "        try { runPlugkit(['bootstrap', directory]); } catch(e) {}",
+    "      }",
+    "    },",
+    "",
     "    'experimental.chat.system.transform': async (input, output) => {",
     "      const gmDir = join(directory, '.gm');",
     "      try {",
@@ -1644,7 +1662,6 @@ const oc = factory('oc', 'OpenCode', 'opencode.json', 'GM.md', {
       keywords: ['opencode', 'opencode-plugin', 'automation', 'gm'],
       ...repoFields('gm-oc'), engines: pluginSpec.engines, publishConfig: pluginSpec.publishConfig,
       dependencies: {},
-      scripts: { postinstall: 'node scripts/postinstall-oc.js' },
       files: ['agents/', 'bin/', 'hooks/', 'scripts/', 'skills/', 'lang/', 'gm.js', 'gm-oc.mjs', 'index.js', 'opencode.json', '.github/', 'README.md', 'cli.js', 'install.js', 'LICENSE', 'CONTRIBUTING.md', '.gitignore', '.editorconfig'],
       ...(pluginSpec.scripts && { scripts: pluginSpec.scripts }), ...extraFields
     });
@@ -1690,7 +1707,69 @@ const oc = factory('oc', 'OpenCode', 'opencode.json', 'GM.md', {
     };
   },
   generateReadme(spec) {
-    return `# ${spec.name} for OpenCode\n\n## Installation\n\n### One-liner (recommended)\n\nInstall directly from npm using bun x:\n\n\`\`\`bash\nbun x gm-oc@latest\n\`\`\`\n\nThis command will automatically install gm-oc to the correct location for your platform and restart OpenCode to activate.\n\n### Manual installation\n\n**Windows and Unix:**\n\`\`\`bash\ngit clone https://github.com/AnEntrypoint/gm-oc ~/.config/opencode/plugin && cd ~/.config/opencode/plugin && bun install\n\`\`\`\n\n**Windows PowerShell:**\n\`\`\`powershell\ngit clone https://github.com/AnEntrypoint/gm-oc \"\\$env:APPDATA\\opencode\\plugin\" && cd \"\\$env:APPDATA\\opencode\\plugin\" && bun install\n\`\`\`\n\n### Project-level\n\n**Windows and Unix:**\n\`\`\`bash\ngit clone https://github.com/AnEntrypoint/gm-oc .opencode/plugins && cd .opencode/plugins && bun install\n\`\`\`\n\n## Features\n\n- MCP tools for code execution and search\n- State machine agent policy (gm)\n- Git enforcement on session idle\n- AST analysis via thorns at session start\n\nThe plugin activates automatically on session start.\n`;
+    return `# ${spec.name} for OpenCode
+
+## Installation
+
+### One-liner (recommended)
+
+Install directly from npm:
+
+\`\`\`bash
+bun x gm-oc@latest
+\`\`\`
+
+This copies the plugin to \`~/.config/opencode/\` and registers it in your config. Restart OpenCode to activate.
+
+### Via npm install
+
+\`\`\`bash
+npm install -g gm-oc
+gm-oc
+\`\`\`
+
+### Manual installation
+
+Clone to the global plugin directory:
+
+\`\`\`bash
+git clone https://github.com/AnEntrypoint/gm-oc ~/.config/opencode/plugin
+\`\`\`
+
+## Features
+
+- **State machine agent** — PLAN→EXECUTE→EMIT→VERIFY→COMPLETE orchestration
+- **Skill chain** — gm, planning, gm-execute, gm-emit, gm-complete, update-docs
+- **exec: dispatch** — code execution via spool watcher (nodejs, python, bash, typescript, go, rust)
+- **Code search** — semantic codebase exploration via exec:codesearch
+- **Git enforcement** — blocks session end with uncommitted changes or unpushed commits
+- **Memory** — rs-learn integration for cross-session knowledge retention
+
+## How it works
+
+The plugin installs:
+- **Agent** (\`agents/gm.md\`) — primary orchestrator with skill-chain instructions
+- **Skills** (\`skills/\`) — PLAN, EXECUTE, EMIT, VERIFY, UPDATE-DOCS skill definitions
+- **Plugin** (\`plugins/gm-oc.mjs\`) — hooks for session lifecycle, tool gating, exec: dispatch
+- **Lang runners** (\`lang/\`) — language-specific execution plugins
+
+All exec: commands route through the spool watcher at \`.gm/exec-spool/\` for session-isolated task execution.
+
+## Troubleshooting
+
+**Plugin not loading:**
+- Verify \`~/.config/opencode/plugins/gm-oc.mjs\` exists
+- Check \`opencode.json\` has the plugin path in the \`plugin\` array
+- Restart OpenCode completely
+
+**Skills not appearing:**
+- Verify \`~/.config/opencode/skills/\` contains skill directories with SKILL.md files
+- Skill names must be lowercase with hyphens (e.g., \`gm\`, \`gm-execute\`)
+
+**exec: commands failing:**
+- Check \`.gm/exec-spool/\` directory exists in your project
+- Verify plugkit binary is present at \`~/.config/opencode/bin/\`
+`;
   }
 });
 
@@ -1718,7 +1797,6 @@ const kilo = factory('kilo', 'Kilo CLI', 'kilocode.json', 'KILO.md', {
       keywords: ['kilo', 'kilo-cli', 'mcp', 'automation', 'gm'],
       ...repoFields('gm-kilo'), engines: pluginSpec.engines, publishConfig: pluginSpec.publishConfig,
       dependencies: {},
-      scripts: { postinstall: 'node scripts/postinstall-kilo.js' },
       files: ['agents/', 'bin/', 'hooks/', 'scripts/', 'skills/', 'lang/', 'gm.js', 'gm-kilo.mjs', 'index.js', 'kilocode.json', '.github/', 'README.md', 'cli.js', 'install.js', 'LICENSE', 'CONTRIBUTING.md', '.gitignore', '.editorconfig'],
       ...extraFields
     });
@@ -1770,100 +1848,62 @@ const kilo = factory('kilo', 'Kilo CLI', 'kilocode.json', 'KILO.md', {
 
 ### One-liner (recommended)
 
-Install directly from npm using bun x:
+Install directly from npm:
 
 \`\`\`bash
 bun x gm-kilo@latest
 \`\`\`
 
-This command will automatically install gm-kilo to the correct location for your platform and restart Kilo to activate.
+This copies the plugin to \`~/.config/kilo/\` and registers it in your config. Restart Kilo to activate.
+
+### Via npm install
+
+\`\`\`bash
+npm install -g gm-kilo
+gm-kilo
+\`\`\`
 
 ### Manual installation
 
-**Windows and Unix:**
+Clone to the global plugin directory:
+
 \`\`\`bash
-git clone https://github.com/AnEntrypoint/gm-kilo ~/.config/kilo/plugin && cd ~/.config/kilo/plugin && bun install
+git clone https://github.com/AnEntrypoint/gm-kilo ~/.config/kilo/plugin
 \`\`\`
-
-**Windows PowerShell:**
-\`\`\`powershell
-git clone https://github.com/AnEntrypoint/gm-kilo "\\\$env:APPDATA\\kilo\\plugin" && cd "\\\$env:APPDATA\\kilo\\plugin" && bun install
-\`\`\`
-
-### Step 2: Configure MCP Servers
-
-Kilo uses the OpenCode configuration format. Create or update \`~/.config/kilo/opencode.json\`:
-
-\`\`\`json
-{
-  "\\\$schema": "https://opencode.ai/config.json",
-  "mcp": {
-    "dev": {
-      "type": "local",
-      "command": ["bun x", "mcp-gm"],
-      "timeout": 360000,
-      "enabled": true
-    },
-    "code-search": {
-      "type": "local",
-      "command": ["bun x", "codebasesearch"],
-      "timeout": 360000,
-      "enabled": true
-    }
-  }
-}
-\`\`\`
-
-### Step 3: Update Kilo Configuration
-
-Update \`~/.config/kilo/kilocode.json\` to reference the plugin:
-
-\`\`\`json
-{
-  "\\\$schema": "https://kilo.ai/config.json",
-  "default_agent": "gm",
-  "plugin": ["/home/user/.config/kilo/plugin"]
-}
-\`\`\`
-
-Replace \`/home/user\` with your actual home directory path.
-
-### Step 4: Verify Installation
-
-Start Kilo and verify the tools appear:
-\`\`\`bash
-kilo
-\`\`\`
-
-Check MCP tools are connected:
-\`\`\`bash
-kilo mcp list
-\`\`\`
-
-You should see \`dev\` and \`code-search\` marked as connected.
 
 ## Features
 
-- **MCP tools** - Code execution (\`dev\`) and semantic search (\`code-search\`)
-- **State machine agent** - Complete \`gm\` behavioral rule system
-- **Git enforcement** - Blocks uncommitted changes and unpushed commits on session idle
-- **AST analysis** - Automatic codebase analysis via mcp-thorns on session start
-- **.prd enforcement** - Blocks exit if work items remain in .prd file
+- **State machine agent** — PLAN→EXECUTE→EMIT→VERIFY→COMPLETE orchestration
+- **Skill chain** — gm, planning, gm-execute, gm-emit, gm-complete, update-docs
+- **exec: dispatch** — code execution via spool watcher (nodejs, python, bash, typescript, go, rust)
+- **Code search** — semantic codebase exploration via exec:codesearch
+- **Git enforcement** — blocks session end with uncommitted changes or unpushed commits
+- **Memory** — rs-learn integration for cross-session knowledge retention
+
+## How it works
+
+The plugin installs:
+- **Agent** (\`agents/gm.md\`) — primary orchestrator with skill-chain instructions
+- **Skills** (\`skills/\`) — PLAN, EXECUTE, EMIT, VERIFY, UPDATE-DOCS skill definitions
+- **Plugin** (\`plugins/gm-kilo.mjs\`) — hooks for session lifecycle, tool gating, exec: dispatch
+- **Lang runners** (\`lang/\`) — language-specific execution plugins
+
+All exec: commands route through the spool watcher at \`.gm/exec-spool/\` for session-isolated task execution.
 
 ## Troubleshooting
 
-**MCP tools not appearing:**
-- Verify \`~/.config/kilo/opencode.json\` exists with correct MCP server definitions
-- Check that \`plugin\` path in \`kilocode.json\` points to the correct directory
-- Run \`kilo mcp list\` to verify servers are connected
+**Plugin not loading:**
+- Verify \`~/.config/kilo/plugins/gm-kilo.mjs\` exists
+- Check \`kilocode.json\` has the plugin path in the \`plugin\` array
 - Restart Kilo CLI completely
 
-**Plugin not loading:**
-- Verify plugin path in \`kilocode.json\` is absolute (e.g., \`/home/user/.config/kilo/plugin\`, not relative)
-- Check \`index.js\` and \`gm.mjs\` exist in the plugin directory
-- Run \`bun install\` in the plugin directory to ensure dependencies are installed
+**Skills not appearing:**
+- Verify \`~/.config/kilo/skills/\` contains skill directories with SKILL.md files
+- Skill names must be lowercase with hyphens (e.g., \`gm\`, \`gm-execute\`)
 
-The plugin activates automatically on session start once MCP servers are configured.
+**exec: commands failing:**
+- Check \`.gm/exec-spool/\` directory exists in your project
+- Verify plugkit binary is present at \`~/.config/kilo/bin/\`
 `;
   }
 });

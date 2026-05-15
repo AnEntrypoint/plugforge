@@ -2,8 +2,6 @@
 name: gm-oc
 description: AI-native software engineering via skill-driven orchestration on oc; bootstraps plugkit for task execution and session isolation
 allowed-tools: Skill
-compatible-platforms:
-  - gm-oc
 ---
 
 # GM — oc Platform
