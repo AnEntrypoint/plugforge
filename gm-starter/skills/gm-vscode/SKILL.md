@@ -2,8 +2,6 @@
 name: gm-vscode
 description: AI-native software engineering via skill-driven orchestration on vscode; bootstraps plugkit for task execution and session isolation
 allowed-tools: Skill
-compatible-platforms:
-  - gm-vscode
 ---
 
 # GM — vscode Platform

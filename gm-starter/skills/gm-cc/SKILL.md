@@ -2,8 +2,6 @@
 name: gm-cc
 description: AI-native software engineering via skill-driven orchestration on cc; bootstraps plugkit for task execution and session isolation
 allowed-tools: Skill
-compatible-platforms:
-  - gm-cc
 ---
 
 # GM — cc Platform

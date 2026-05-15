@@ -5,6 +5,7 @@ gm-build/
 gm-build-latest/
 gm-build-sync/
 .codeinsight
+node_modules/
 
 loggedin/
 site/node_modules/

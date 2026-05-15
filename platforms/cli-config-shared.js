@@ -165,10 +165,14 @@ function install() {
   if (!isInsideNodeModules()) return;
   const projectRoot = getProjectRoot();
   if (!projectRoot) return;
-  const ocDir = path.join(projectRoot, '.config', 'opencode', 'plugin');
+  const ocDir = path.join(projectRoot, '.opencode', 'plugins', 'gm-oc');
   const sourceDir = __dirname;
   safeCopyDirectory(path.join(sourceDir, 'agents'), path.join(ocDir, 'agents'));
   safeCopyDirectory(path.join(sourceDir, 'hooks'), path.join(ocDir, 'hooks'));
+  safeCopyDirectory(path.join(sourceDir, 'bin'), path.join(ocDir, 'bin'));
+  safeCopyDirectory(path.join(sourceDir, 'skills'), path.join(ocDir, 'skills'));
+  safeCopyDirectory(path.join(sourceDir, 'lang'), path.join(ocDir, 'lang'));
+  safeCopyDirectory(path.join(sourceDir, 'scripts'), path.join(ocDir, 'scripts'));
 }
 
 install();
@@ -186,10 +190,14 @@ function install() {
   if (!isInsideNodeModules()) return;
   const projectRoot = getProjectRoot();
   if (!projectRoot) return;
-  const kiloDir = path.join(projectRoot, '.config', 'kilo', 'plugin');
+  const kiloDir = path.join(projectRoot, '.kilo', 'plugins', 'gm-kilo');
   const sourceDir = __dirname;
   safeCopyDirectory(path.join(sourceDir, 'agents'), path.join(kiloDir, 'agents'));
   safeCopyDirectory(path.join(sourceDir, 'hooks'), path.join(kiloDir, 'hooks'));
+  safeCopyDirectory(path.join(sourceDir, 'bin'), path.join(kiloDir, 'bin'));
+  safeCopyDirectory(path.join(sourceDir, 'skills'), path.join(kiloDir, 'skills'));
+  safeCopyDirectory(path.join(sourceDir, 'lang'), path.join(kiloDir, 'lang'));
+  safeCopyDirectory(path.join(sourceDir, 'scripts'), path.join(kiloDir, 'scripts'));
 }
 
 install();
@@ -523,22 +531,27 @@ try {
   copyRecursive(path.join(srcDir, 'lang'), path.join(ocConfigDir, 'lang'));
   copyRecursive(path.join(srcDir, 'bin'), path.join(ocConfigDir, 'bin'));
   copyRecursive(path.join(srcDir, 'hooks'), path.join(ocConfigDir, 'hooks'));
-  copyRecursive(path.join(srcDir, 'gm-plugkit'), path.join(ocConfigDir, 'gm-plugkit'));
+  copyRecursive(path.join(srcDir, 'scripts'), path.join(ocConfigDir, 'scripts'));
 
   const ocJsonPath = path.join(ocConfigDir, 'opencode.json');
+  const configExisted = fs.existsSync(ocJsonPath);
   let ocConfig = {};
-  try {
-    const raw = fs.readFileSync(ocJsonPath, 'utf-8');
-    ocConfig = JSON.parse(raw);
-    if (ocConfig['']) { delete ocConfig['']; }
-  } catch (e) {}
-  delete ocConfig.mcp;
-  ocConfig['$schema'] = 'https://opencode.ai/config.json';
-  ocConfig.default_agent = 'gm';
+  if (configExisted) {
+    try {
+      const raw = fs.readFileSync(ocJsonPath, 'utf-8');
+      ocConfig = JSON.parse(raw);
+      if (ocConfig['']) { delete ocConfig['']; }
+    } catch (e) {}
+  }
+  if (!configExisted) {
+    ocConfig['$schema'] = 'https://opencode.ai/config.json';
+    ocConfig.default_agent = 'gm';
+  }
   const pluginMjsPath = path.join(ocConfigDir, 'plugins', 'gm-oc.mjs');
   if (!Array.isArray(ocConfig.plugin)) ocConfig.plugin = [];
-  ocConfig.plugin = ocConfig.plugin.filter(p => !p.includes('gm-oc'));
-  ocConfig.plugin.push(pluginMjsPath);
+  if (!ocConfig.plugin.some(p => typeof p === 'string' && p.includes('gm-oc'))) {
+    ocConfig.plugin.push(pluginMjsPath);
+  }
   fs.writeFileSync(ocJsonPath, JSON.stringify(ocConfig, null, 2) + '\\n');
 
   const oldDir = process.platform === 'win32'
@@ -584,22 +597,27 @@ try {
   copyRecursive(path.join(srcDir, 'lang'), path.join(kiloConfigDir, 'lang'));
   copyRecursive(path.join(srcDir, 'bin'), path.join(kiloConfigDir, 'bin'));
   copyRecursive(path.join(srcDir, 'hooks'), path.join(kiloConfigDir, 'hooks'));
-  copyRecursive(path.join(srcDir, 'gm-plugkit'), path.join(kiloConfigDir, 'gm-plugkit'));
+  copyRecursive(path.join(srcDir, 'scripts'), path.join(kiloConfigDir, 'scripts'));
 
   const kiloJsonPath = path.join(kiloConfigDir, 'kilocode.json');
+  const configExisted = fs.existsSync(kiloJsonPath);
   let kiloConfig = {};
-  try {
-    const raw = fs.readFileSync(kiloJsonPath, 'utf-8');
-    kiloConfig = JSON.parse(raw);
-    if (kiloConfig['']) { delete kiloConfig['']; }
-  } catch (e) {}
-  delete kiloConfig.mcp;
-  kiloConfig['$schema'] = 'https://kilo.ai/config.json';
-  kiloConfig.default_agent = 'gm';
+  if (configExisted) {
+    try {
+      const raw = fs.readFileSync(kiloJsonPath, 'utf-8');
+      kiloConfig = JSON.parse(raw);
+      if (kiloConfig['']) { delete kiloConfig['']; }
+    } catch (e) {}
+  }
+  if (!configExisted) {
+    kiloConfig['$schema'] = 'https://kilo.ai/config.json';
+    kiloConfig.default_agent = 'gm';
+  }
   const kiloPluginPath = path.join(kiloConfigDir, 'plugins', 'gm-kilo.mjs');
   if (!Array.isArray(kiloConfig.plugin)) kiloConfig.plugin = [];
-  kiloConfig.plugin = kiloConfig.plugin.filter(p => !p.includes('gm-kilo'));
-  kiloConfig.plugin.push(kiloPluginPath);
+  if (!kiloConfig.plugin.some(p => typeof p === 'string' && p.includes('gm-kilo'))) {
+    kiloConfig.plugin.push(kiloPluginPath);
+  }
   fs.writeFileSync(kiloJsonPath, JSON.stringify(kiloConfig, null, 2) + '\\n');
 
   const oldDir = process.platform === 'win32'
@@ -631,11 +649,10 @@ function repoFields(pkg) {
 
 function pluginMjsSource(pluginFile) {
   const lines = [
-    "import { readFileSync, existsSync, writeFileSync, unlinkSync, mkdirSync, readdirSync } from 'fs';",
+    "import { readFileSync, existsSync, writeFileSync, unlinkSync } from 'fs';",
     "import { join, dirname, extname, basename } from 'path';",
     "import { fileURLToPath } from 'url';",
-    "import { spawn, spawnSync } from 'child_process';",
-    "import { tmpdir, homedir } from 'os';",
+    "import { spawnSync } from 'child_process';",
     "",
     "const __dirname = dirname(fileURLToPath(import.meta.url));",
     "const LANG_ALIASES = { js:'nodejs',javascript:'nodejs',ts:'typescript',node:'nodejs',py:'python',sh:'bash',shell:'bash',zsh:'bash' };",
@@ -644,141 +661,72 @@ function pluginMjsSource(pluginFile) {
     "const FORBIDDEN_PATH_RE = ['/__tests__/','/test/','/tests/','/fixtures/','/test-data/',\"/__mocks__/\"];",
     "const DOC_BLOCK_RE = /\\.(md|txt)$/;",
     "",
-    "// Spool dispatch: write to ~/.gm/exec-spool/in/<lang-or-verb>/<id>.<ext>, poll out/<id>.json",
-    "const SPOOL_BASE = join(homedir(), '.gm', 'exec-spool');",
-    "let _spoolCounter = 0;",
-    "function nextSpoolId() { return String(Date.now()) + '-' + (++_spoolCounter); }",
-    "",
-    "function writeSpoolFile(body, langOrVerb, ext) {",
-    "  const id = nextSpoolId();",
-    "  const dir = join(SPOOL_BASE, 'in', langOrVerb);",
-    "  mkdirSync(dir, { recursive: true });",
-    "  mkdirSync(join(SPOOL_BASE, 'out'), { recursive: true });",
-    "  const filePath = join(dir, id + '.' + (ext || 'txt'));",
-    "  writeFileSync(filePath, body, 'utf-8');",
-    "  return id;",
-    "}",
-    "",
-    "function pollSpoolResult(id, timeoutMs) {",
-    "  const start = Date.now();",
-    "  const jsonFile = join(SPOOL_BASE, 'out', id + '.json');",
-    "  while (Date.now() - start < timeoutMs) {",
-    "    if (existsSync(jsonFile)) {",
-    "      try {",
-    "        const meta = JSON.parse(readFileSync(jsonFile, 'utf-8'));",
-    "        const outFile = join(SPOOL_BASE, 'out', id + '.out');",
-    "        const errFile = join(SPOOL_BASE, 'out', id + '.err');",
-    "        const stdout = existsSync(outFile) ? readFileSync(outFile, 'utf-8') : '';",
-    "        const stderr = existsSync(errFile) ? readFileSync(errFile, 'utf-8') : '';",
-    "        return { ok: meta.exitCode === 0 && !meta.timedOut, exitCode: meta.exitCode, stdout, stderr, timedOut: meta.timedOut || false };",
-    "      } catch(e) {}",
-    "    }",
-    "    Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 50);",
-    "  }",
-    "  return { ok: false, exitCode: -1, stdout: '', stderr: '[spool timeout after ' + timeoutMs + 'ms]', timedOut: true };",
-    "}",
-    "",
-    "function spoolExec(body, langOrVerb, ext, timeoutMs) {",
-    "  const id = writeSpoolFile(body, langOrVerb, ext);",
-    "  return pollSpoolResult(id, timeoutMs || 30000);",
-    "}",
-    "",
-    "function spoolVerb(body, verb) {",
-    "  return spoolExec(body, verb, 'txt', 15000);",
-    "}",
-    "",
-    "// Bootstrap: ensure plugkit binary is downloaded and spool watcher is running",
-    "let _bootstrapPromise = null;",
-    "function ensureBootstrap() {",
-    "  if (_bootstrapPromise) return _bootstrapPromise;",
-    "  _bootstrapPromise = (async () => {",
-    "    try {",
-    "      const { spawn: asyncSpawn } = await import('child_process');",
-    "      return new Promise((resolve) => {",
-    "        const child = asyncSpawn('bun', ['x', 'gm-plugkit@latest', '--daemon'], {",
-    "          detached: false, stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true, timeout: 60000",
-    "        });",
-    "        let out = '', err = '';",
-    "        child.stdout.on('data', d => out += d);",
-    "        child.stderr.on('data', d => err += d);",
-    "        child.on('close', () => resolve({ ok: child.exitCode === 0, stdout: out, stderr: err }));",
-    "        child.on('error', (e) => resolve({ ok: false, error: e.message }));",
-    "      });",
-    "    } catch(e) { return { ok: false, error: e.message }; }",
-    "  })();",
-    "  return _bootstrapPromise;",
+    "function runPlugkit(args) {",
+    "  const bin = join(__dirname, '..', 'bin', 'plugkit.js');",
+    "  if (!existsSync(bin)) return '';",
+    "  try {",
+    "    const r = spawnSync('node', [bin, ...args], { encoding: 'utf-8', timeout: 300000, windowsHide: true });",
+    "    return (r.stdout || '').trim() || (r.stderr || '').trim();",
+    "  } catch(e) { return ''; }",
     "}",
     "",
     "function safePrintf(s) {",
-    "  return \"printf '%s' '\" + String(s).replace(/\\\\\\\\/g,'\\\\\\\\\\\\\\\\').replace(/'/g,\"'\\\\\\\\''\")+\"'\";",
+    "  return \"printf '%s' '\" + String(s).replace(/'/g,\"'\\\\\\\\''\")+\"'\";",
     "}",
     "",
     "function stripFooter(s) { return s ? s.replace(/\\n\\[Running tools\\][\\s\\S]*$/, '').trimEnd() : ''; }",
     "",
-    "function tryLangPlugin(lang, code, cwd) {",
-    "  const projectDir = cwd || process.cwd();",
-    "  const candidates = [join(projectDir, 'lang', lang+'.js'), join(__dirname, '..', 'lang', lang+'.js')];",
-    "  for (const langPluginFile of candidates) {",
-    "    if (!existsSync(langPluginFile)) continue;",
-    "    try {",
-    "      const plugin = await import('file://' + langPluginFile);",
-    "      if (plugin && plugin.exec && plugin.exec.run) {",
-    "        const result = plugin.exec.run(code, projectDir);",
-    "        if (result && typeof result.then === 'function') continue;",
-    "        return String(result === undefined ? '' : result);",
-    "      }",
-    "    } catch(e) {}",
-    "  }",
-    "  return null;",
-    "}",
-    "",
     "function runExecSync(rawLang, code, cwd) {",
     "  const lang = LANG_ALIASES[rawLang] || rawLang || 'nodejs';",
-    "  if (lang === 'codesearch' || lang === 'search') {",
-    "    const r = spoolVerb(code.trim(), 'codesearch');",
-    "    return r.stdout || r.stderr || '(no results)';",
+    "  const projectDir = cwd || process.cwd();",
+    "  const spoolBase = join(projectDir, '.gm', 'exec-spool');",
+    "  const taskId = Date.now() + '-' + Math.random().toString(16).slice(2, 8);",
+    "",
+    "  const isVerb = ['codesearch','recall','memorize','wait','sleep','status','close','browser','runner','type','kill-port','forget','feedback','discipline','pause','health'].includes(lang);",
+    "  const langDir = lang.match(/^(nodejs|python|bash|typescript|go|rust|c|cpp|java|deno)$/) ? lang : 'nodejs';",
+    "  const ext = {nodejs:'js',python:'py',bash:'sh',typescript:'ts',go:'go',rust:'rs',c:'c',cpp:'cpp',java:'java',deno:'ts'}[langDir] || 'js';",
+    "",
+    "  const inDir = join(spoolBase, 'in', isVerb ? lang : langDir);",
+    "  const outDir = join(spoolBase, 'out');",
+    "  const inFile = join(inDir, taskId + (isVerb ? '.txt' : '.' + ext));",
+    "  const jsonFile = join(outDir, taskId + '.json');",
+    "",
+    "  try { fs.mkdirSync(inDir, { recursive: true }); fs.mkdirSync(outDir, { recursive: true }); } catch(e) {}",
+    "  writeFileSync(inFile, code, 'utf-8');",
+    "",
+    "  const start = Date.now();",
+    "  while (Date.now() - start < 28000) {",
+    "    if (existsSync(jsonFile)) {",
+    "      try {",
+    "        const meta = JSON.parse(readFileSync(jsonFile, 'utf-8'));",
+    "        const outFile = jsonFile.replace(/\\.json$/, '.out');",
+    "        const errFile = jsonFile.replace(/\\.json$/, '.err');",
+    "        const stdout = existsSync(outFile) ? readFileSync(outFile, 'utf-8') : '';",
+    "        const stderr = existsSync(errFile) ? readFileSync(errFile, 'utf-8') : '';",
+    "        const o = stdout.trimEnd(), e = stripFooter(stderr).trimEnd();",
+    "        return o && e ? o + '\\n[stderr]\\n' + e : o || e || '(no output)';",
+    "      } catch(e) {}",
+    "    }",
+    "    try { require('child_process').execSync('sleep 0.05', { stdio: 'ignore' }); } catch(e) { const s = Date.now(); while(Date.now()-s<50){} }",
     "  }",
-    "  if (lang === 'runner') {",
-    "    const r = spoolVerb(code.trim(), 'runner');",
-    "    return r.stdout || r.stderr || '';",
-    "  }",
-    "  if (lang === 'status') {",
-    "    const r = spoolVerb(code.trim(), 'status');",
-    "    return r.stdout || r.stderr || '';",
-    "  }",
-    "  if (lang === 'sleep') {",
-    "    const r = spoolVerb(code.trim(), 'sleep');",
-    "    return r.stdout || r.stderr || '';",
-    "  }",
-    "  if (lang === 'close') {",
-    "    const r = spoolVerb(code.trim(), 'close');",
-    "    return r.stdout || r.stderr || '';",
-    "  }",
-    "  if (lang === 'browser') {",
-    "    const r = spoolExec(code.trim(), 'browser', 'js', 60000);",
-    "    const o = (r.stdout||'').trimEnd(), e = stripFooter(r.stderr||'').trimEnd();",
-    "    return o && e ? o+'\\n[stderr]\\n'+e : o||e||'(no output)';",
-    "  }",
-    "  const opts = { encoding: 'utf-8', timeout: 30000, windowsHide: true, ...(cwd && { cwd }) };",
-    "  const out = (r) => { const o = (r.stdout||'').trimEnd(), e = stripFooter(r.stderr||'').trimEnd(); return o && e ? o+'\\n[stderr]\\n'+e : o||e||'(no output)'; };",
-    "  if (lang === 'cmd') return out(spawnSync('cmd',['/c',code],opts));",
-    "  if (lang === 'python') return out(spawnSync('python3',['-c',code],opts));",
-    "  if (lang === 'bash' || lang === 'sh') {",
-    "    const tmp = join(tmpdir(),'gm-exec-'+Date.now()+'.sh');",
-    "    writeFileSync(tmp,code,'utf-8');",
-    "    const r = spawnSync('bash',[tmp],opts);",
-    "    try { unlinkSync(tmp); } catch(e) {}",
-    "    return out(r);",
-    "  }",
-    "  const ext = lang === 'typescript' ? 'ts' : 'mjs';",
-    "  const tmp = join(tmpdir(),'gm-exec-'+Date.now()+'.'+ext);",
-    "  const src = lang === 'typescript' ? code : 'const __r=await(async()=>{\\n'+code+'\\n})();if(__r!==undefined){if(typeof __r===\"object\"){console.log(JSON.stringify(__r,null,2));}else{console.log(__r);}}';",
-    "  writeFileSync(tmp,src,'utf-8');",
-    "  const r = spawnSync('bun',['run',tmp],opts);",
-    "  try { unlinkSync(tmp); } catch(e) {}",
-    "  let result = out(r);",
-    "  if (result) result = result.split(tmp).join('<script>');",
-    "  return result;",
+    "  return '[spool dispatch timeout after 28s]';",
+    "}",
+
+    "",
+    "function ensureSpoolWatcher(dir) {",
+    "  try {",
+    "    const spoolBase = join(dir, '.gm', 'exec-spool');",
+    "    const pidFile = join(spoolBase, '.watcher.pid');",
+    "    try { fs.mkdirSync(spoolBase, { recursive: true }); } catch(e) {}",
+    "    const alreadyRunning = existsSync(pidFile) && (() => { try { const p = parseInt(readFileSync(pidFile,'utf-8')); process.kill(p,0); return true; } catch(e) { return false; } })();",
+    "    if (!alreadyRunning) {",
+    "      const r = spawnSync('node', [join(__dirname, '..', 'bin', 'plugkit.js'), 'spool'], {",
+    "        detached: true, stdio: 'ignore', windowsHide: true,",
+    "        env: { ...process.env, GM_SPOOL_DIR: spoolBase }",
+    "      });",
+    "      if (r.pid) { try { writeFileSync(pidFile, String(r.pid), 'utf-8'); } catch(e) {} }",
+    "    }",
+    "  } catch(e) {}",
     "}",
     "",
     "const BANNED_BASH = ['grep','rg','find','glob','awk','sed','cat','head','tail'];",
@@ -795,7 +743,28 @@ function pluginMjsSource(pluginFile) {
     "  const injectedSessions = new Set();",
     "",
     "  return {",
+    "    'session.created': async () => {",
+    "      if (!sessionStarted) {",
+    "        sessionStarted = true;",
+    "        try { runPlugkit(['hook', 'session-start']); } catch(e) {}",
+    "        try {",
+    "          const spoolBase = join(directory, '.gm', 'exec-spool');",
+    "          const pidFile = join(spoolBase, '.watcher.pid');",
+    "          try { fs.mkdirSync(spoolBase, { recursive: true }); } catch(e) {}",
+    "          const alreadyRunning = existsSync(pidFile) && (() => { try { const p = parseInt(readFileSync(pidFile,'utf-8')); process.kill(p,0); return true; } catch(e) { return false; } })();",
+    "          if (!alreadyRunning) {",
+    "            const r = spawnSync('node', [join(__dirname, '..', 'bin', 'plugkit.js'), 'spool'], {",
+    "              detached: true, stdio: 'ignore', windowsHide: true,",
+    "              env: { ...process.env, GM_SPOOL_DIR: spoolBase }",
+    "            });",
+    "            if (r.pid) { try { writeFileSync(pidFile, String(r.pid), 'utf-8'); } catch(e) {} }",
+    "          }",
+    "        } catch(e) {}",
+    "      }",
+    "    },",
+    "",
     "    'experimental.chat.system.transform': async (input, output) => {",
+    "      const gmDir = join(directory, '.gm');",
     "      try {",
     "        const giPath = join(directory, '.gitignore');",
     "        const entry = '.gm-stop-verified';",
@@ -809,13 +778,20 @@ function pluginMjsSource(pluginFile) {
     "      } catch(e) {}",
     "      if (!sessionStarted) {",
     "        sessionStarted = true;",
-    "        ensureBootstrap().catch(() => {});",
+    "        try { runPlugkit(['hook', 'session-start']); } catch(e) {}",
+    "        try { ensureSpoolWatcher(directory); } catch(e) {}",
     "      }",
     "      try { const rules = readFileSync(agentMd,'utf-8'); if (rules) output.system.unshift(rules); } catch(e) {}",
     "      try {",
     "        if (existsSync(prdFile)) {",
     "          const prd = readFileSync(prdFile,'utf-8').trim();",
     "          if (prd) output.system.push('\\nPENDING WORK (.prd):\\n'+prd);",
+    "        }",
+    "      } catch(e) {}",
+    "      try {",
+    "        const needsGmPath = join(gmDir, 'needs-gm');",
+    "        if (existsSync(needsGmPath)) {",
+    "          output.system.push('\\nCRITICAL: You MUST invoke the `gm` skill before any other tool. Your current state is BLOCKED by a safety gate until gm runs.');",
     "        }",
     "      } catch(e) {}",
     "    },",
@@ -831,10 +807,12 @@ function pluginMjsSource(pluginFile) {
     "      const textPart = msg.parts && msg.parts.find(p => p.type === 'text' && p.text && p.text.trim());",
     "      const prompt = textPart ? textPart.text.trim() : '';",
     "      const parts = [];",
-    "      parts.push('Invoke the `gm` skill to begin. All code execution routes through the file-spool watcher daemon. Write to `.gm/exec-spool/in/<lang>/<N>.<ext>` — the watcher executes and writes out/<N>.json. Use `exec:<lang>` prefix in Bash. Codebase search: `exec:codesearch` on its own line, then a two-word query.');",
+    "      parts.push('Invoke the `gm` skill to begin. Treat the `exec:` preamble as authoritative; host auto-detection is fallback only. Raw JIT code can also be written to `.gm/exec-spool/in/<lang>/<N>.<ext>` (e.g. in/nodejs/42.js) — the spool watcher executes it and writes out/<N>.json. Keep stale running tasks in view and prefer the latest task reminder over starting duplicate work.');",
+    "      const insight = runPlugkit(['codeinsight', directory]);",
+    "      if (insight && !insight.startsWith('Error')) parts.push('=== codeinsight ===\\n'+insight);",
     "      if (prompt) {",
-    "        const search = spoolVerb(prompt, 'codesearch');",
-    "        if (search.stdout && !search.stdout.startsWith('No results')) parts.push('=== codeinsight ===\\n'+search.stdout);",
+    "        const search = runPlugkit(['search', '--path', directory, prompt]);",
+    "        if (search && !search.startsWith('No results')) parts.push('=== search ===\\n'+search);",
     "      }",
     "      const injection = '<system-reminder>\\n'+parts.join('\\n\\n')+'\\n</system-reminder>';",
     "      if (textPart) textPart.text = injection + '\\n' + textPart.text;",
@@ -851,7 +829,8 @@ function pluginMjsSource(pluginFile) {
     "      const args = (input.args || (output && output.args) || {});",
     "      if (!sessionStarted) {",
     "        sessionStarted = true;",
-    "        ensureBootstrap().catch(() => {});",
+    "        try { runPlugkit(['hook', 'session-start']); } catch(e) {}",
+    "        try { ensureSpoolWatcher(directory); } catch(e) {}",
     "      }",
     "      const skillName = (args.skill || args.name || '').toString();",
     "      if (FORBIDDEN_TOOLS.has(input.tool)) {",
@@ -859,7 +838,7 @@ function pluginMjsSource(pluginFile) {
     "      }",
     "      if (tool === 'Skill' || tool === 'skill') {",
     "        try {",
-    "          if (!existsSync(gmDir)) { try { mkdirSync(gmDir, { recursive: true }); } catch(e) {} }",
+    "          if (!existsSync(gmDir)) { try { require('fs').mkdirSync(gmDir, { recursive: true }); } catch(e) {} }",
     "          if (skillName) writeFileSync(lastskillPath, skillName, 'utf-8');",
     "          const norm = skillName.toLowerCase().replace(/^gm:/, '');",
     "          if (norm === 'gm') { try { unlinkSync(needsGmPath); } catch(e) {} }",
@@ -909,10 +888,10 @@ function pluginMjsSource(pluginFile) {
     "      if (input.tool !== 'bash' && input.tool !== 'Bash' && input.tool !== 'shell' && input.tool !== 'Shell' && input.tool !== 'spawn/exec') return;",
     "      const cmd = (output.args && output.args.command) || '';",
     "      if (!cmd) return;",
-    "      if (/^\\s*git(?:\\s|$)/.test(cmd)) return;",
-    "      const m = cmd.match(/^exec(?::(\\S+))?\\n([\\s\\S]+)$/);",
+    "      if (/^\\s*(git|gh)(?:\\s|$)/.test(cmd)) return;",
+    "      const m = cmd.match(/^exec(?::(\\S+))?\\s*\\n([\\s\\S]+)$/);",
     "      if (!m) {",
-    "        throw new Error('Use exec: prefix for Bash. The command must start with `exec` or `exec:<lang>` on its own line, then the body on the next line. Examples:\\n\\nexec\\nls -la\\n\\nexec:nodejs\\nconsole.log(\"hello\")\\n\\nexec:bash\\ngit status\\n\\nLanguages: nodejs (default), bash, python, typescript, go, rust, deno, cmd. File I/O via exec:nodejs + require(\"fs\"). Raw JIT execution routes through the spool watcher: write to `.gm/exec-spool/in/<lang>/<N>.<ext>` and the watcher executes it and writes `.gm/exec-spool/out/<N>.json`. Codebase search: exec:codesearch on its own line, then a two-word query.');",
+    "        throw new Error('Use exec: prefix for Bash. The command must start with `exec` or `exec:<lang>` on its own line, then the body on the next line. Examples:\\\\n\\\\nexec\\\\nls -la\\\\n\\\\nexec:nodejs\\\\nconsole.log(\"hello\")\\\\n\\\\nexec:bash\\\\ngit status\\\\n\\\\nLanguages: nodejs (default), bash, python, typescript, go, rust, deno, cmd. File I/O via exec:nodejs + require(\"fs\"). Raw JIT execution can also bypass Bash entirely: write to `.gm/exec-spool/in/<lang>/<N>.<ext>` (e.g. in/nodejs/42.js) and the spool watcher executes it and writes `.gm/exec-spool/out/<N>.json`. Codebase search: exec:codesearch on its own line, then a two-word query.');",
     "      }",
     "      const rawLang = (m[1]||'').toLowerCase();",
     "      if (rawLang === 'bash' || rawLang === 'sh' || rawLang === '') {",
@@ -920,14 +899,14 @@ function pluginMjsSource(pluginFile) {
     "        if (banned) throw new Error('`'+banned+'` is blocked in exec:bash. Use exec:codesearch instead. For raw JIT execution, write code to `.gm/exec-spool/in/<lang>/<N>.<ext>` (e.g. in/nodejs/42.js); the spool watcher executes it and writes out/<N>.json.');",
     "      }",
     "      const result = runExecSync(m[1]||'', m[2], output.args.workdir || directory);",
-    "      output.args = { ...output.args, command: safePrintf('exec:'+(m[1]||'nodejs')+' output:\\n\\n'+result) };",
+    "      throw new Error('exec:'+(m[1]||'nodejs')+' output:\\n\\n'+result);",
     "    },",
     "    'message.updated': async (input, output) => {",
     "      try {",
     "        const role = input && input.message && input.message.info && input.message.info.role;",
     "        if (role !== 'user') return;",
     "        const gmDir = join(directory, '.gm');",
-    "        if (!existsSync(gmDir)) { try { mkdirSync(gmDir, { recursive: true }); } catch(e) {} }",
+    "        if (!existsSync(gmDir)) { try { require('fs').mkdirSync(gmDir, { recursive: true }); } catch(e) {} }",
     "        try { writeFileSync(join(gmDir, 'needs-gm'), '1', 'utf-8'); } catch(e) {}",
     "        try {",
     "          const turnState = { turnId: Date.now(), firstToolFired: false, execCallsSinceMemorize: 0, recallFiredThisTurn: false };",
@@ -937,12 +916,15 @@ function pluginMjsSource(pluginFile) {
     "          const pausedPrd = join(gmDir, 'prd.paused.yml');",
     "          const livePrd = join(gmDir, 'prd.yml');",
     "          if (existsSync(pausedPrd) && !existsSync(livePrd)) {",
-    "            try { renameSync(pausedPrd, livePrd); } catch(e) {}",
+    "            try { require('fs').renameSync(pausedPrd, livePrd); } catch(e) {}",
     "          }",
     "        } catch(e) {}",
+    "        runPlugkit(['hook', 'prompt-submit']);",
     "      } catch(e) {}",
     "    },",
     "    'session.closing': async (input, output) => {",
+    "      try { runPlugkit(['hook', 'stop']); } catch(e) {}",
+    "      try { runPlugkit(['hook', 'stop-git']); } catch(e) {}",
     "    },",
     "  };",
     "}",
@@ -1713,7 +1695,7 @@ const oc = factory('oc', 'OpenCode', 'opencode.json', 'GM.md', {
     return {
       main: 'gm.js',
       bin: { 'gm-oc': './cli.js', 'gm-oc-install': './install.js' },
-      files: ['agents/', 'hooks/', 'scripts/', 'skills/', 'lang/', 'gm-plugkit/', 'gm.js', 'gm-oc.mjs', 'index.js', 'opencode.json', '.github/', 'README.md', 'cli.js', 'install.js', 'LICENSE', 'CONTRIBUTING.md', '.gitignore', '.editorconfig'],
+      files: ['agents/', 'bin/', 'hooks/', 'scripts/', 'skills/', 'lang/', 'gm.js', 'gm-oc.mjs', 'index.js', 'opencode.json', '.github/', 'README.md', 'cli.js', 'install.js', 'LICENSE', 'CONTRIBUTING.md', '.gitignore', '.editorconfig'],
       keywords: ['opencode', 'opencode-plugin', 'automation', 'gm'],
       dependencies: {}
     };
@@ -1726,8 +1708,7 @@ const oc = factory('oc', 'OpenCode', 'opencode.json', 'GM.md', {
       keywords: ['opencode', 'opencode-plugin', 'automation', 'gm'],
       ...repoFields('gm-oc'), engines: pluginSpec.engines, publishConfig: pluginSpec.publishConfig,
       dependencies: {},
-      scripts: { postinstall: 'node scripts/postinstall-oc.js' },
-      files: ['agents/', 'hooks/', 'scripts/', 'skills/', 'lang/', 'gm-plugkit/', 'gm.js', 'gm-oc.mjs', 'index.js', 'opencode.json', '.github/', 'README.md', 'cli.js', 'install.js', 'LICENSE', 'CONTRIBUTING.md', '.gitignore', '.editorconfig'],
+      files: ['agents/', 'bin/', 'hooks/', 'scripts/', 'skills/', 'lang/', 'gm.js', 'gm-oc.mjs', 'index.js', 'opencode.json', '.github/', 'README.md', 'cli.js', 'install.js', 'LICENSE', 'CONTRIBUTING.md', '.gitignore', '.editorconfig'],
       ...(pluginSpec.scripts && { scripts: pluginSpec.scripts }), ...extraFields
     });
   },
@@ -1772,7 +1753,69 @@ const oc = factory('oc', 'OpenCode', 'opencode.json', 'GM.md', {
     };
   },
   generateReadme(spec) {
-    return `# ${spec.name} for OpenCode\n\n## Installation\n\n### One-liner (recommended)\n\nInstall directly from npm using bun x:\n\n\`\`\`bash\nbun x gm-oc@latest\n\`\`\`\n\nThis command will automatically install gm-oc to the correct location for your platform and restart OpenCode to activate.\n\n### Manual installation\n\n**Windows and Unix:**\n\`\`\`bash\ngit clone https://github.com/AnEntrypoint/gm-oc ~/.config/opencode/plugin && cd ~/.config/opencode/plugin && bun install\n\`\`\`\n\n**Windows PowerShell:**\n\`\`\`powershell\ngit clone https://github.com/AnEntrypoint/gm-oc \"\\$env:APPDATA\\opencode\\plugin\" && cd \"\\$env:APPDATA\\opencode\\plugin\" && bun install\n\`\`\`\n\n### Project-level\n\n**Windows and Unix:**\n\`\`\`bash\ngit clone https://github.com/AnEntrypoint/gm-oc .opencode/plugins && cd .opencode/plugins && bun install\n\`\`\`\n\n## Features\n\n- MCP tools for code execution and search\n- State machine agent policy (gm)\n- Git enforcement on session idle\n- AST analysis via thorns at session start\n\nThe plugin activates automatically on session start.\n`;
+    return `# ${spec.name} for OpenCode
+
+## Installation
+
+### One-liner (recommended)
+
+Install directly from npm:
+
+\`\`\`bash
+bun x gm-oc@latest
+\`\`\`
+
+This copies the plugin to \`~/.config/opencode/\` and registers it in your config. Restart OpenCode to activate.
+
+### Via npm install
+
+\`\`\`bash
+npm install -g gm-oc
+gm-oc
+\`\`\`
+
+### Manual installation
+
+Clone to the global plugin directory:
+
+\`\`\`bash
+git clone https://github.com/AnEntrypoint/gm-oc ~/.config/opencode/plugin
+\`\`\`
+
+## Features
+
+- **State machine agent** — PLAN→EXECUTE→EMIT→VERIFY→COMPLETE orchestration
+- **Skill chain** — gm, planning, gm-execute, gm-emit, gm-complete, update-docs
+- **exec: dispatch** — code execution via spool watcher (nodejs, python, bash, typescript, go, rust)
+- **Code search** — semantic codebase exploration via exec:codesearch
+- **Git enforcement** — blocks session end with uncommitted changes or unpushed commits
+- **Memory** — rs-learn integration for cross-session knowledge retention
+
+## How it works
+
+The plugin installs:
+- **Agent** (\`agents/gm.md\`) — primary orchestrator with skill-chain instructions
+- **Skills** (\`skills/\`) — PLAN, EXECUTE, EMIT, VERIFY, UPDATE-DOCS skill definitions
+- **Plugin** (\`plugins/gm-oc.mjs\`) — hooks for session lifecycle, tool gating, exec: dispatch
+- **Lang runners** (\`lang/\`) — language-specific execution plugins
+
+All exec: commands route through the spool watcher at \`.gm/exec-spool/\` for session-isolated task execution.
+
+## Troubleshooting
+
+**Plugin not loading:**
+- Verify \`~/.config/opencode/plugins/gm-oc.mjs\` exists
+- Check \`opencode.json\` has the plugin path in the \`plugin\` array
+- Restart OpenCode completely
+
+**Skills not appearing:**
+- Verify \`~/.config/opencode/skills/\` contains skill directories with SKILL.md files
+- Skill names must be lowercase with hyphens (e.g., \`gm\`, \`gm-execute\`)
+
+**exec: commands failing:**
+- Check \`.gm/exec-spool/\` directory exists in your project
+- Verify plugkit binary is present at \`~/.config/opencode/bin/\`
+`;
   }
 });
 
@@ -1787,7 +1830,7 @@ const kilo = factory('kilo', 'Kilo CLI', 'kilocode.json', 'KILO.md', {
     return {
       main: 'gm.js',
       bin: { 'gm-kilo': './cli.js', 'gm-kilo-install': './install.js' },
-      files: ['agents/', 'bin/', 'hooks/', 'scripts/', 'skills/', 'lang/', 'gm-plugkit/', 'gm.js', 'gm-kilo.mjs', 'index.js', 'kilocode.json', '.github/', 'README.md', 'cli.js', 'install.js', 'LICENSE', 'CONTRIBUTING.md', '.gitignore', '.editorconfig'],
+      files: ['agents/', 'bin/', 'hooks/', 'scripts/', 'skills/', 'lang/', 'gm.js', 'gm-kilo.mjs', 'index.js', 'kilocode.json', '.github/', 'README.md', 'cli.js', 'install.js', 'LICENSE', 'CONTRIBUTING.md', '.gitignore', '.editorconfig'],
       keywords: ['kilo', 'kilo-cli', 'automation', 'gm'],
       dependencies: {}
     };
@@ -1800,8 +1843,7 @@ const kilo = factory('kilo', 'Kilo CLI', 'kilocode.json', 'KILO.md', {
       keywords: ['kilo', 'kilo-cli', 'mcp', 'automation', 'gm'],
       ...repoFields('gm-kilo'), engines: pluginSpec.engines, publishConfig: pluginSpec.publishConfig,
       dependencies: {},
-      scripts: { postinstall: 'node scripts/postinstall-kilo.js' },
-      files: ['agents/', 'bin/', 'hooks/', 'scripts/', 'skills/', 'lang/', 'gm-plugkit/', 'gm.js', 'gm-kilo.mjs', 'index.js', 'kilocode.json', '.github/', 'README.md', 'cli.js', 'install.js', 'LICENSE', 'CONTRIBUTING.md', '.gitignore', '.editorconfig'],
+      files: ['agents/', 'bin/', 'hooks/', 'scripts/', 'skills/', 'lang/', 'gm.js', 'gm-kilo.mjs', 'index.js', 'kilocode.json', '.github/', 'README.md', 'cli.js', 'install.js', 'LICENSE', 'CONTRIBUTING.md', '.gitignore', '.editorconfig'],
       ...extraFields
     });
   },
@@ -1852,100 +1894,62 @@ const kilo = factory('kilo', 'Kilo CLI', 'kilocode.json', 'KILO.md', {
 
 ### One-liner (recommended)
 
-Install directly from npm using bun x:
+Install directly from npm:
 
 \`\`\`bash
 bun x gm-kilo@latest
 \`\`\`
 
-This command will automatically install gm-kilo to the correct location for your platform and restart Kilo to activate.
+This copies the plugin to \`~/.config/kilo/\` and registers it in your config. Restart Kilo to activate.
+
+### Via npm install
+
+\`\`\`bash
+npm install -g gm-kilo
+gm-kilo
+\`\`\`
 
 ### Manual installation
 
-**Windows and Unix:**
+Clone to the global plugin directory:
+
 \`\`\`bash
-git clone https://github.com/AnEntrypoint/gm-kilo ~/.config/kilo/plugin && cd ~/.config/kilo/plugin && bun install
+git clone https://github.com/AnEntrypoint/gm-kilo ~/.config/kilo/plugin
 \`\`\`
-
-**Windows PowerShell:**
-\`\`\`powershell
-git clone https://github.com/AnEntrypoint/gm-kilo "\\\$env:APPDATA\\kilo\\plugin" && cd "\\\$env:APPDATA\\kilo\\plugin" && bun install
-\`\`\`
-
-### Step 2: Configure MCP Servers
-
-Kilo uses the OpenCode configuration format. Create or update \`~/.config/kilo/opencode.json\`:
-
-\`\`\`json
-{
-  "\\\$schema": "https://opencode.ai/config.json",
-  "mcp": {
-    "dev": {
-      "type": "local",
-      "command": ["bun x", "mcp-gm"],
-      "timeout": 360000,
-      "enabled": true
-    },
-    "code-search": {
-      "type": "local",
-      "command": ["bun x", "codebasesearch"],
-      "timeout": 360000,
-      "enabled": true
-    }
-  }
-}
-\`\`\`
-
-### Step 3: Update Kilo Configuration
-
-Update \`~/.config/kilo/kilocode.json\` to reference the plugin:
-
-\`\`\`json
-{
-  "\\\$schema": "https://kilo.ai/config.json",
-  "default_agent": "gm",
-  "plugin": ["/home/user/.config/kilo/plugin"]
-}
-\`\`\`
-
-Replace \`/home/user\` with your actual home directory path.
-
-### Step 4: Verify Installation
-
-Start Kilo and verify the tools appear:
-\`\`\`bash
-kilo
-\`\`\`
-
-Check MCP tools are connected:
-\`\`\`bash
-kilo mcp list
-\`\`\`
-
-You should see \`dev\` and \`code-search\` marked as connected.
 
 ## Features
 
-- **MCP tools** - Code execution (\`dev\`) and semantic search (\`code-search\`)
-- **State machine agent** - Complete \`gm\` behavioral rule system
-- **Git enforcement** - Blocks uncommitted changes and unpushed commits on session idle
-- **AST analysis** - Automatic codebase analysis via mcp-thorns on session start
-- **.prd enforcement** - Blocks exit if work items remain in .prd file
+- **State machine agent** — PLAN→EXECUTE→EMIT→VERIFY→COMPLETE orchestration
+- **Skill chain** — gm, planning, gm-execute, gm-emit, gm-complete, update-docs
+- **exec: dispatch** — code execution via spool watcher (nodejs, python, bash, typescript, go, rust)
+- **Code search** — semantic codebase exploration via exec:codesearch
+- **Git enforcement** — blocks session end with uncommitted changes or unpushed commits
+- **Memory** — rs-learn integration for cross-session knowledge retention
+
+## How it works
+
+The plugin installs:
+- **Agent** (\`agents/gm.md\`) — primary orchestrator with skill-chain instructions
+- **Skills** (\`skills/\`) — PLAN, EXECUTE, EMIT, VERIFY, UPDATE-DOCS skill definitions
+- **Plugin** (\`plugins/gm-kilo.mjs\`) — hooks for session lifecycle, tool gating, exec: dispatch
+- **Lang runners** (\`lang/\`) — language-specific execution plugins
+
+All exec: commands route through the spool watcher at \`.gm/exec-spool/\` for session-isolated task execution.
 
 ## Troubleshooting
 
-**MCP tools not appearing:**
-- Verify \`~/.config/kilo/opencode.json\` exists with correct MCP server definitions
-- Check that \`plugin\` path in \`kilocode.json\` points to the correct directory
-- Run \`kilo mcp list\` to verify servers are connected
+**Plugin not loading:**
+- Verify \`~/.config/kilo/plugins/gm-kilo.mjs\` exists
+- Check \`kilocode.json\` has the plugin path in the \`plugin\` array
 - Restart Kilo CLI completely
 
-**Plugin not loading:**
-- Verify plugin path in \`kilocode.json\` is absolute (e.g., \`/home/user/.config/kilo/plugin\`, not relative)
-- Check \`index.js\` and \`gm.mjs\` exist in the plugin directory
-- Run \`bun install\` in the plugin directory to ensure dependencies are installed
+**Skills not appearing:**
+- Verify \`~/.config/kilo/skills/\` contains skill directories with SKILL.md files
+- Skill names must be lowercase with hyphens (e.g., \`gm\`, \`gm-execute\`)
 
-The plugin activates automatically on session start once MCP servers are configured.
+**exec: commands failing:**
+- Check \`.gm/exec-spool/\` directory exists in your project
+- Verify plugkit binary is present at \`~/.config/kilo/bin/\`
 `;
   }
 });
