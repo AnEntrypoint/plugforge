@@ -165,10 +165,14 @@ function install() {
   if (!isInsideNodeModules()) return;
   const projectRoot = getProjectRoot();
   if (!projectRoot) return;
-  const ocDir = path.join(projectRoot, '.config', 'opencode', 'plugin');
+  const ocDir = path.join(projectRoot, '.opencode', 'plugins', 'gm-oc');
   const sourceDir = __dirname;
   safeCopyDirectory(path.join(sourceDir, 'agents'), path.join(ocDir, 'agents'));
   safeCopyDirectory(path.join(sourceDir, 'hooks'), path.join(ocDir, 'hooks'));
+  safeCopyDirectory(path.join(sourceDir, 'bin'), path.join(ocDir, 'bin'));
+  safeCopyDirectory(path.join(sourceDir, 'skills'), path.join(ocDir, 'skills'));
+  safeCopyDirectory(path.join(sourceDir, 'lang'), path.join(ocDir, 'lang'));
+  safeCopyDirectory(path.join(sourceDir, 'scripts'), path.join(ocDir, 'scripts'));
 }
 
 install();
@@ -186,10 +190,14 @@ function install() {
   if (!isInsideNodeModules()) return;
   const projectRoot = getProjectRoot();
   if (!projectRoot) return;
-  const kiloDir = path.join(projectRoot, '.config', 'kilo', 'plugin');
+  const kiloDir = path.join(projectRoot, '.kilo', 'plugins', 'gm-kilo');
   const sourceDir = __dirname;
   safeCopyDirectory(path.join(sourceDir, 'agents'), path.join(kiloDir, 'agents'));
   safeCopyDirectory(path.join(sourceDir, 'hooks'), path.join(kiloDir, 'hooks'));
+  safeCopyDirectory(path.join(sourceDir, 'bin'), path.join(kiloDir, 'bin'));
+  safeCopyDirectory(path.join(sourceDir, 'skills'), path.join(kiloDir, 'skills'));
+  safeCopyDirectory(path.join(sourceDir, 'lang'), path.join(kiloDir, 'lang'));
+  safeCopyDirectory(path.join(sourceDir, 'scripts'), path.join(kiloDir, 'scripts'));
 }
 
 install();
@@ -523,6 +531,7 @@ try {
   copyRecursive(path.join(srcDir, 'lang'), path.join(ocConfigDir, 'lang'));
   copyRecursive(path.join(srcDir, 'bin'), path.join(ocConfigDir, 'bin'));
   copyRecursive(path.join(srcDir, 'hooks'), path.join(ocConfigDir, 'hooks'));
+  copyRecursive(path.join(srcDir, 'scripts'), path.join(ocConfigDir, 'scripts'));
 
   const ocJsonPath = path.join(ocConfigDir, 'opencode.json');
   let ocConfig = {};
@@ -583,6 +592,7 @@ try {
   copyRecursive(path.join(srcDir, 'lang'), path.join(kiloConfigDir, 'lang'));
   copyRecursive(path.join(srcDir, 'bin'), path.join(kiloConfigDir, 'bin'));
   copyRecursive(path.join(srcDir, 'hooks'), path.join(kiloConfigDir, 'hooks'));
+  copyRecursive(path.join(srcDir, 'scripts'), path.join(kiloConfigDir, 'scripts'));
 
   const kiloJsonPath = path.join(kiloConfigDir, 'kilocode.json');
   let kiloConfig = {};
@@ -646,64 +656,32 @@ function pluginMjsSource(pluginFile) {
     "  const bin = join(__dirname, '..', 'bin', 'plugkit.js');",
     "  if (!existsSync(bin)) return '';",
     "  try {",
-    "    const r = spawnSync('node', [bin, ...args], { encoding: 'utf-8', timeout: 15000, windowsHide: true });",
+    "    const r = spawnSync('node', [bin, ...args], { encoding: 'utf-8', timeout: 300000, windowsHide: true });",
     "    return (r.stdout || '').trim() || (r.stderr || '').trim();",
     "  } catch(e) { return ''; }",
     "}",
     "",
     "function safePrintf(s) {",
-    "  return \"printf '%s' '\" + String(s).replace(/\\\\\\\\/g,'\\\\\\\\\\\\\\\\').replace(/'/g,\"'\\\\\\\\''\")+\"'\";",
+    "  return \"printf '%s' '\" + String(s).replace(/'/g,\"'\\\\\\\\''\")+\"'\";",
     "}",
     "",
     "function stripFooter(s) { return s ? s.replace(/\\n\\[Running tools\\][\\s\\S]*$/, '').trimEnd() : ''; }",
     "",
-    "function tryLangPlugin(lang, code, cwd) {",
-    "  const projectDir = cwd || process.cwd();",
-    "  const candidates = [join(projectDir, 'lang', lang+'.js'), join(__dirname, '..', 'lang', lang+'.js')];",
-    "  for (const langPluginFile of candidates) {",
-    "    if (!existsSync(langPluginFile)) continue;",
-    "    try {",
-    "      const plugin = require(langPluginFile);",
-    "      if (plugin && plugin.exec && plugin.exec.run) {",
-    "        const result = plugin.exec.run(code, projectDir);",
-    "        if (result && typeof result.then === 'function') continue;",
-    "        return String(result === undefined ? '' : result);",
-    "      }",
-    "    } catch(e) {}",
-    "  }",
-    "  return null;",
-    "}",
-    "",
     "function runExecSync(rawLang, code, cwd) {",
     "  const lang = LANG_ALIASES[rawLang] || rawLang || 'nodejs';",
-    "  const opts = { encoding: 'utf-8', timeout: 30000, windowsHide: true, ...(cwd && { cwd }) };",
-    "  const out = (r) => { const o = (r.stdout||'').trimEnd(), e = stripFooter(r.stderr||'').trimEnd(); return o && e ? o+'\\n[stderr]\\n'+e : o||e||'(no output)'; };",
-    "  if (lang === 'codesearch' || lang === 'search') return runPlugkit(['search', '--path', cwd || process.cwd(), code.trim()]);",
-    "  if (lang === 'runner') return runPlugkit(['runner', code.trim()]);",
-    "  if (lang === 'status') return runPlugkit(['status', code.trim()]);",
-    "  if (lang === 'sleep') return runPlugkit(['sleep', code.trim()]);",
-    "  if (lang === 'close') return runPlugkit(['close', code.trim()]);",
-    "  if (lang === 'browser') return runPlugkit(['exec', '--lang', 'browser', '--code', code.trim(), '--cwd', cwd || process.cwd()]);",
-    "  if (lang === 'cmd') return out(spawnSync('cmd',['/c',code],opts));",
-    "  const pluginResult = tryLangPlugin(lang, code, cwd);",
-    "  if (pluginResult !== null) return pluginResult;",
-    "  if (lang === 'python') return out(spawnSync('python3',['-c',code],opts));",
-    "  if (lang === 'bash' || lang === 'sh') {",
-    "    const tmp = join(tmpdir(),'gm-exec-'+Date.now()+'.sh');",
-    "    writeFileSync(tmp,code,'utf-8');",
-    "    const r = spawnSync('bash',[tmp],opts);",
-    "    try { unlinkSync(tmp); } catch(e) {}",
-    "    return out(r);",
+    "  const projectDir = cwd || process.cwd();",
+    "  if (lang === 'codesearch' || lang === 'search') return runPlugkit(['search', '--path', projectDir, code.trim()]);",
+    "  if (['runner','status','sleep','close'].includes(lang)) return runPlugkit([lang, code.trim()]);",
+    "  if (['browser','tail','watch','wait','type','kill-port','health','recall','memorize','forget','feedback','discipline','pause'].includes(lang)) {",
+    "    return runPlugkit(['exec', '--lang', lang, '--code', code.trim(), '--cwd', projectDir]);",
     "  }",
-    "  const ext = lang === 'typescript' ? 'ts' : 'mjs';",
-    "  const tmp = join(tmpdir(),'gm-exec-'+Date.now()+'.'+ext);",
-    "  const src = lang === 'typescript' ? code : 'const __r=await(async()=>{\\n'+code+'\\n})();if(__r!==undefined){if(typeof __r===\"object\"){console.log(JSON.stringify(__r,null,2));}else{console.log(__r);}}';",
-    "  writeFileSync(tmp,src,'utf-8');",
-    "  const r = spawnSync('bun',['run',tmp],opts);",
-    "  try { unlinkSync(tmp); } catch(e) {}",
-    "  let result = out(r);",
-    "  if (result) result = result.split(tmp).join('<script>');",
-    "  return result;",
+    "  if (lang === 'cmd') {",
+    "    const opts = { encoding: 'utf-8', timeout: 30000, windowsHide: true, cwd: projectDir };",
+    "    const r = spawnSync('cmd', ['/c', code], opts);",
+    "    const o = (r.stdout || '').trimEnd(), e = stripFooter(r.stderr || '').trimEnd();",
+    "    return o && e ? o + '\\n[stderr]\\n' + e : o || e || '(no output)';",
+    "  }",
+    "  return runPlugkit(['exec', '--lang', lang, '--code', code.trim(), '--cwd', projectDir]);",
     "}",
 
     "",
@@ -722,6 +700,7 @@ function pluginMjsSource(pluginFile) {
     "",
     "  return {",
     "    'experimental.chat.system.transform': async (input, output) => {",
+    "      const gmDir = join(directory, '.gm');",
     "      try {",
     "        const giPath = join(directory, '.gitignore');",
     "        const entry = '.gm-stop-verified';",
@@ -743,6 +722,12 @@ function pluginMjsSource(pluginFile) {
     "        if (existsSync(prdFile)) {",
     "          const prd = readFileSync(prdFile,'utf-8').trim();",
     "          if (prd) output.system.push('\\nPENDING WORK (.prd):\\n'+prd);",
+    "        }",
+    "      } catch(e) {}",
+    "      try {",
+    "        const needsGmPath = join(gmDir, 'needs-gm');",
+    "        if (existsSync(needsGmPath)) {",
+    "          output.system.push('\\nCRITICAL: You MUST invoke the `gm` skill before any other tool. Your current state is BLOCKED by a safety gate until gm runs.');",
     "        }",
     "      } catch(e) {}",
     "    },",
@@ -839,18 +824,18 @@ function pluginMjsSource(pluginFile) {
     "      if (input.tool !== 'bash' && input.tool !== 'Bash' && input.tool !== 'shell' && input.tool !== 'Shell' && input.tool !== 'spawn/exec') return;",
     "      const cmd = (output.args && output.args.command) || '';",
     "      if (!cmd) return;",
-    "      if (/^\\s*git(?:\\s|$)/.test(cmd)) return;",
-    "      const m = cmd.match(/^exec(?::(\\S+))?\\n([\\s\\S]+)$/);",
-     "      if (!m) {",
-     "        throw new Error('Use exec: prefix for Bash. The command must start with `exec` or `exec:<lang>` on its own line, then the body on the next line. Examples:\\n\\nexec\\nls -la\\n\\nexec:nodejs\\nconsole.log(\"hello\")\\n\\nexec:bash\\ngit status\\n\\nLanguages: nodejs (default), bash, python, typescript, go, rust, deno, cmd. File I/O via exec:nodejs + require(\"fs\"). Raw JIT execution can also bypass Bash entirely: write to `.gm/exec-spool/in/<lang>/<N>.<ext>` (e.g. in/nodejs/42.js) and the spool watcher executes it and writes `.gm/exec-spool/out/<N>.json`. Codebase search: exec:codesearch on its own line, then a two-word query.');",
-     "      }",
-     "      const rawLang = (m[1]||'').toLowerCase();",
-     "      if (rawLang === 'bash' || rawLang === 'sh' || rawLang === '') {",
-     "        const banned = bashBannedTool(m[2]);",
+    "      if (/^\\s*(git|gh)(?:\\s|$)/.test(cmd)) return;",
+    "      const m = cmd.match(/^exec(?::(\\S+))?\\s*\\n([\\s\\S]+)$/);",
+    "      if (!m) {",
+    "        throw new Error('Use exec: prefix for Bash. The command must start with `exec` or `exec:<lang>` on its own line, then the body on the next line. Examples:\\\\n\\\\nexec\\\\nls -la\\\\n\\\\nexec:nodejs\\\\nconsole.log(\"hello\")\\\\n\\\\nexec:bash\\\\ngit status\\\\n\\\\nLanguages: nodejs (default), bash, python, typescript, go, rust, deno, cmd. File I/O via exec:nodejs + require(\"fs\"). Raw JIT execution can also bypass Bash entirely: write to `.gm/exec-spool/in/<lang>/<N>.<ext>` (e.g. in/nodejs/42.js) and the spool watcher executes it and writes `.gm/exec-spool/out/<N>.json`. Codebase search: exec:codesearch on its own line, then a two-word query.');",
+    "      }",
+    "      const rawLang = (m[1]||'').toLowerCase();",
+    "      if (rawLang === 'bash' || rawLang === 'sh' || rawLang === '') {",
+    "        const banned = bashBannedTool(m[2]);",
     "        if (banned) throw new Error('`'+banned+'` is blocked in exec:bash. Use exec:codesearch instead. For raw JIT execution, write code to `.gm/exec-spool/in/<lang>/<N>.<ext>` (e.g. in/nodejs/42.js); the spool watcher executes it and writes out/<N>.json.');",
-     "      }",
-     "      const result = runExecSync(m[1]||'', m[2], output.args.workdir || directory);",
-     "      output.args = { ...output.args, command: safePrintf('exec:'+(m[1]||'nodejs')+' output:\\n\\n'+result) };",
+    "      }",
+    "      const result = runExecSync(m[1]||'', m[2], output.args.workdir || directory);",
+    "      throw new Error('exec:'+(m[1]||'nodejs')+' output:\\n\\n'+result);",
     "    },",
     "    'message.updated': async (input, output) => {",
     "      try {",
@@ -1646,7 +1631,7 @@ const oc = factory('oc', 'OpenCode', 'opencode.json', 'GM.md', {
     return {
       main: 'gm.js',
       bin: { 'gm-oc': './cli.js', 'gm-oc-install': './install.js' },
-      files: ['agents/', 'hooks/', 'scripts/', 'skills/', 'lang/', 'gm.js', 'gm-oc.mjs', 'index.js', 'opencode.json', '.github/', 'README.md', 'cli.js', 'install.js', 'LICENSE', 'CONTRIBUTING.md', '.gitignore', '.editorconfig'],
+      files: ['agents/', 'bin/', 'hooks/', 'scripts/', 'skills/', 'lang/', 'gm.js', 'gm-oc.mjs', 'index.js', 'opencode.json', '.github/', 'README.md', 'cli.js', 'install.js', 'LICENSE', 'CONTRIBUTING.md', '.gitignore', '.editorconfig'],
       keywords: ['opencode', 'opencode-plugin', 'automation', 'gm'],
       dependencies: {}
     };
@@ -1660,7 +1645,7 @@ const oc = factory('oc', 'OpenCode', 'opencode.json', 'GM.md', {
       ...repoFields('gm-oc'), engines: pluginSpec.engines, publishConfig: pluginSpec.publishConfig,
       dependencies: {},
       scripts: { postinstall: 'node scripts/postinstall-oc.js' },
-      files: ['agents/', 'hooks/', 'scripts/', 'skills/', 'lang/', 'gm.js', 'gm-oc.mjs', 'index.js', 'opencode.json', '.github/', 'README.md', 'cli.js', 'install.js', 'LICENSE', 'CONTRIBUTING.md', '.gitignore', '.editorconfig'],
+      files: ['agents/', 'bin/', 'hooks/', 'scripts/', 'skills/', 'lang/', 'gm.js', 'gm-oc.mjs', 'index.js', 'opencode.json', '.github/', 'README.md', 'cli.js', 'install.js', 'LICENSE', 'CONTRIBUTING.md', '.gitignore', '.editorconfig'],
       ...(pluginSpec.scripts && { scripts: pluginSpec.scripts }), ...extraFields
     });
   },
