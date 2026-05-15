@@ -1,1 +1,0 @@
-spool.js gm-starter lib

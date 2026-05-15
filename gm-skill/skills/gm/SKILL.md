@@ -48,6 +48,41 @@ The user's request is authorization. When scope is unclear, pick the maximum rea
 
 **Caveman medium mode (full) always on**: drop articles (a/an/the), filler (just/really/basically/actually/simply), pleasantries, and hedging. Fragments OK. Use short synonyms. Keep technical terms exact. Keep code blocks and exact error strings unchanged. Pattern: `[thing] [action] [reason]. [next step].` Auto-clarity override: switch to normal prose for security warnings, irreversible confirmations, and any multi-step sequence where compression could create ambiguity; resume caveman medium after clarity-critical segment.
 
+## Skill-Driven Gate Enforcement (No Hooks)
+
+Without hook infrastructure, gate enforcement is achieved through marker files that skills read before proceeding:
+
+**Marker file contract** (all under `.gm/`):
+- `.gm/needs-gm` — written when PRD exists or session starts. Blocks tool use until cleared.
+- `.gm/gm-fired-this-turn` — written after gm skill runs. Clears the needs-gm gate for remaining tool calls this turn.
+- `.gm/mutables.yml` — written by planning, updated by gm-execute. Blocks Write/Edit/git commit while any entry has `status: unknown`.
+- `.gm/turn-state.json` — written after each tool use. Tracks phase, tool count, timestamp, session ID.
+- `.gm/prd.yml` — written by planning, deleted when empty. PRD existence implies needs-gm gate.
+- `.gm/residual-check-fired` — one-shot marker for residual scan at session end.
+
+**Gate enforcement discipline**:
+1. Before any Write/Edit/NotebookEdit/git commit: read `.gm/mutables.yml`. If any entry has `status: unknown`, do not proceed — resolve mutables first.
+2. Before any tool use when `.gm/needs-gm` exists: gm skill must run first. After gm runs, write `.gm/gm-fired-this-turn` to clear the gate.
+3. After each tool use: update `.gm/turn-state.json` with current phase and tool count.
+4. At session end: gm-complete checks `.gm/residual-check-fired`. If absent and PRD empty, fire residual scan. If present, allow stop.
+
+**Turn state format** (`.gm/turn-state.json`):
+```json
+{"phase":"EXECUTE","toolCount":3,"timestamp":"2026-05-15T12:00:00Z","sessionId":"abc123"}
+```
+
+## Daemon Bootstrap (Skills-Only Platforms)
+
+Without session_start hook, daemons are spawned by the planning skill at PLAN start:
+
+1. **Plugkit binary**: Run `bun x gm-plugkit@latest` or `node gm-skill/lib/daemon-bootstrap.js` to download, verify SHA256, install to `~/.claude/gm-tools/`.
+2. **Spool watcher**: After binary ready, start spool daemon via `gm-plugkit startSpoolDaemon()` or `plugkit spool` detached process.
+3. **rs-learn**: Spawn `bun x rs-learn@latest` detached. Verify port 4801 reachable.
+4. **rs-codeinsight**: Spawn `bun x rs-codeinsight@latest` detached. Verify port 4802 reachable.
+5. **acptoapi**: Spawn `bun x acptoapi@latest` detached. Verify port 4800 reachable.
+
+All daemons spawned detached with `stdio: 'ignore'`, `windowsHide: true`. Skip spawn if already running (port reachable check).
+
 ## End-to-End Phase Chaining (Skills-Based Platforms)
 
 When `end-to-end: true` is present in SKILL.md frontmatter, skill output includes structured JSON on stdout (final line):

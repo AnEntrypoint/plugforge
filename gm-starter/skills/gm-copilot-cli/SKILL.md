@@ -10,7 +10,7 @@ compatible-platforms:
 
 AI-native software engineering orchestrated via skill chain: PLAN → EXECUTE → EMIT → VERIFY → UPDATE-DOCS.
 
-**Bootstrap pattern**: bootstrapPlugkit() loads plugkit binary (`.gm-tools/plugkit`) at session start, verifies sha256 against manifest. Returns plugkit.version + plugkit.sha256. Failure blocks all downstream dispatch — re-run bootstrap before retry.
+**Bootstrap pattern**: `bun x gm-plugkit@latest --daemon` downloads the correct platform binary, verifies SHA256, and starts the spool watcher daemon. Call once at session start; idempotent on subsequent calls. All execution routes through the file-spool: write to `.gm/exec-spool/in/<lang>/<N>.<ext>` or `in/<verb>/<N>.txt`, poll `out/<N>.json` for results.
 
 **Session-ID threading (no session-start hook)**: At skill invoke time, generate or detect SESSION_ID (env var `SESSION_ID` or `uuid()`). Pass `sessionId: "<id>"` in every rs-exec RPC body (spawn, tail, watch, etc.) and every spool-written task body. All task-scoped cleanup (deleteTask, getTask, appendOutput, killSessionTasks) requires matching sessionId. Absence is forbidden — hard reject by rs-exec handler.
 

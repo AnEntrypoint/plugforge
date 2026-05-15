@@ -1,138 +1,332 @@
-- id: verify-gc-build
-  subject: Verify gm-gc build includes all required directories
-  status: completed
-  description: Confirm that build/gm-gc contains skills/, scripts/, bin/, prompts/, agents/, hooks/ directories
-  effort: small
+- id: hook-behavior-mapping
+  subject: Map all gm-cc hook behaviors to skill-driven equivalents
+  status: pending
+  description: Document every hook behavior (session_start, pre_tool_use, prompt_submit, post_tool_use, session_end) and design skill-driven replacements using marker files and state machines
+  effort: large
   category: infra
-  route_family: boundary
-  load: 0.8
-  witness_evidence: |
-    Validation passed - 25/25 checks:
-    ✓ skills/ (24 subdirs)
-    ✓ agents/ (4 files)
-    ✓ hooks/hooks.json
-    ✓ scripts/
-    ✓ bin/ (bootstrap.js, plugkit.js, plugkit.sha256)
-    ✓ prompts/ (4 files)
-    ✓ All config files (package.json, gemini-extension.json, GEMINI.md, AGENTS.md)
+  route_family: grounding
+  load: 0.9
+  failure_modes: ["skill-driven gates not enforced without hooks", "marker files not read/written consistently"]
+  route_fit: dominant
+  authorization: weak_prior
+  blocking: []
+  blockedBy: []
+  acceptance:
+    - Every gm-cc hook behavior has a documented skill-driven equivalent
+    - Marker file contract (.gm/needs-gm, .gm/gm-fired-this-turn, .gm/mutables.yml, .gm/turn-state.json) is preserved
+    - No functionality lost in translation from hooks to skills
+  edge_cases:
+    - Pre-tool-use gate enforcement without Rust hooks
+    - Auto-recall injection without prompt-submit hook
+    - Session-end cleanup without session_end hook
 
-- id: enable-gc-skills-loading
-  subject: Enable gm-gc to load skills from source
-  status: completed
-  description: Changed loadSkillsFromSource to actually load skills
-  effort: small
+- id: skill-gate-enforcement
+  subject: Implement skill-enforced gate system replacing pre-tool-use hook
+  status: pending
+  description: Build marker-file-based gate enforcement into gm and planning skills that blocks tool use when needs-gm is set or mutables are unresolved
+  effort: large
   category: feature
-  route_family: boundary
-  load: 0.8
-  witness_evidence: |
-    platforms/cli-config-shared.js line 1381:
-    Changed loadSkillsFromSource() { return {}; }
-    To: loadSkillsFromSource(sourceDir) { return TemplateBuilder.loadSkillsFromSource(sourceDir, 'skills'); }
-    
-    Build result: 57 files (up from 33), includes all 24 skills
+  route_family: state
+  load: 0.9
+  failure_modes: ["gates not enforced", "model ignores marker files"]
+  route_fit: dominant
+  authorization: weak_prior
+  blocking: []
+  blockedBy: ["hook-behavior-mapping"]
+  acceptance:
+    - gm skill reads .gm/needs-gm and blocks until gm-fired-this-turn marker exists
+    - gm skill reads .gm/mutables.yml and blocks until all mutables are witnessed
+    - Gate logic is identical to rs-plugkit pre_tool_use.rs behavior
+  edge_cases:
+    - Model bypasses gate by not reading marker files
+    - Concurrent sessions writing same marker files
 
-- id: create-gc-feature-parity-doc
-  subject: Document gm-gc feature parity with gm-cc
-  status: completed
-  description: Create GEMINI.md with feature list, installation, and workarounds
-  effort: small
-  category: infra
-  load: 0.4
-  witness_evidence: |
-    gm-starter/GEMINI.md created (407 lines):
-    - Feature Parity table (8 features all ✓)
-    - Installation instructions (git + npm)
-    - Hook Event Mapping (BeforeTool, SessionStart, BeforeAgent, SessionEnd)
-    - 5 Elegant Workarounds documented
-    - Directory structure explained
-    - Operational differences
-    - Troubleshooting guide
+- id: auto-recall-injection
+  subject: Implement auto-recall at planning phase replacing prompt-submit hook
+  status: pending
+  description: Planning skill derives 2-6 word query from user prompt and calls exec:recall before writing PRD, injecting results as context
+  effort: medium
+  category: feature
+  route_family: reasoning
+  load: 0.7
+  failure_modes: ["recall not called", "query derivation poor", "results not injected"]
+  route_fit: dominant
+  authorization: weak_prior
+  blocking: []
+  blockedBy: ["hook-behavior-mapping"]
+  acceptance:
+    - Planning skill always calls exec:recall before PRD construction
+    - Recall results injected as weak_prior context in mutable discovery
+    - Query derivation uses subject, verb objects, key domain terms
+  edge_cases:
+    - No recall results available
+    - Discipline-scoped recall with @sigil
 
-- id: add-prompts-loader
-  subject: Add prompts loading support for gm-gc
-  status: completed
-  description: Prompts available in ~/.gemini/extensions/gm/prompts/ on install
+- id: turn-state-tracking
+  subject: Implement skill-driven turn state tracking replacing post-tool-use hook
+  status: pending
+  description: gm-execute and gm-emit skills write .gm/turn-state.json after each tool use, tracking phase transitions and tool counts
+  effort: medium
+  category: feature
+  route_family: state
+  load: 0.5
+  failure_modes: ["turn state not written", "stale turn state"]
+  route_fit: dominant
+  authorization: weak_prior
+  blocking: []
+  blockedBy: ["hook-behavior-mapping"]
+  acceptance:
+    - .gm/turn-state.json updated after every tool use in gm-execute and gm-emit
+    - Contains current phase, tool count, timestamp, session ID
+    - Read by gm-complete for verification
+  edge_cases:
+    - Concurrent tool writes
+    - Turn state corruption
+
+- id: session-end-cleanup
+  subject: Implement skill-driven session-end cleanup replacing session_end hook
+  status: pending
+  description: gm-complete skill kills background tasks and closes browser sessions on session end, triggered by clear/logout/prompt_input_exit
   effort: medium
   category: feature
   route_family: execution
   load: 0.7
-  witness_evidence: |
-    Prompts copied via cli.js and install.js:
-    - prompts/ included in package.json files array
-    - All 4 prompts copied on installation
-    - bash-deny.txt, session-start.txt, prompt-submit.txt, pre-compact.txt
-    - Available to skills via filesystem spool
+  failure_modes: ["cleanup not triggered", "tasks not killed", "browsers not closed"]
+  route_fit: dominant
+  authorization: weak_prior
+  blocking: []
+  blockedBy: ["hook-behavior-mapping"]
+  acceptance:
+    - gm-complete calls rs-exec killSessionTasks on real-exit reasons
+    - Browser sessions closed via kill_session_browser
+    - Cleanup only on clear/logout/prompt_input_exit, not compaction/handoff
+  edge_cases:
+    - Session resumes after compaction (tasks/browsers must stay alive)
+    - Kill fails on Windows held handles
 
-- id: test-gc-npm-install
-  subject: Test gm-gc npm installation end-to-end
-  status: completed
-  description: Verified npm installation structure and file copying
-  effort: medium
-  category: infra
-  load: 0.8
-  witness_evidence: |
-    install.js validated:
-    - node_modules detection working
-    - safeCopyDirectory function present
-    - 7 directories copied on postinstall
-    - Proper permission handling
-    - Cross-platform path resolution
-
-- id: verify-hook-execution
-  subject: Verify plugkit hooks execute correctly
-  status: completed
-  description: Hooks properly configured to invoke plugkit subcommands
-  effort: medium
-  category: infra
-  load: 0.7
-  witness_evidence: |
-    hooks.json validation:
-    ✓ BeforeTool → pre-tool-use (3600ms)
-    ✓ SessionStart → session-start (180000ms)
-    ✓ BeforeAgent → prompt-submit (60000ms)
-    ✓ SessionEnd → stop (300000ms) + stop-git (60000ms)
-    ✓ ${extensionPath} variable interpolation
-    ✓ Command format: node ${extensionPath}/bin/plugkit.js hook <subcommand>
-
-- id: wiring-gm-gc-orchestration
-  subject: Wire gm-gc to use gm orchestration with prompts
-  status: completed
-  description: gm skill chain fully available with all dependencies
+- id: daemon-bootstrap-parity
+  subject: Ensure gm-skill can bootstrap all daemons gm-cc does
+  status: pending
+  description: gm-skill must spawn rs-learn, rs-codeinsight, acptoapi, and spool watcher daemon identically to gm-cc session_start hook
   effort: medium
   category: feature
+  route_family: execution
   load: 0.8
-  witness_evidence: |
-    Skills available:
-    ✓ gm (orchestrator)
-    ✓ planning (PRD writing)
-    ✓ gm-execute (mutables resolution)
-    ✓ gm-emit (file writing)
-    ✓ gm-complete (verification)
-    ✓ browser (automation)
-    ✓ All 24 bundled skills
-    
-    Installation ensures skills copied to ~/.gemini/extensions/gm/skills/
+  failure_modes: ["daemon not spawned", "port not reachable", "binary not available"]
+  route_fit: dominant
+  authorization: weak_prior
+  blocking: []
+  blockedBy: ["hook-behavior-mapping"]
+  acceptance:
+    - planning skill calls daemon-bootstrap for rs-learn, rs-codeinsight, acptoapi
+    - Spool watcher daemon started via gm-plugkit startSpoolDaemon
+    - All daemons verified via port reachability or process check
+  edge_cases:
+    - Daemon already running (skip spawn)
+    - Binary download fails (fallback to Anthropic SDK)
+    - Windows process hold on binary during update
 
-- id: test-full-gm-workflow
-  subject: Execute a complete gm workflow in gm-gc end-to-end
-  status: completed
-  description: Build validation confirms all prerequisites in place
-  effort: large
+- id: spool-watcher-daemon
+  subject: Implement spool watcher daemon start in gm-skill
+  status: pending
+  description: gm-skill starts plugkit spool watcher daemon on session start, processes exec: requests via file spool
+  effort: medium
+  category: feature
+  route_family: execution
+  load: 0.8
+  failure_modes: ["watcher not started", "spool files not processed", "output not returned"]
+  route_fit: dominant
+  authorization: weak_prior
+  blocking: []
+  blockedBy: ["hook-behavior-mapping", "daemon-bootstrap-parity"]
+  acceptance:
+    - Spool watcher daemon running after planning skill executes
+    - exec:nodejs, exec:bash, exec:python, etc. write to .gm/exec-spool/in/
+    - Results read from .gm/exec-spool/out/ with metadata
+    - Fallback to poll-based watcher if plugkit binary unavailable
+  edge_cases:
+    - Watcher crashes mid-session
+    - Spool directory permissions
+    - Concurrent session spool conflicts
+
+- id: skill-bundle-parity
+  subject: Ensure gm-skill bundles all skills gm-cc has
+  status: pending
+  description: gm-skill must include all 24 skills present in gm-cc with identical SKILL.md content
+  effort: small
+  category: feature
+  route_family: representation
+  load: 0.4
+  failure_modes: ["skills missing", "skill content diverged"]
+  route_fit: dominant
+  authorization: weak_prior
+  blocking: []
+  blockedBy: []
+  acceptance:
+    - All 24 skills present in gm-skill/skills/ directory
+    - SKILL.md content identical to gm-starter/skills/ versions
+    - Skill loading discovers all skills without errors
+  edge_cases:
+    - Platform-specific skill overrides
+    - Skill metadata differences
+
+- id: plugkit-binary-management
+  subject: Consolidate plugkit binary management in gm-skill
+  status: pending
+  description: gm-skill manages plugkit binary download, SHA256 verification, gm-tools installation, and version tracking identically to gm-cc bootstrap
+  effort: medium
   category: infra
-  load: 0.9
-  witness_evidence: |
-    Comprehensive validation passed (30/30 checks):
-    - All directories present
-    - All configuration files valid
-    - All 24 skills present
-    - All 4 agents present
-    - Installation scripts functional
-    - Hook configuration correct
-    - Prompt files included
-    
-    Ready for:
-    1. Direct install: node build/gm-gc/cli.js
-    2. npm install: npm install gm-gc
-    3. git clone: git clone https://github.com/AnEntrypoint/gm-gc ~/.gemini/extensions/gm
+  route_family: execution
+  load: 0.7
+  failure_modes: ["binary not downloaded", "sha mismatch", "gm-tools not updated"]
+  route_fit: dominant
+  authorization: weak_prior
+  blocking: []
+  blockedBy: []
+  acceptance:
+    - gm-plugkit bootstrap.js handles download, verify, install
+    - SHA256 verification against manifest
+    - gm-tools directory updated with version file
+    - Stale process kill before binary replace (Windows)
+  edge_cases:
+    - Concurrent bootstrap races
+    - Network failure during download
+    - Windows EBUSY on rename
 
-blockedBy: []
+- id: marker-file-contract
+  subject: Define and implement marker file contract for skill-driven gates
+  status: pending
+  description: Document and implement the marker file contract that replaces hook-based gate enforcement
+  effort: small
+  category: infra
+  route_family: state
+  load: 0.6
+  failure_modes: ["marker files not written", "marker files not read", "stale markers"]
+  route_fit: dominant
+  authorization: weak_prior
+  blocking: []
+  blockedBy: ["hook-behavior-mapping"]
+  acceptance:
+    - .gm/needs-gm: written by session-start, deleted by prompt-submit when no PRD
+    - .gm/gm-fired-this-turn: written by pre-tool-use after gm skill runs, deleted by prompt-submit
+    - .gm/mutables.yml: written by planning, updated by gm-execute, read by pre-tool-use gate
+    - .gm/turn-state.json: written by post-tool-use, read by gm-complete
+    - .gm/prd.yml: written by planning, deleted when empty
+  edge_cases:
+    - Marker file corruption
+    - Concurrent session marker conflicts
+    - Stale markers from crashed sessions
+
+- id: skill-chain-enforcement
+  subject: Implement skill chain enforcement without hooks
+  status: pending
+  description: Ensure the PLAN→EXECUTE→EMIT→VERIFY→COMPLETE chain is enforced through skill transitions and marker files
+  effort: large
+  category: feature
+  route_family: state
+  load: 0.9
+  failure_modes: ["chain broken", "skills skipped", "phase transitions incorrect"]
+  route_fit: dominant
+  authorization: weak_prior
+  blocking: []
+  blockedBy: ["hook-behavior-mapping", "skill-gate-enforcement"]
+  acceptance:
+    - planning skill writes PRD and transitions to gm-execute
+    - gm-execute resolves all mutables before transitioning to gm-emit
+    - gm-emit writes files and verifies from disk before transitioning to gm-complete
+    - gm-complete verifies PRD empty, git clean, pushed before transitioning to update-docs
+    - Any new unknown triggers snake back to planning
+  edge_cases:
+    - Agent skips skill transition
+    - Phase transition without gate clearance
+    - New unknown discovered in EMIT phase
+
+- id: residual-scan-gate
+  subject: Implement residual scan gate replacing stop-hook behavior
+  status: pending
+  description: gm-complete skill fires one residual-scan challenge when PRD is empty and no open browser sessions
+  effort: small
+  category: feature
+  route_family: reasoning
+  load: 0.5
+  failure_modes: ["residual scan not fired", "false positives", "infinite scan loop"]
+  route_fit: dominant
+  authorization: weak_prior
+  blocking: []
+  blockedBy: ["skill-chain-enforcement"]
+  acceptance:
+    - .gm/residual-check-fired marker ensures one-shot per stopping window
+    - Agent enumerates in-spirit reachable residuals or states none reachable
+    - Second stop in same window allows without scan
+    - prompt_submit clears residual-check-fired at turn start
+  edge_cases:
+    - Residuals discovered but out-of-spirit
+    - Multiple stop attempts in same window
+
+- id: observability-parity
+  subject: Ensure gm-skill writes structured JSONL logs identically to gm-cc
+  status: pending
+  description: All gm-skill subsystems write to ~/.claude/gm-log/<date>/<subsystem>.jsonl with structured entries
+  effort: small
+  category: infra
+  route_family: observability
+  load: 0.3
+  failure_modes: ["logs not written", "log format incorrect", "log directory not created"]
+  route_fit: dominant
+  authorization: weak_prior
+  blocking: []
+  blockedBy: []
+  acceptance:
+    - daemon-bootstrap.js writes to bootstrap.jsonl
+    - spool dispatch writes to exec.jsonl
+    - skill transitions write to hook.jsonl equivalent
+    - GM_LOG_DISABLE=1 disables, GM_LOG_DIR relocates
+  edge_cases:
+    - Log directory permissions
+    - Disk full during write
+    - Concurrent log writes
+
+- id: health-check-endpoint
+  subject: Implement health check surface for gm-skill diagnostics
+  status: pending
+  description: gm-skill exposes health status via .gm/exec-spool/.status.json and .gm/exec-spool/.bootstrap-error.json
+  effort: small
+  category: infra
+  route_family: observability
+  load: 0.3
+  failure_modes: ["status files not written", "stale status", "error files not cleared"]
+  route_fit: dominant
+  authorization: weak_prior
+  blocking: []
+  blockedBy: []
+  acceptance:
+    - .status.json updated each watcher tick with watcher state
+    - .last-session-start.json written on session start
+    - .bootstrap-error.json written on pin-mismatch/fetch-fail, cleared on success
+    - Health probe returns plugkit version, watcher liveness, runner state
+  edge_cases:
+    - Status file corruption
+    - Stale status from dead watcher
+
+- id: skill-loader-enhancement
+  subject: Enhance gm-skill loader to support skill chain transitions
+  status: pending
+  description: gm-skill loader discovers skills, validates SKILL.md format, and supports transition metadata for chain enforcement
+  effort: medium
+  category: feature
+  route_family: representation
+  load: 0.5
+  failure_modes: ["skills not discovered", "transition metadata missing", "chain broken"]
+  route_fit: dominant
+  authorization: weak_prior
+  blocking: []
+  blockedBy: []
+  acceptance:
+    - Loader discovers all skills in skills/ directory
+    - SKILL.md frontmatter parsed for transitions, allowed-tools, gates
+    - Chain metadata validated on load
+    - Missing skills reported with clear error
+  edge_cases:
+    - Malformed SKILL.md
+    - Missing transition targets
+    - Circular skill dependencies

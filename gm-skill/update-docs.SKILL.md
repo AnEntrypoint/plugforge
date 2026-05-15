@@ -52,15 +52,17 @@ git push -u origin HEAD
 
 ## Exit: browser cleanup
 
-After docs push succeeds, close any browser sessions spawned during this or prior skill phases. Write a nodejs spool file calling rs-exec:
+After docs push succeeds, close any browser sessions spawned during this or prior skill phases. Write a nodejs spool file:
 
 ```javascript
+const fs = require('fs');
+const path = require('path');
 const sessionId = process.env.CLAUDE_SESSION_ID;
 if (!sessionId) return;
-const rs = require('rs-exec');
-try {
-  rs.client().close_sessions_for(sessionId).catch(() => {});
-} catch (e) {}
+const closeDir = path.join(process.cwd(), '.gm', 'exec-spool', 'in', 'close');
+fs.mkdirSync(closeDir, { recursive: true });
+const taskId = Date.now();
+fs.writeFileSync(path.join(closeDir, `${taskId}.txt`), 'close_sessions_for ' + sessionId);
 ```
 
-Best-effort: session context or rs-exec unavailable → skip gracefully. No error thrown.
+Best-effort: session context or spool unavailable → skip gracefully. No error thrown.

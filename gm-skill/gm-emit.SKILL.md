@@ -49,7 +49,24 @@ Re-import from disk — in-memory state is stale and inadmissible. Run identical
 
 ## Mutables gate
 
-Before pre-emit run, read `.gm/mutables.yml`. Any entry with `status: unknown` → regress to `gm-execute`. The pre-tool-use hook hard-blocks Write/Edit/NotebookEdit while unresolved entries exist; trying to emit anyway returns deny. Zero unresolved is the precondition for every legitimacy question below.
+Before pre-emit run, read `.gm/mutables.yml`. Any entry with `status: unknown` → regress to `gm-execute`. Gate enforcement: hard-block Write/Edit/NotebookEdit while unresolved entries exist; trying to emit anyway returns deny. Zero unresolved is the precondition for every legitimacy question below.
+
+## Turn-State Tracking (Skills-Only Platforms)
+
+After each tool use, update `.gm/turn-state.json`:
+
+```json
+{"phase":"EMIT","toolCount":<N>,"timestamp":"<ISO8601>","sessionId":"<id>"}
+```
+
+Write via nodejs spool file:
+```js
+const fs = require('fs');
+const path = require('path');
+const statePath = path.join(process.cwd(), '.gm', 'turn-state.json');
+const state = { phase: 'EMIT', toolCount: N, timestamp: new Date().toISOString(), sessionId: process.env.CLAUDE_SESSION_ID || 'unknown' };
+fs.writeFileSync(statePath, JSON.stringify(state));
+```
 
 ## Gate (all true at once)
 
@@ -60,9 +77,9 @@ Before pre-emit run, read `.gm/mutables.yml`. Any entry with `status: unknown` �
 - Hot-reloadable; errors throw with context (no `|| default`, no `catch { return null }`, no fallbacks)
 - No mocks, fakes, stubs, or scattered test files (delete on discovery)
 - Any behavior change has a corresponding assertion in `test.js` — a change no test catches is a change you cannot prove
-- Browser-facing change → post-emit verify includes a live `exec:browser` witness (boot server → `page.goto` → `page.evaluate` asserting the invariant the change established). Node-side import + test.js does not satisfy this — the final gate runs again in `gm-complete`.
+- Browser-facing change → post-emit verify includes a live browser witness (boot server → `page.goto` → `page.evaluate` asserting the invariant the change established). Node-side import + test.js does not satisfy this — the final gate runs again in `gm-complete`.
 - Files ≤ 200 lines
-- No duplicate concern (run `exec:codesearch` for the primary concern after writing; overlap → `planning`)
+- No duplicate concern (run codesearch for the primary concern after writing; overlap → `planning`)
 - No comments, no hardcoded values, no adjectives in identifiers, no unnecessary files
 - Observability: new server subsystems expose `/debug/<subsystem>`; new client modules register in `window.__debug`
 - Structure: no if/else where dispatch suffices; no one-liners that obscure; no reinvented APIs

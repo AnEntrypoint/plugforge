@@ -23,9 +23,30 @@ Cannot stop while `.gm/prd.yml` has items, git is dirty, or commits are unpushed
 
 ## Orient
 
-Open every plan with one parallel pack of `exec:recall` + `exec:codesearch` against the request's nouns. Hits land as `weak_prior`; misses confirm the unknown is fresh. The pack runs in one message.
+Open every plan with one parallel pack of recall + codesearch against the request's nouns. Hits land as `weak_prior`; misses confirm the unknown is fresh. The pack runs in one message.
 
-**Auto-recall injection (skills-only platforms)**: derive a 2–6 word query from the request's nouns (subject, verb objects, key domain terms). Call `exec:recall <query>` at PLAN start before writing `.gm/prd.yml`, inline. This replaces the prompt-submit hook's auto-recall for platforms without hook infrastructure. Recall hits are injected as context into mutable discovery and PRD item acceptance criteria.
+**Auto-recall injection (skills-only platforms)**: derive a 2–6 word query from the request's nouns (subject, verb objects, key domain terms). Write recall query to `.gm/exec-spool/in/recall/<N>.txt` at PLAN start before writing `.gm/prd.yml`. Read result from `.gm/exec-spool/out/<N>.out`. This replaces the prompt-submit hook's auto-recall for platforms without hook infrastructure. Recall hits are injected as context into mutable discovery and PRD item acceptance criteria.
+
+**Auto-codesearch**: write codesearch query to `.gm/exec-spool/in/codesearch/<N>.txt`. Read result from `.gm/exec-spool/out/<N>.out`.
+
+## Daemon Bootstrap (Skills-Only Platforms)
+
+Before writing PRD, ensure daemons are running:
+
+1. **Plugkit binary**: if `~/.claude/gm-tools/plugkit` (or `.exe`) absent or version mismatch, run `bun x gm-plugkit@latest` to bootstrap.
+2. **Spool watcher**: if not running, start via `plugkit spool` detached or `gm-plugkit startSpoolDaemon()`.
+3. **rs-learn**: if port 4801 not reachable, spawn `bun x rs-learn@latest` detached.
+4. **rs-codeinsight**: if port 4802 not reachable, spawn `bun x rs-codeinsight@latest` detached.
+5. **acptoapi**: if port 4800 not reachable, spawn `bun x acptoapi@latest` detached.
+
+Skip spawn if port already reachable. All daemons: `detached: true`, `stdio: 'ignore'`, `windowsHide: true`.
+
+## Gate Setup (Skills-Only Platforms)
+
+After PRD written:
+1. Write `.gm/needs-gm` marker file (empty body) — this blocks tool use until gm skill runs.
+2. Delete `.gm/gm-fired-this-turn` if it exists — resets the gate for this turn.
+3. Write `.gm/mutables.yml` with all unknowns surfaced during orient.
 
 ## Mutable discovery
 
@@ -35,18 +56,18 @@ Fault surfaces to scan: file existence, API shape, data format, dep versions, ru
 
 Tag every item with a route family (grounding | reasoning | state | execution | observability | boundary | representation) and cross-reference the 16-failure taxonomy. `governance` skill holds the table.
 
-`existingImpl=UNKNOWN` is the default; resolve via `exec:codesearch` before adding the item. An existing concern routes to consolidation, not addition.
+`existingImpl=UNKNOWN` is the default; resolve via codesearch before adding the item. An existing concern routes to consolidation, not addition.
 
 Plan exits when zero new unknowns surfaced last pass AND every item has acceptance criteria AND deps are mapped.
 
 ## .gm/mutables.yml — co-equal with .gm/prd.yml
 
-Every unknown surfaced during PLAN lands as an entry in `.gm/mutables.yml` the same pass. Live during work, deleted when empty. Hook-gated: Write/Edit/NotebookEdit and `git commit`/`git push` are hard-blocked while any entry has `status: unknown`; turn-stop is hard-blocked the same way.
+Every unknown surfaced during PLAN lands as an entry in `.gm/mutables.yml` the same pass. Live during work, deleted when empty. Gate-enforced: Write/Edit/NotebookEdit and `git commit`/`git push` are hard-blocked while any entry has `status: unknown`; turn-stop is hard-blocked the same way.
 
 ```yaml
 - id: kebab-id
   claim: One-line statement of what is assumed
-  witness_method: exec:codesearch <query> | exec:nodejs import | exec:recall <query> | Read <path>
+  witness_method: codesearch <query> | nodejs import | recall <query> | Read <path>
   witness_evidence: ""
   status: unknown
 ```
@@ -107,7 +128,7 @@ The 200 lines are a *budget* for maximum surface coverage, not a target. Subsyst
 
 Code execution AND utility verbs both write to `.gm/exec-spool/in/<lang-or-verb>/<N>.<ext>`. Languages live under `in/<lang>/` (nodejs, python, bash, typescript, go, rust, c, cpp, java, deno); verbs live under `in/<verb>/` (codesearch, recall, memorize, wait, sleep, status, close, browser, runner, type, kill-port, forget, feedback, learn-status, learn-debug, learn-build, discipline, pause, health). The spool watcher runs the file and streams to `out/<N>.out` (stdout) + `out/<N>.err` (stderr) line-by-line, then writes `out/<N>.json` metadata (exitCode, durationMs, timedOut, startedAt, endedAt) at completion. Both streams return as systemMessage with `--- stdout ---` / `--- stderr ---` separators. `in/` and `out/` are wiped at session start and at real-exit session end. Only `git` (and `gh`) run directly via Bash; never `Bash(node/npm/npx/bun)`, never `Bash(exec:<anything>)`. Spool paths in nodejs files are platform-literal — use `os.tmpdir()` and `path.join`. The spool enforces per-task timeouts; on timeout, partial output is preserved and the watcher emits `[exec timed out after Nms; partial output above]`.
 
-`exec:codesearch` only — Grep/Glob/Find/Explore are hook-blocked. Start two words, change/add one per pass, minimum four attempts before concluding absent.
+Codesearch only — Grep/Glob/Find/Explore are hook-blocked. Start two words, change/add one per pass, minimum four attempts before concluding absent.
 
 Pack runs use `Promise.allSettled`, each idea its own try/catch, under 12s per call.
 

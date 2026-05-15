@@ -8,6 +8,34 @@ const spool = require('./spool.js');
 const LOG_DIR = path.join(os.homedir(), '.claude', 'gm-log');
 const GM_STATE_DIR = path.join(os.homedir(), '.gm');
 
+// --- Plugkit integration ---
+const rsPlugkit = path.join(__dirname, '..', 'bin', 'rs-plugkit.js');
+
+function ensurePlugkitReady() {
+  try {
+    if (fs.existsSync(rsPlugkit)) {
+      const r = execSync(`node "${rsPlugkit}" ensure`, {
+        cwd: __dirname,
+        encoding: 'utf8',
+        timeout: 300000,
+        windowsHide: true,
+      });
+      return true;
+    }
+  } catch (e) {
+    emitEvent('daemon-bootstrap', 'warn', 'rs-plugkit ensure failed, will retry on demand', { error: e.message });
+  }
+  return false;
+}
+
+function getPlugkitBinary() {
+  const home = os.homedir();
+  const exe = process.platform === 'win32' ? 'plugkit.exe' : 'plugkit';
+  const p = path.join(home, '.claude', 'gm-tools', exe);
+  return fs.existsSync(p) ? p : null;
+}
+
+// --- Existing daemon-bootstrap logic ---
 function emitEvent(daemon, severity, message, details = {}) {
   try {
     const date = new Date().toISOString().split('T')[0];
@@ -129,6 +157,15 @@ async function spawnDaemon(daemonName, cmd) {
       return { ok: true, already_running: true, durationMs: Date.now() - startTime };
     }
 
+    // Ensure plugkit binary is available before spawning any daemon
+    const plugged = ensurePlugkitReady();
+    if (!plugged) {
+      const bin = getPlugkitBinary();
+      if (!bin) {
+        emitEvent(daemonName, 'warn', 'Plugkit binary not available, daemon spawn may fail');
+      }
+    }
+
     emitEvent(daemonName, 'info', 'Spawning daemon', { cmd, sessionId });
 
     const env = Object.assign({}, process.env, {
@@ -146,7 +183,7 @@ async function spawnDaemon(daemonName, cmd) {
     proc.unref();
 
     emitEvent(daemonName, 'info', 'Daemon spawned', { pid, cmd, sessionId });
-    writeStatusFile(daemonName, 'spawned', { pid, sessionId });
+    writeStatusFile(daemonName, 'spawned', { pid, cmd, sessionId });
 
     return {
       ok: true,
@@ -257,16 +294,12 @@ async function shutdown(daemonName) {
       try {
         execSync(`taskkill /F /IM ${daemonName}* /T`, { stdio: 'ignore' });
         killed = true;
-      } catch {
-        killed = false;
-      }
+      } catch {}
     } else {
       try {
         execSync(`pkill -9 -f "${daemonName}"`, { stdio: 'ignore' });
         killed = true;
-      } catch {
-        killed = false;
-      }
+      } catch {}
     }
 
     emitEvent(daemonName, 'info', 'shutdown completed', {
@@ -296,4 +329,6 @@ module.exports = {
   emitEvent,
   isDaemonRunning,
   checkPortReachable,
+  ensurePlugkitReady,
+  getPlugkitBinary,
 };

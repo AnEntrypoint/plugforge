@@ -20,6 +20,17 @@ async function gmSkill(input) {
   const maxDepth = 6;
 
   console.log(`[gm] orchestrator starting; request="${context.request}"; task=${context.taskId}`);
+
+  // Auto-start the spool watcher before entering the skill chain
+  // This replaces post-write hooks with a file-watcher pattern
+  const watcherStarted = hooks.startWatcher(process.cwd());
+  if (watcherStarted) {
+    console.log(`[gm] spool watcher started (pid=${watcherStarted})`);
+  } else {
+    console.log('[gm] spool watcher not available (binary not ready or watch mode unsupported)');
+  }
+
+  // Activate hook bridge lifecycle (session-start, prompt-submit hooks)
   hooks.skillLifecycle({ sessionStart: true, promptSubmit: true, preToolUse: false, postToolUse: false });
 
   while (currentSkill && chainDepth < maxDepth) {
@@ -28,13 +39,10 @@ async function gmSkill(input) {
 
     const skillPath = path.join(skillsDir, currentSkill, 'index.js');
     if (!fs.existsSync(skillPath)) {
-      console.error(`[gm] ERROR: skill not found: ${skillPath}`);
-      return {
-        nextSkill: null,
-        context,
-        phase: 'ERROR',
-        error: `Skill ${currentSkill} not found`,
-      };
+      // Skill has SKILL.md but no index.js (reference-only / build-time skill)
+      console.error(`[gm] skill not found at ${skillPath}, skipping`);
+      currentSkill = null;
+      break;
     }
 
     try {
@@ -91,6 +99,7 @@ async function gmSkill(input) {
       error: 'Skill chain exceeded maximum depth',
     };
   }
+
   hooks.skillLifecycle({ sessionStart: false, promptSubmit: false, preToolUse: false, postToolUse: false, stop: true, stopGit: true });
 
   return {

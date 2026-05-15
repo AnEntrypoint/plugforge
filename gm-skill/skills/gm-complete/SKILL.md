@@ -26,10 +26,50 @@ Failure triage: broken output to EMIT, wrong logic to EXECUTE, new unknown to PL
 - `git_clean` — `git status --porcelain` returns empty
 - `git_pushed` — `git log origin/main..HEAD --oneline` returns empty
 - `ci_passed` — every GitHub Actions run reaches `conclusion: success`
-- `mutables_resolved` — `.gm/mutables.yml` deleted OR every entry `status: witnessed`. Stop hook hard-blocks turn-stop while any entry is `status: unknown`.
+- `mutables_resolved` — `.gm/mutables.yml` deleted OR every entry `status: witnessed`. Gate hard-blocks turn-stop while any entry is `status: unknown`.
 - `prd_empty` — `.gm/prd.yml` deleted AFTER residual scan: enumerate every in-spirit reachable residual surfaced this session; any hit re-enters `planning`, appends PRD items, executes. Empty PRD is necessary, not sufficient — done = empty PRD AND zero reachable in-spirit residuals. Out-of-spirit-or-unreachable residuals are named in the response and skipped; everything else is this turn's work.
 - `stress_suite_clear` — change walked through M1–D1 (governance), none flunked
 - `hidden_decision_posture` — open → down_weighted → closed only when CI is green AND stress suite is clear
+
+## Session-End Cleanup (Skills-Only Platforms)
+
+Without session_end hook, gm-complete handles cleanup on real-exit reasons (clear, logout, prompt_input_exit):
+
+1. **Kill background tasks**: write task IDs to `.gm/exec-spool/in/close/<N>.txt` for each running task. Or write `killSessionTasks` RPC call to `.gm/exec-spool/in/status/<N>.txt`.
+2. **Close browser sessions**: if any browser sessions open, close them via browser skill or spool dispatch.
+3. **Compaction/handoff reasons**: do NOT kill tasks or close browsers — the agent expects to resume from where it left off.
+
+Cleanup is triggered when gm-complete detects session end. Write cleanup commands via spool files:
+```js
+// .gm/exec-spool/in/nodejs/cleanup.js
+const fs = require('fs');
+const path = require('path');
+const spoolBase = path.join(process.cwd(), '.gm', 'exec-spool', 'in');
+// Close all running tasks for this session
+const closeDir = path.join(spoolBase, 'close');
+fs.mkdirSync(closeDir, { recursive: true });
+const taskId = Date.now();
+fs.writeFileSync(path.join(closeDir, `${taskId}.txt`), 'killSessionTasks');
+```
+
+## Residual-Scan Gate (Skills-Only Platforms)
+
+Without stop hook, gm-complete fires one residual-scan challenge when PRD is empty/missing AND no open browser sessions:
+
+1. Check `.gm/residual-check-fired` marker. If present, allow stop (second stop in same window).
+2. If absent, enumerate in-spirit reachable residuals:
+   - Pre-existing build breaks surfaced this turn
+   - Neighboring lint/test/lockfile failures
+   - Obvious refactor wins
+   - Observability gaps
+   - Doc drift
+   - Follow-on work the user clearly implied
+3. Any reachable residual → re-enter `planning`, append PRD items, execute.
+4. No reachable residuals → write "residual scan: none reachable in-spirit" to response, write `.gm/residual-check-fired` marker, allow stop.
+
+Marker management:
+- Write `.gm/residual-check-fired` after first residual scan in stopping window.
+- Clear `.gm/residual-check-fired` at start of every new user turn (alongside deleting `.gm/gm-fired-this-turn`).
 
 ## End-to-end verification
 
@@ -48,13 +88,13 @@ Required when this session changed any code that runs in a browser: anything und
 
 Trigger detection (any one): `git diff --name-only origin/main..HEAD` includes paths under `client/`, `apps/*/index.js` with client export, `docs/`, `*.html`, shader files, or any file imported by a browser entry; new/changed export consumed by `window.*` or rendered in DOM/canvas/WebGL; visual, layout, animation, input, network-on-page, or shader behavior altered.
 
-Protocol: boot the real server (or open the static page) on a known URL — witness HTTP 200. `exec:browser` → `page.goto(url)` → wait for app init by polling for the global the change affects (`window.__app.<system>`). Probe via `page.evaluate(() => …)` asserting the specific invariant the change was supposed to establish — instance counts, scene meshes, DOM nodes, render stats, network frames. Capture witnessed numbers in the response — "looks fine" is not a witness. Failures route to `gm-execute` (logic) or `gm-emit` (output) — never paper over.
+Protocol: boot the real server (or open the static page) on a known URL — witness HTTP 200. Browser skill → `page.goto(url)` → wait for app init by polling for the global the change affects (`window.__app.<system>`). Probe via `page.evaluate(() => …)` asserting the specific invariant the change was supposed to establish — instance counts, scene meshes, DOM nodes, render stats, network frames. Capture witnessed numbers in the response — "looks fine" is not a witness. Failures route to `gm-execute` (logic) or `gm-emit` (output) — never paper over.
 
-Long-running probes split into navigate-call → `exec:wait N` → probe-call to stay under the per-call budget. Do not stack multi-second `setTimeout` inside one `exec:browser` invocation.
+Long-running probes split into navigate-call → wait → probe-call to stay under the per-call budget. Do not stack multi-second `setTimeout` inside one browser invocation.
 
 Exempt only when: change is server-only with zero browser-facing surface, OR the repository has no browser surface at all (pure CLI / library). Exemption requires explicit tag in the response: `BROWSER EXEMPT: <reason — must reference diff paths showing zero browser-facing surface>`. Default posture is NOT exempt — burden is on the agent to prove exemption with diff evidence.
 
-Pre-flight: run `git diff --name-only origin/main..HEAD` directly via Bash, then dispatch a nodejs spool file that reads the diff list and filters lines matching `client/|docs/|\.html$|\.glsl$|\.frag$|\.vert$`. Any hit AND no `exec:browser` block in this session → mandatory regression to `gm-execute`.
+Pre-flight: run `git diff --name-only origin/main..HEAD` directly via Bash, then dispatch a nodejs spool file that reads the diff list and filters lines matching `client/|docs/|\.html$|\.glsl$|\.frag$|\.vert$`. Any hit AND no browser block in this session → mandatory regression to `gm-execute`.
 
 ## Integration test gate
 

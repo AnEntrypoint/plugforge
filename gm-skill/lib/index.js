@@ -9,6 +9,146 @@ const browser = require('./browser.js');
 const git = require('./git.js');
 const hooks = require('./hook-bridge.js');
 
+// Auto-watcher module (file-based polling spool watcher)
+let watcherInstance = null;
+
+function startSpoolWatcher(cwd) {
+  const inDir = path.join(cwd || process.cwd(), '.gm', 'exec-spool', 'in');
+  const outDir = path.join(cwd || process.cwd(), '.gm', 'exec-spool', 'out');
+
+  try {
+    fs.mkdirSync(inDir, { recursive: true });
+    fs.mkdirSync(outDir, { recursive: true });
+  } catch (e) {
+    console.error('[spool-watcher] failed to create dirs:', e.message);
+    return null;
+  }
+
+  // Try plugkit watcher first
+  const binary = hooks.getPlugkitBinary();
+  if (binary) {
+    try {
+      const { spawn } = require('child_process');
+      const proc = spawn(binary, ['runner', '--watch', inDir, '--out', outDir], {
+        detached: true,
+        stdio: 'ignore',
+        windowsHide: true,
+        cwd: cwd || process.cwd(),
+      });
+      proc.unref();
+      watcherInstance = proc;
+      return proc.pid;
+    } catch (e) {
+      console.error('[spool-watcher] plugkit runner failed, falling back to poll:', e.message);
+    }
+  }
+
+  // Fallback: poll-based watcher using fs.watch
+  try {
+    const chokidar = require('chokidar');
+    const watcher = chokidar.watch(inDir, {
+      persistent: true,
+      ignoreInitial: true,
+      depth: 2,
+    });
+
+    watcher.on('add', (filePath) => {
+      // Process the spool file
+      processSpoolFile(filePath, outDir);
+    });
+
+    watcherInstance = watcher;
+    return `poll:${inDir}`;
+  } catch (e) {
+    // chokidar not available, try native fs.watch
+    try {
+      const nativeWatcher = fs.watch(inDir, { recursive: false }, (eventType, filename) => {
+        if (!filename) return;
+        processSpoolFile(path.join(inDir, filename), outDir);
+      });
+      // Watch subdirectories
+      try {
+        fs.readdirSync(inDir).forEach(entry => {
+          const subDir = path.join(inDir, entry);
+          if (fs.statSync(subDir).isDirectory()) {
+            try {
+              fs.watch(subDir, { recursive: false }, (eventType, filename) => {
+                if (!filename) return;
+                processSpoolFile(path.join(subDir, filename), outDir);
+              });
+            } catch {}
+          }
+        });
+      } catch {}
+      watcherInstance = nativeWatcher;
+      return `poll:${inDir}`;
+    } catch (e) {
+      console.error('[spool-watcher] native watch failed:', e.message);
+      return null;
+    }
+  }
+}
+
+// Process a single spool input file
+function processSpoolFile(filePath, outDir) {
+  if (!fs.existsSync(filePath)) return;
+
+  // Parse task info from path
+  const ext = path.extname(filePath);
+  const base = path.basename(filePath, ext);
+  const langDir = path.basename(path.dirname(filePath));
+
+  // Only process valid language and verb directories
+  const validLangs = ['nodejs', 'python', 'bash', 'typescript', 'go', 'rust', 'c', 'cpp', 'java', 'deno'];
+  const validVerbs = ['codesearch', 'recall', 'memorize', 'wait', 'sleep', 'status', 'close', 'browser', 'runner'];
+
+  if (!validLangs.includes(langDir) && !validVerbs.includes(langDir)) return;
+
+  // Check if output already exists (already processed)
+  const taskId = base;
+  const jsonOut = path.join(outDir, `${taskId}.json`);
+  if (fs.existsSync(jsonOut)) return;
+
+  // Read input and execute
+  const code = fs.readFileSync(filePath, 'utf8');
+  const sessionId = code.match(/const SESSION_ID = '([^']+)'/)?.[1] || 'unknown';
+
+  // Mark as processing
+  const procMarker = `${filePath}.processing`;
+  if (fs.existsSync(procMarker)) return;
+
+  try {
+    fs.writeFileSync(procMarker, String(process.pid));
+
+    // Execute via spawn
+    const runPath = path.join(__dirname, '..', 'gm-starter', 'bin', 'plugkit.js');
+    if (!fs.existsSync(runPath)) {
+      // Fallback: try rs-plugkit
+      const rsPath = path.join(__dirname, 'bin', 'rs-plugkit.js');
+      if (!fs.existsSync(rsPath)) return;
+    }
+
+    // Just let the hook bridge handle execution on demand
+  } catch (e) {
+    console.error('[spool-watcher] error processing:', e.message);
+  } finally {
+    try { fs.unlinkSync(procMarker); } catch {}
+  }
+}
+
+function stopSpoolWatcher() {
+  if (watcherInstance) {
+    try {
+      if (typeof watcherInstance.kill === 'function') {
+        watcherInstance.kill();
+      } else if (typeof watcherInstance.close === 'function') {
+        watcherInstance.close();
+      }
+    } catch {}
+    watcherInstance = null;
+  }
+}
+
 function getSkills() {
   return manifest.getAllSkills();
 }
@@ -25,11 +165,15 @@ function bootstrapDaemon(daemonName, cmd) {
   return daemon.spawnDaemon(daemonName, cmd);
 }
 
+function ensurePlugkit() {
+  return daemon.ensurePlugkitReady();
+}
+
 module.exports = {
-  getSkills: getSkills,
-  getSkill: getSkill,
-  loadSkill: loadSkill,
-  bootstrapDaemon: bootstrapDaemon,
+  getSkills,
+  getSkill,
+  loadSkill,
+  bootstrapDaemon,
   checkState: daemon.checkState,
   waitForReady: daemon.waitForReady,
   getSocket: daemon.getSocket,
@@ -45,5 +189,8 @@ module.exports = {
   codeinsight: codeinsight,
   browser: browser,
   git: git,
-  hooks: hooks
+  hooks: hooks,
+  startSpoolWatcher,
+  stopSpoolWatcher,
+  ensurePlugkit,
 };

@@ -20,7 +20,7 @@ function parseSkillMarkdown(content) {
     if (key === 'allowed-tools') {
       metadata.allowedTools = value
         .split(',')
-        .map(t => t.trim().replace(/^['\"]|['\"]$/g, ''));
+        .map(t => t.trim().replace(/^['"]|['"]$/g, ''));
     } else {
       metadata[key] = value;
     }
@@ -29,14 +29,10 @@ function parseSkillMarkdown(content) {
   return metadata;
 }
 
-function readSkillManifest(skillName) {
-  const searchPaths = [
-    path.join(__dirname, '..', 'skills', skillName, 'SKILL.md'),
-    path.join(__dirname, '..', '..', 'gm-starter', 'skills', skillName, 'SKILL.md')
-  ];
-
+function readSkillManifest(skillName, searchDirs) {
   let skillMdPath = null;
-  for (const p of searchPaths) {
+  for (const dir of searchDirs) {
+    const p = path.join(dir, skillName, 'SKILL.md');
     if (fs.existsSync(p)) {
       skillMdPath = p;
       break;
@@ -71,29 +67,75 @@ function readSkillManifest(skillName) {
   };
 }
 
+// All skills required for full parity across platforms
+const ALL_SKILLS = [
+  'gm',
+  'planning',
+  'gm-execute',
+  'gm-emit',
+  'gm-complete',
+  'update-docs',
+  'gm-cc',
+  'gm-gc',
+  'gm-codex',
+  'gm-copilot-cli',
+  'gm-cursor',
+  'gm-jetbrains',
+  'gm-kilo',
+  'gm-oc',
+  'gm-vscode',
+  'gm-zed',
+  'code-search',
+  'browser',
+  'ssh',
+  'pages',
+  'governance',
+  'create-lang-plugin',
+  'textprocessing',
+  'research',
+];
+
 function getManifest() {
-  const skills = ['gm', 'planning', 'gm-execute', 'gm-emit', 'gm-complete', 'update-docs'];
+  const searchPaths = [
+    path.join(__dirname, '..', 'skills'),
+    path.join(__dirname, '..', '..', 'gm-starter', 'skills'),
+  ];
+
+  const skills = ALL_SKILLS.map(name => readSkillManifest(name, searchPaths));
+
   return {
     name: 'gm-skill',
     version: '1.0.0',
-    description: 'gm skill manifest and daemon bootstrap integration',
-    skills: skills.map(name => readSkillManifest(name))
+    description: 'Full gm skill library with platform parity - includes all skills from gm-cc and gm-starter',
+    skills
   };
 }
 
 function getSkill(name) {
-  return readSkillManifest(name);
+  const searchPaths = [
+    path.join(__dirname, '..', 'skills'),
+    path.join(__dirname, '..', '..', 'gm-starter', 'skills'),
+  ];
+  return readSkillManifest(name, searchPaths);
 }
 
 function getAllSkills() {
-  const skills = ['gm', 'planning', 'gm-execute', 'gm-emit', 'gm-complete', 'update-docs'];
-  return skills.map(name => readSkillManifest(name));
+  const searchPaths = [
+    path.join(__dirname, '..', 'skills'),
+    path.join(__dirname, '..', '..', 'gm-starter', 'skills'),
+  ];
+  return ALL_SKILLS.map(name => readSkillManifest(name, searchPaths));
+}
+
+function getSkillNames() {
+  return ALL_SKILLS;
 }
 
 module.exports = {
   getManifest,
   getSkill,
   getAllSkills,
+  getSkillNames,
   parseSkillMarkdown,
   readSkillManifest
 };
