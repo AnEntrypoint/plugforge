@@ -1360,9 +1360,9 @@ try {
 function createGcSessionStartHook() {
   return `#!/usr/bin/env node
 try {
-  console.log(JSON.stringify({ systemMessage: '<system-reminder>\\nUse gm orchestration and invoke the gm skill first.\\n</system-reminder>' }, null, 2));
+  console.log(JSON.stringify({}, null, 2));
 } catch (e) {
-  console.log(JSON.stringify({ systemMessage: '<system-reminder>\\nUse gm orchestration and invoke the gm skill first.\\n</system-reminder>' }, null, 2));
+  console.log(JSON.stringify({}, null, 2));
 }
 `;
 }
