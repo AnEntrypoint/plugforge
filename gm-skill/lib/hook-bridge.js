@@ -111,48 +111,47 @@ function runHook(subcommand, options = {}) {
 
 /**
  * Start the plugkit file watcher daemon.
- * Uses plugkit's built-in runner/watch mode.
- * If no binary available, bootstraps via rs-plugkit or plugkit.js.
+ * Uses plugkit's built-in spool command which watches .gm/exec-spool/in.
  */
 function startWatcher(cwd) {
   cwd = cwd || process.cwd();
-  const binary = getPlugkitBinary();
+  let binary = getPlugkitBinary();
 
   if (!binary) {
-    // Bootstrap first
     const ok = ensurePlugkit(false);
     if (!ok) {
       console.error('[hook-bridge] plugkit bootstrap failed, cannot start watcher');
       return null;
     }
+    binary = getPlugkitBinary();
   }
 
-  const bin = binary || getPlugkitBinary();
-  if (!bin) return null;
+  if (!binary) return null;
 
-  // Use plugkit's runner in watch mode for the exec-spool directory
   const spoolIn = path.join(cwd, '.gm', 'exec-spool', 'in');
   const spoolOut = path.join(cwd, '.gm', 'exec-spool', 'out');
 
-  // Ensure directories exist
   fs.mkdirSync(spoolIn, { recursive: true });
   fs.mkdirSync(spoolOut, { recursive: true });
 
-  // Start the watcher process detached
   try {
-    // Try watch mode first (rs-plugkit v2+ or plugkit with runner support)
-    const proc = spawn(bin, ['runner', '--watch', spoolIn, '--out', spoolOut], {
+    const proc = spawn(binary, ['spool'], {
       detached: true,
       stdio: 'ignore',
       windowsHide: true,
       cwd,
+      env: {
+        ...process.env,
+        SESSION_ID: process.env.SESSION_ID || 'default',
+        CLAUDE_PROJECT_DIR: cwd,
+        SPOOL_DIR: path.join(cwd, '.gm', 'exec-spool')
+      }
     });
     proc.unref();
     watcherProc = proc;
     return proc.pid;
   } catch (e) {
-    // Fallback: just ensure the binary is present for on-demand hook execution
-    console.error('[hook-bridge] watcher fallback, binary available for on-demand hooks:', bin);
+    console.error('[hook-bridge] watcher spawn failed:', e.message);
     return null;
   }
 }

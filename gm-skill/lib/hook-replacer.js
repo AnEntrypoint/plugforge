@@ -58,19 +58,24 @@ function startSpoolWatcher(cwd, options = {}) {
 
   const bin = getToolsBin();
   if (bin) {
-    try {
-      watcherProc = spawn(bin, ['runner', '--watch', inDir, '--out', outDir], {
-        detached: true,
-        stdio: options.stdio || 'ignore',
-        windowsHide: true,
-        cwd: cwd || process.cwd(),
-      });
-      watcherProc.unref();
-      watcherStarted = true;
-      return watcherProc.pid;
-    } catch (e) {
-      console.error('[hook-replacer] plugkit runner failed:', e.message);
-    }
+try {
+       watcherProc = spawn(bin, ['spool'], {
+         detached: true,
+         stdio: options.stdio || 'ignore',
+         windowsHide: true,
+         cwd: cwd || process.cwd(),
+         env: {
+           ...process.env,
+           CLAUDE_PROJECT_DIR: cwd || process.cwd(),
+           SPOOL_DIR: path.join(cwd || process.cwd(), '.gm', 'exec-spool')
+         }
+       });
+       watcherProc.unref();
+       watcherStarted = true;
+       return watcherProc.pid;
+     } catch (e) {
+       console.error('[hook-replacer] plugkit spool failed:', e.message);
+     }
   }
 
   try {
@@ -158,12 +163,13 @@ function processSpoolFile(filePath, outDir) {
   const procMarker = `${filePath}.processing`;
   if (fs.existsSync(procMarker)) return;
 
+  let tmpFile = null;
   try {
     fs.writeFileSync(procMarker, String(process.pid));
 
     const bin = getToolsBin();
-    if (!bin) {
-      fs.writeFileSync(path.join(outDir, `${taskId}.json`), JSON.stringify({
+    if (!fs.existsSync(bin)) {
+      fs.writeFileSync(jsonOut, JSON.stringify({
         error: 'plugkit binary not available',
         exitCode: 1,
         timedOut: false
@@ -171,26 +177,82 @@ function processSpoolFile(filePath, outDir) {
       return;
     }
 
-    const r = spawnSync(bin, ['runner', '--dispatch', filePath, '--out', outDir], {
-      cwd: path.dirname(filePath),
-      encoding: 'utf8',
-      timeout: 600000,
-      windowsHide: true,
-      stdio: 'pipe',
-    });
+    const content = fs.readFileSync(filePath, 'utf8');
+    const sessionId = process.env.CLAUDE_SESSION_ID || process.env.GM_SESSION_ID || 'default';
+    
+    let result;
+    if (['nodejs', 'typescript'].includes(langDir)) {
+      tmpFile = path.join(os.tmpdir(), `spool-${taskId}.js`);
+      fs.writeFileSync(tmpFile, content);
+      result = spawnSync(bin, ['exec', '--lang', 'nodejs', '--session', sessionId, '--timeout-ms', '300000', '--file', tmpFile], {
+        cwd: process.cwd(),
+        encoding: 'utf8',
+        timeout: 600000,
+        windowsHide: true,
+        stdio: 'pipe',
+      });
+    } else if (langDir === 'bash') {
+      result = spawnSync(bin, ['bash', '--timeout-ms', '300000', content], {
+        cwd: process.cwd(),
+        encoding: 'utf8',
+        timeout: 600000,
+        windowsHide: true,
+        stdio: 'pipe',
+      });
+    } else if (langDir === 'python') {
+      tmpFile = path.join(os.tmpdir(), `spool-${taskId}.py`);
+      fs.writeFileSync(tmpFile, content);
+      result = spawnSync(bin, ['exec', '--lang', 'python', '--session', sessionId, '--timeout-ms', '300000', '--file', tmpFile], {
+        cwd: process.cwd(),
+        encoding: 'utf8',
+        timeout: 600000,
+        windowsHide: true,
+        stdio: 'pipe',
+      });
+    } else if (langDir === 'codesearch') {
+      result = spawnSync(bin, ['search', content], {
+        cwd: process.cwd(),
+        encoding: 'utf8',
+        timeout: 600000,
+        windowsHide: true,
+        stdio: 'pipe',
+      });
+    } else if (langDir === 'recall') {
+      result = spawnSync(bin, ['recall', content], {
+        cwd: process.cwd(),
+        encoding: 'utf8',
+        timeout: 600000,
+        windowsHide: true,
+        stdio: 'pipe',
+      });
+    } else if (langDir === 'memorize') {
+      result = spawnSync(bin, ['memorize', content], {
+        cwd: process.cwd(),
+        encoding: 'utf8',
+        timeout: 600000,
+        windowsHide: true,
+        stdio: 'pipe',
+      });
+    } else {
+      fs.writeFileSync(jsonOut, JSON.stringify({
+        error: `Unknown lang/verb: ${langDir}`,
+        exitCode: 1,
+        timedOut: false
+      }));
+      return;
+    }
 
     if (!fs.existsSync(jsonOut)) {
-      const exitCode = r.status ?? 1;
+      const exitCode = result.status ?? 1;
       const metadata = {
         exitCode,
-        timedOut: r.signal === 'SIGTERM',
-        error: r.stderr || r.error?.message || 'unknown error',
-        stdout: r.stdout || '',
+        timedOut: result.signal === 'SIGTERM',
+        error: result.stderr || result.error?.message || '',
+        stdout: result.stdout || '',
       };
       fs.writeFileSync(jsonOut, JSON.stringify(metadata));
     }
   } catch (e) {
-    const taskId = base;
     fs.writeFileSync(path.join(outDir, `${taskId}.json`), JSON.stringify({
       error: e.message,
       exitCode: 1,
@@ -198,6 +260,7 @@ function processSpoolFile(filePath, outDir) {
     }));
   } finally {
     try { fs.unlinkSync(procMarker); } catch {}
+    if (tmpFile) { try { fs.unlinkSync(tmpFile); } catch {} }
   }
 }
 
