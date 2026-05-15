@@ -80,34 +80,43 @@ install();
 
 // Per-platform postinstall scripts (npm install into node_modules triggers copy to project)
 function createGeminiInstallScript() {
-  return `#!/usr/bin/env node
-const fs = require('fs');
-const path = require('path');
+   return `#!/usr/bin/env node
+ const fs = require('fs');
+ const path = require('path');
 
-${NODE_MODULES_HELPERS}
+ ${NODE_MODULES_HELPERS}
 
-function install() {
-  if (!isInsideNodeModules()) {
-    process.stderr.write('[gm-gc-install] not in node_modules context, skipping\\n');
-    return;
-  }
-  const projectRoot = getProjectRoot();
-  if (!projectRoot) {
-    process.stderr.write('[gm-gc-install] could not resolve project root\\n');
-    return;
-  }
-  const geminiDir = path.join(projectRoot, '.gemini', 'extensions', 'gm');
-  const sourceDir = __dirname;
-  process.stderr.write(\`[gm-gc-install] destination: \${geminiDir}\\n\`);
-  const agentsOk = safeCopyDirectory(path.join(sourceDir, 'agents'), path.join(geminiDir, 'agents'));
-  process.stderr.write(\`[gm-gc-install] agents: \${agentsOk ? 'ok' : 'failed'}\\n\`);
-  const hooksOk = safeCopyDirectory(path.join(sourceDir, 'hooks'), path.join(geminiDir, 'hooks'));
-  process.stderr.write(\`[gm-gc-install] hooks: \${hooksOk ? 'ok' : 'failed'}\\n\`);
-}
+ function install() {
+   if (!isInsideNodeModules()) {
+     process.stderr.write('[gm-gc-install] not in node_modules context, skipping\\n');
+     return;
+   }
+   const projectRoot = getProjectRoot();
+   if (!projectRoot) {
+     process.stderr.write('[gm-gc-install] could not resolve project root\\n');
+     return;
+   }
+   const geminiDir = path.join(projectRoot, '.gemini', 'extensions', 'gm');
+   const sourceDir = __dirname;
+   process.stderr.write(\`[gm-gc-install] destination: \${geminiDir}\\n\`);
+   const agentsOk = safeCopyDirectory(path.join(sourceDir, 'agents'), path.join(geminiDir, 'agents'));
+   process.stderr.write(\`[gm-gc-install] agents: \${agentsOk ? 'ok' : 'failed'}\\n\`);
+   const hooksOk = safeCopyDirectory(path.join(sourceDir, 'hooks'), path.join(geminiDir, 'hooks'));
+   process.stderr.write(\`[gm-gc-install] hooks: \${hooksOk ? 'ok' : 'failed'}\\n\`);
+   const skillsOk = safeCopyDirectory(path.join(sourceDir, 'skills'), path.join(geminiDir, 'skills'));
+   process.stderr.write(\`[gm-gc-install] skills: \${skillsOk ? 'ok' : 'failed'}\\n\`);
+   const scriptsOk = safeCopyDirectory(path.join(sourceDir, 'scripts'), path.join(geminiDir, 'scripts'));
+   process.stderr.write(\`[gm-gc-install] scripts: \${scriptsOk ? 'ok' : 'failed'}\\n\`);
+   const binOk = safeCopyDirectory(path.join(sourceDir, 'bin'), path.join(geminiDir, 'bin'));
+   process.stderr.write(\`[gm-gc-install] bin: \${binOk ? 'ok' : 'failed'}\\n\`);
+   ['AGENTS.md', 'prompts'].forEach(f => {
+     try { fs.copyFileSync(path.join(sourceDir, f), path.join(geminiDir, f)); } catch {}
+   });
+ }
 
-install();
-`;
-}
+ install();
+ `;
+ }
 
 function createCodexInstallScript() {
   const merger = codexMergerInline('codexDir', `path.join(projectRoot, '.codex', 'config.toml')`);
@@ -280,17 +289,18 @@ ${extraSetup}
 }
 
 function createGeminiInstallerScript() {
-  return createCliInstaller({
-    pkg: 'gm-gc',
-    label: 'Gemini CLI',
-    destDir: `path.join(homeDir, '.gemini', 'extensions', 'gm')`,
-    filesToCopy: [
-      ['agents', 'agents'], ['hooks', 'hooks'], ['.mcp.json', '.mcp.json'],
-      ['gemini-extension.json', 'gemini-extension.json'], ['README.md', 'README.md'], ['GEMINI.md', 'GEMINI.md'], ['AGENTS.md', 'AGENTS.md']
-    ],
-    restartMsg: 'Restart Gemini CLI to activate.'
-  });
-}
+   return createCliInstaller({
+     pkg: 'gm-gc',
+     label: 'Gemini CLI',
+     destDir: `path.join(homeDir, '.gemini', 'extensions', 'gm')`,
+     filesToCopy: [
+       ['agents', 'agents'], ['hooks', 'hooks'], ['skills', 'skills'], ['scripts', 'scripts'], ['bin', 'bin'],
+       ['.mcp.json', '.mcp.json'], ['gemini-extension.json', 'gemini-extension.json'], ['README.md', 'README.md'],
+       ['GEMINI.md', 'GEMINI.md'], ['AGENTS.md', 'AGENTS.md'], ['prompts', 'prompts']
+     ],
+     restartMsg: 'Restart Gemini CLI to activate.'
+   });
+ }
 
 function createClaudeCodeCliScript() {
   const extraSetup = `
@@ -1368,7 +1378,9 @@ try {
 }
 
 const gc = factory('gc', 'Gemini CLI', 'gemini-extension.json', 'GEMINI.md', {
-  loadSkillsFromSource() { return {}; },
+  loadSkillsFromSource(sourceDir) {
+    return TemplateBuilder.loadSkillsFromSource(sourceDir, 'skills');
+  },
   transformAgentFrontmatter(raw) {
     const m = raw.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n?([\s\S]*)$/);
     if (!m) return raw;
@@ -1393,41 +1405,36 @@ const gc = factory('gc', 'Gemini CLI', 'gemini-extension.json', 'GEMINI.md', {
       author: pluginSpec.author, license: pluginSpec.license,
       ...repoFields('gm-gc'), engines: pluginSpec.engines, publishConfig: pluginSpec.publishConfig,
       bin: { 'gm-gc': './cli.js', 'gm-gc-install': './install.js' },
-      files: ['agents/', 'hooks/', '.github/', 'README.md', 'GEMINI.md', '.mcp.json', 'gemini-extension.json', 'cli.js', 'install.js'],
+      files: ['agents/', 'bin/', 'hooks/', 'scripts/', 'skills/', 'prompts/', '.github/', 'README.md', 'GEMINI.md', '.mcp.json', 'gemini-extension.json', 'cli.js', 'install.js'],
       ...(pluginSpec.scripts && { scripts: pluginSpec.scripts }), ...extraFields
     });
   },
-  getPackageJsonFields() {
-    return {
-      bin: { 'gm-gc': './cli.js', 'gm-gc-install': './install.js' },
-      files: ['agents/', 'hooks/', '.github/', 'README.md', 'GEMINI.md', '.mcp.json', 'gemini-extension.json', 'cli.js']
-    };
-  },
-  getAdditionalFiles(spec) {
-    return {
-      'cli.js': createGeminiInstallerScript(),
-      'install.js': createGeminiInstallScript(),
-      'hooks/pre-tool-use-hook.js': createGcPreToolUseHook(),
-      'hooks/prompt-submit-hook.js': createGcPromptSubmitHook(),
-      'hooks/stop-hook.js': createGcStopHook(),
-      'hooks/stop-hook-git.js': createGcStopHookGit(),
-      'hooks/session-start-hook.js': createGcSessionStartHook(),
-    };
-  },
-  buildHookSpec() {
-    return {
-      envVar: 'extensionPath',
-      events: [
-        { eventKey: 'BeforeTool', commands: [{ kind: 'js', file: 'pre-tool-use-hook.js', timeout: 3600 }] },
-        { eventKey: 'SessionStart', commands: [{ kind: 'js', file: 'session-start-hook.js', timeout: 180000 }] },
-        { eventKey: 'BeforeAgent', commands: [{ kind: 'js', file: 'prompt-submit-hook.js', timeout: 60000 }] },
-        { eventKey: 'SessionEnd', commands: [
-          { kind: 'js', file: 'stop-hook.js', timeout: 300000 },
-          { kind: 'js', file: 'stop-hook-git.js', timeout: 60000 }
-        ]}
-      ]
-    };
-  },
+getPackageJsonFields() {
+     return {
+       bin: { 'gm-gc': './cli.js', 'gm-gc-install': './install.js' },
+       files: ['agents/', 'bin/', 'hooks/', 'scripts/', 'skills/', 'prompts/', '.github/', 'README.md', 'GEMINI.md', '.mcp.json', 'gemini-extension.json', 'cli.js']
+     };
+   },
+getAdditionalFiles(spec) {
+     return {
+       'cli.js': createGeminiInstallerScript(),
+       'install.js': createGeminiInstallScript(),
+     };
+   },
+buildHookSpec() {
+     return {
+       envVar: 'extensionPath',
+       events: [
+         { eventKey: 'BeforeTool', commands: [{ kind: 'plugkit', subcommand: 'pre-tool-use', timeout: 3600 }] },
+         { eventKey: 'SessionStart', commands: [{ kind: 'plugkit', subcommand: 'session-start', timeout: 180000 }] },
+         { eventKey: 'BeforeAgent', commands: [{ kind: 'plugkit', subcommand: 'prompt-submit', timeout: 60000 }] },
+         { eventKey: 'SessionEnd', commands: [
+           { kind: 'plugkit', subcommand: 'stop', timeout: 300000 },
+           { kind: 'plugkit', subcommand: 'stop-git', timeout: 60000 }
+         ]}
+       ]
+     };
+   },
   generateReadme(spec) {
     return `# ${spec.name} for Gemini CLI\n\n## Installation\n\n**Windows and Unix:**\n\`\`\`bash\ngit clone https://github.com/AnEntrypoint/gm-gc ~/.gemini/extensions/${spec.name}\n\`\`\`\n\n**Windows PowerShell:**\n\`\`\`powershell\ngit clone https://github.com/AnEntrypoint/gm-gc \"\\$env:APPDATA\\gemini\\extensions\\${spec.name}\"\n\`\`\`\n\n## Automatic Path Resolution\n\nHooks automatically use \`\${extensionPath}\` for path resolution. No manual environment variable setup required. The extension is fully portable.\n\n## Features\n\n- MCP tools for code execution and search\n- State machine agent policy (gm)\n- Stop hook verification loop\n- Git enforcement on session end\n- AST analysis via thorns at session start\n\nThe extension activates automatically on session start.\n`;
   }

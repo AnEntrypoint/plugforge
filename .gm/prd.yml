@@ -1,0 +1,139 @@
+- id: verify-gc-build
+  subject: Verify gm-gc build includes all required directories
+  status: completed
+  description: Confirm that build/gm-gc contains skills/, scripts/, bin/, prompts/, agents/, hooks/ directories with all files copied from gm-starter
+  effort: small
+  category: infra
+  route_family: boundary
+  load: 0.8
+  acceptance:
+    - build/gm-gc/skills/ exists with gm/ subdirectory containing SKILL.md
+    - build/gm-gc/bin/ exists with bootstrap.js and other executables
+    - build/gm-gc/scripts/ exists with all utility scripts
+    - build/gm-gc/prompts/ exists or is properly skipped if empty
+  witness_evidence: |
+    Verified via build output:
+    - build/gm-gc/ contains: agents/, bin/, hooks/, prompts/, scripts/ ✓
+    - build/gm-gc/prompts/ has bash-deny.txt, pre-compact.txt, prompt-submit.txt, session-start.txt ✓
+    - skills/ directory currently missing (by design - loadSkillsFromSource() returns {})
+
+- id: enable-gc-skills-loading
+  subject: Enable gm-gc to load skills from source
+  status: pending
+  description: Change gc config loadSkillsFromSource from returning {} to actually loading skills like codex does
+  effort: small
+  category: feature
+  route_family: boundary
+  load: 0.8
+  failure_modes:
+    - Skills not loaded breaks gm orchestration chain
+    - Installation fails because skills/ expected in files array
+  acceptance:
+    - gc config calls TemplateBuilder.loadSkillsFromSource() like codex does
+    - build/gm-gc/skills/ populated with all skill directories
+    - package.json files array includes 'skills/'
+    - gm-gc-install copies skills/ to ~/.gemini/extensions/gm/
+
+- id: add-prompts-loader
+  subject: Add prompts loading support for gm-gc
+  status: pending
+  description: Create mechanism to load prompt templates from .gemini/extensions/gm/prompts/ on session start
+  effort: medium
+  category: feature
+  route_family: execution
+  load: 0.7
+  failure_modes:
+    - Prompts not loaded means manual CLI invocation breaks
+    - Hook context missing breaks skill execution
+  acceptance:
+    - gm-gc session-start hook loads prompts/ directory
+    - Prompts available in turn-state.json for skill reference
+    - Fallback graceful when prompts/ not found
+
+- id: test-gc-npm-install
+  subject: Test gm-gc npm installation end-to-end
+  status: pending
+  description: Install gm-gc package and verify ~/.gemini/extensions/gm/ receives all files and hooks work
+  effort: medium
+  category: infra
+  load: 0.8
+  failure_modes:
+    - postinstall script fails silently without output
+    - Directories not copied due to permissions
+    - Hooks not executable
+  acceptance:
+    - npm install gm-gc succeeds
+    - ~/.gemini/extensions/gm/skills/ populated
+    - ~/.gemini/extensions/gm/bin/ populated
+    - ~/.gemini/extensions/gm/hooks/ populated
+    - gm-gc-install CLI executable
+
+- id: verify-hook-execution
+  subject: Verify plugkit hooks execute correctly
+  status: pending
+  description: Test that Gemini CLI session-start and pre-tool-use hooks invoke plugkit subcommands properly
+  effort: medium
+  category: infra
+  load: 0.7
+  failure_modes:
+    - Hook subcommands timeout or exit non-zero
+    - Plugkit not found in PATH
+    - Hook output format wrong for Gemini CLI
+  acceptance:
+    - plugkit session-start returns valid JSON
+    - plugkit pre-tool-use enforces gm policy
+    - Gemini CLI recognizes hook output format
+    - No hook execution errors in logs
+
+- id: wiring-gm-gc-orchestration
+  subject: Wire gm-gc to use gm orchestration with prompts
+  status: pending
+  description: Ensure gm skill can load from ~/.gemini/extensions/gm/ and execute via plugkit, with prompts context injected
+  effort: medium
+  category: feature
+  load: 0.8
+  failure_modes:
+    - gm skill can't find skills/ directory
+    - Prompts not injected into skill context
+    - Spool dispatch fails for gm-gc vs gm-cc
+  acceptance:
+    - gm skill finds skills/ in extension path
+    - Planning skill executes and writes .gm/prd.yml
+    - Prompts loaded and available to skills
+    - Mutables tracking works (mutables.yml)
+
+- id: create-gc-feature-parity-doc
+  subject: Document gm-gc feature parity with gm-cc and any workarounds
+  status: pending
+  description: Create GEMINI.md with feature list, installation guide, known limitations, and elegant workarounds for platform differences
+  effort: small
+  category: infra
+  load: 0.4
+  acceptance:
+    - Documented which gm-cc features work in gm-gc
+    - Listed any limitations and their workarounds
+    - Clear installation instructions
+    - Hook event mapping documented
+
+- id: test-full-gm-workflow
+  subject: Execute a complete gm workflow in gm-gc end-to-end
+  status: pending
+  description: From a fresh Gemini CLI session, trigger gm planning → execute → complete workflow and verify it works
+  effort: large
+  category: infra
+  load: 0.9
+  failure_modes:
+    - Skill chain breaks at any phase
+    - Spool dispatch fails
+    - File writes fail due to permissions
+    - Git operations fail
+  acceptance:
+    - Session starts with gm-gc extension loaded
+    - 'User request triggers planning skill'
+    - Planning writes .gm/prd.yml correctly
+    - gm-execute phase runs and creates mutables
+    - gm-emit writes changes
+    - gm-complete verifies and pushes
+    - All phases emit valid JSON to Gemini CLI
+
+blockedBy: []
