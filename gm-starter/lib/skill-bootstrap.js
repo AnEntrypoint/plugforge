@@ -4,7 +4,7 @@ const https = require('https');
 const { execSync, spawn } = require('child_process');
 const crypto = require('crypto');
 const os = require('os');
-const net = require('net');
+const spool = require('./spool.js');
 
 const PLUGKIT_TOOLS_DIR = path.join(os.homedir(), '.claude', 'gm-tools');
 const PLUGKIT_VERSION_FILE = path.join(PLUGKIT_TOOLS_DIR, 'plugkit.version');
@@ -355,24 +355,12 @@ async function bootstrapPlugkit() {
 }
 
 async function checkPortReachable(host, port, timeoutMs = 500) {
-  return new Promise((resolve) => {
-    const socket = new net.Socket();
-    const timeoutHandle = setTimeout(() => {
-      socket.destroy();
-      resolve(false);
-    }, timeoutMs);
-
-    socket.connect(port, host, () => {
-      clearTimeout(timeoutHandle);
-      socket.destroy();
-      resolve(true);
-    });
-
-    socket.on('error', () => {
-      clearTimeout(timeoutHandle);
-      resolve(false);
-    });
-  });
+  try {
+    const result = await spool.execSpool('health', 'health', { timeoutMs, sessionId: process.env.CLAUDE_SESSION_ID || 'unknown' });
+    return !!(result && result.ok);
+  } catch (e) {
+    return false;
+  }
 }
 
 async function bootstrapAcptoapi() {

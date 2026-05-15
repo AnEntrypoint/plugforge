@@ -32,6 +32,11 @@ function getExtForLang(lang) {
   return langExt[lang] || 'js';
 }
 
+function validateVerb(verb) {
+  const valid = ['codesearch', 'recall', 'memorize', 'wait', 'sleep', 'status', 'close', 'browser', 'runner', 'type', 'kill-port', 'forget', 'feedback', 'learn-status', 'learn-debug', 'learn-build', 'discipline', 'pause', 'health'];
+  return valid.includes(verb) ? verb : 'status';
+}
+
 function writeSpool(body, lang = 'nodejs', options = {}) {
   const validLang = validateLang(lang);
   const ext = getExtForLang(validLang);
@@ -54,6 +59,17 @@ function writeSpool(body, lang = 'nodejs', options = {}) {
     lang: validLang,
     ext
   };
+}
+
+function writeSpoolVerb(body, verb, options = {}) {
+  const validVerb = validateVerb(verb);
+  const taskId = options.taskId || generateTaskId();
+  const baseDir = getSpoolBaseDir();
+  const inDir = path.join(baseDir, 'in', validVerb);
+  const inFile = path.join(inDir, `${taskId}.txt`);
+  fs.mkdirSync(inDir, { recursive: true });
+  fs.writeFileSync(inFile, body, 'utf8');
+  return { id: taskId, path: inFile, verb: validVerb };
 }
 
 function readSpoolOutput(id) {
@@ -121,6 +137,21 @@ async function waitForCompletion(id, timeoutMs = 30000) {
   };
 }
 
+async function execSpool(body, lang, options = {}) {
+  const timeoutMs = options.timeoutMs || 30000;
+  const sessionId = options.sessionId || process.env.CLAUDE_SESSION_ID;
+  const task = lang === 'nodejs' || lang === 'bash' ? writeSpool(body, lang, { sessionId }) : writeSpoolVerb(body, lang, {});
+  const result = await waitForCompletion(task.id, timeoutMs);
+  if (options.cleanup !== false) {
+    try { fs.unlinkSync(task.path); } catch (e) {}
+  }
+  return result;
+}
+
+async function execCodesearch(query, options = {}) { return execSpool(query, 'codesearch', options); }
+async function execRecall(query, options = {}) { return execSpool(query, 'recall', options); }
+async function execMemorize(fact, options = {}) { return execSpool(fact, 'memorize', options); }
+
 function getAllOutputs() {
   const baseDir = getSpoolBaseDir();
   const outDir = path.join(baseDir, 'out');
@@ -153,12 +184,18 @@ async function getEvents(sessionId, cwd) {
 
 module.exports = {
   writeSpool,
+  writeSpoolVerb,
   readSpoolOutput,
   waitForCompletion,
+  execSpool,
+  execCodesearch,
+  execRecall,
+  execMemorize,
   getAllOutputs,
   getSpoolBaseDir,
   generateTaskId,
   validateLang,
   getExtForLang,
+  validateVerb,
   getEvents
 };

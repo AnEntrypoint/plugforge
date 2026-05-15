@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
-const yaml = require('yaml');
+const yaml = require('js-yaml');
+const hooks = require('../../lib/hook-bridge.js');
 
 async function emitSkill(input, parentContext) {
   const context = parentContext || {
@@ -13,13 +14,14 @@ async function emitSkill(input, parentContext) {
   const prdPath = path.join(gmDir, 'prd.yml');
 
   console.error(`[gm-emit] EMIT phase starting`);
+  hooks.preToolUse();
 
   let prd = [];
 
   try {
     if (fs.existsSync(prdPath)) {
       const prdContent = fs.readFileSync(prdPath, 'utf8');
-      prd = yaml.parse(prdContent) || [];
+      prd = yaml.load(prdContent) || [];
     }
   } catch (err) {
     console.error(`[gm-emit] ERROR reading prd.yml:`, err.message);
@@ -69,6 +71,7 @@ async function emitSkill(input, parentContext) {
   }
 
   context.prd = prd;
+  hooks.postToolUse();
 
   return {
     nextSkill: 'gm-complete',

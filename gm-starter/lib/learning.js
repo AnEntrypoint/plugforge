@@ -1,7 +1,7 @@
-const net = require('net');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
+const spool = require('./spool.js');
 
 const RS_LEARN_HOST = '127.0.0.1';
 const RS_LEARN_PORT = 4801;
@@ -76,116 +76,16 @@ async function ensureDaemonRunning(sessionId = null) {
 }
 
 async function checkLearningAvailable(timeoutMs = 500) {
-  const startTime = Date.now();
   const sessionId = process.env.CLAUDE_SESSION_ID || 'unknown';
-
-  return new Promise((resolve) => {
-    const socket = new net.Socket();
-    const timeoutHandle = setTimeout(() => {
-      socket.destroy();
-      emitLearningEvent('check', 'warn', 'rs-learn unavailable (timeout)', { sessionId, timeoutMs });
-      resolve(false);
-    }, timeoutMs);
-
-    socket.connect(RS_LEARN_PORT, RS_LEARN_HOST, () => {
-      clearTimeout(timeoutHandle);
-      socket.destroy();
-      emitLearningEvent('check', 'info', 'rs-learn reachable', { sessionId, durationMs: Date.now() - startTime });
-      resolve(true);
-    });
-
-    socket.on('error', () => {
-      clearTimeout(timeoutHandle);
-      emitLearningEvent('check', 'warn', 'rs-learn connection failed', { sessionId, durationMs: Date.now() - startTime });
-      resolve(false);
-    });
-  });
-}
-
-async function jsonRpcCall(method, params, sessionId, timeoutMs = 5000) {
-  const requestId = getRequestId();
-  const startTime = Date.now();
-
-  return new Promise((resolve, reject) => {
-    const socket = new net.Socket();
-    let response = '';
-    const timeoutHandle = setTimeout(() => {
-      socket.destroy();
-      emitLearningEvent('rpc', 'error', `RPC timeout: ${method}`, { sessionId, method, requestId, timeoutMs });
-      reject(new Error(`RPC timeout after ${timeoutMs}ms for ${method}`));
-    }, timeoutMs);
-
-    socket.on('connect', () => {
-      const payload = JSON.stringify({
-        jsonrpc: '2.0',
-        method,
-        params: { ...params, sessionId },
-        id: requestId,
-      });
-
-      emitLearningEvent('rpc', 'debug', `RPC call: ${method}`, { sessionId, method, requestId });
-      socket.write(payload + '\n');
-    });
-
-    socket.on('data', (chunk) => {
-      response += chunk.toString();
-
-      try {
-        const lines = response.split('\n').filter(l => l.trim());
-        const lastLine = lines[lines.length - 1];
-
-        if (lastLine.trim()) {
-          const result = JSON.parse(lastLine);
-
-          if (result.error) {
-            clearTimeout(timeoutHandle);
-            socket.destroy();
-            emitLearningEvent('rpc', 'error', `RPC error: ${method}`, {
-              sessionId,
-              method,
-              requestId,
-              error: result.error.message,
-              durationMs: Date.now() - startTime,
-            });
-            reject(new Error(`RPC error: ${result.error.message}`));
-          } else if (result.result !== undefined) {
-            clearTimeout(timeoutHandle);
-            socket.destroy();
-            emitLearningEvent('rpc', 'debug', `RPC success: ${method}`, {
-              sessionId,
-              method,
-              requestId,
-              durationMs: Date.now() - startTime,
-            });
-            resolve(result.result);
-          }
-        }
-      } catch (e) {
-        if (response.trim().length > 1000) {
-          clearTimeout(timeoutHandle);
-          socket.destroy();
-          emitLearningEvent('rpc', 'error', `RPC response parse failed: ${method}`, {
-            sessionId,
-            method,
-            error: e.message,
-          });
-          reject(e);
-        }
-      }
-    });
-
-    socket.on('error', (err) => {
-      clearTimeout(timeoutHandle);
-      emitLearningEvent('rpc', 'error', `RPC socket error: ${method}`, {
-        sessionId,
-        method,
-        error: err.message,
-      });
-      reject(err);
-    });
-
-    socket.connect(RS_LEARN_PORT, RS_LEARN_HOST);
-  });
+  try {
+    const result = await spool.execSpool('health', 'health', { timeoutMs, sessionId });
+    const ok = !!(result && result.ok);
+    emitLearningEvent('check', ok ? 'info' : 'warn', ok ? 'rs-learn reachable (spool)' : 'rs-learn unavailable (spool)', { sessionId, timeoutMs });
+    return ok;
+  } catch (e) {
+    emitLearningEvent('check', 'warn', 'rs-learn availability check failed (spool)', { sessionId, timeoutMs, error: e.message });
+    return false;
+  }
 }
 
 async function queryLearning(query, discipline = 'default', sessionId = null) {
@@ -201,22 +101,19 @@ async function queryLearning(query, discipline = 'default', sessionId = null) {
       return null;
     }
 
-    const result = await jsonRpcCall(
-      'recall',
-      { query, discipline },
-      sid,
-      5000
-    );
+    const payload = discipline && discipline !== 'default' ? `@${discipline} ${query}` : query;
+    const result = await spool.execRecall(payload, { timeoutMs: 5000, sessionId: sid });
+    if (!result.ok) throw new Error(result.stderr || result.stdout || 'recall failed');
 
     emitLearningEvent('query', 'info', 'Learning query completed', {
       sessionId: sid,
       query,
       discipline,
-      hitCount: Array.isArray(result) ? result.length : 0,
+      hitCount: (result.stdout || '').length > 0 ? 1 : 0,
       durationMs: Date.now() - startTime,
     });
 
-    return result;
+    return result.stdout || '';
   } catch (error) {
     emitLearningEvent('query', 'error', `Learning query failed: ${query}`, {
       sessionId: sid,
@@ -241,12 +138,9 @@ async function persistLearning(fact, discipline = 'default', sessionId = null) {
       throw new Error('rs-learn daemon not available');
     }
 
-    const result = await jsonRpcCall(
-      'memorize',
-      { fact, discipline },
-      sid,
-      5000
-    );
+    const payload = discipline && discipline !== 'default' ? `@${discipline}\n${fact}` : fact;
+    const result = await spool.execMemorize(payload, { timeoutMs: 5000, sessionId: sid });
+    if (!result.ok) throw new Error(result.stderr || result.stdout || 'memorize failed');
 
     emitLearningEvent('persist', 'info', 'Learning persist completed', {
       sessionId: sid,

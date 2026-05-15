@@ -76,7 +76,8 @@ async function handleBrowserVerb(body, sessionId) {
 
       case 'click':
       case 'type':
-      case 'navigate': {
+      case 'navigate':
+      case 'execute': {
         let commandArgs = {};
         if (args) {
           try {
@@ -91,8 +92,19 @@ async function handleBrowserVerb(body, sessionId) {
         return result;
       }
 
-      default:
-        throw new Error(`Unknown browser action: ${action}`);
+      default: {
+        let commandArgs = {};
+        if (args) {
+          try {
+            commandArgs = JSON.parse(args);
+          } catch (e) {
+            commandArgs = { value: args };
+          }
+        }
+        const result = await sendCommand(sessionId, action, commandArgs);
+        console.log(JSON.stringify(result));
+        return result;
+      }
     }
   } catch (e) {
     emitHandlerEvent('error', 'Browser verb failed', {

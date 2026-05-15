@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
-const net = require('net');
 const os = require('os');
+const spool = require('./spool.js');
 
 const CODEINSIGHT_HOST = '127.0.0.1';
 const CODEINSIGHT_PORT = 4802;
@@ -20,12 +20,12 @@ function emitEvent(severity, message, details = {}) {
 }
 
 async function checkSocketReachable(host = CODEINSIGHT_HOST, port = CODEINSIGHT_PORT, timeoutMs = 1000) {
-  return new Promise((resolve) => {
-    const socket = new net.Socket();
-    const timeoutHandle = setTimeout(() => { socket.destroy(); resolve(false); }, timeoutMs);
-    socket.connect(port, host, () => { clearTimeout(timeoutHandle); socket.destroy(); resolve(true); });
-    socket.on('error', () => { clearTimeout(timeoutHandle); resolve(false); });
-  });
+  try {
+    const result = await spool.execSpool('health', 'health', { timeoutMs });
+    return !!(result && result.ok);
+  } catch (e) {
+    return false;
+  }
 }
 
 async function sendRequest(request, sessionId = 'unknown') {
@@ -42,59 +42,17 @@ async function sendRequest(request, sessionId = 'unknown') {
     return { ok: false, error: `Codeinsight daemon unavailable at ${CODEINSIGHT_HOST}:${CODEINSIGHT_PORT}`, durationMs: Date.now() - startTime };
   }
 
-  return new Promise((resolve) => {
-    const socket = new net.Socket();
-    let buffer = '';
-    let responseReceived = false;
-
-    const timeoutHandle = setTimeout(() => {
-      socket.destroy();
-      if (!responseReceived) {
-        emitEvent('warn', 'Codeinsight request timeout', { request: request.action, sessionId, durationMs: Date.now() - startTime });
-        resolve({ ok: false, error: `Request timeout after ${REQUEST_TIMEOUT_MS}ms`, timedOut: true, durationMs: Date.now() - startTime });
-      }
-    }, REQUEST_TIMEOUT_MS);
-
-    socket.connect(CODEINSIGHT_PORT, CODEINSIGHT_HOST, () => {
-      socket.write(JSON.stringify(request) + '\n');
-    });
-
-    socket.on('data', (data) => {
-      buffer += data.toString('utf8');
-      const lines = buffer.split('\n');
-      for (let i = 0; i < lines.length - 1; i++) {
-        const line = lines[i].trim();
-        if (!line) continue;
-        try {
-          const response = JSON.parse(line);
-          responseReceived = true;
-          clearTimeout(timeoutHandle);
-          socket.destroy();
-          emitEvent('info', 'Codeinsight response received', { action: request.action, ok: response.ok, sessionId, durationMs: Date.now() - startTime });
-          resolve({ ...response, durationMs: Date.now() - startTime });
-        } catch (e) {
-          emitEvent('warn', 'Failed to parse response', { action: request.action, error: e.message, sessionId });
-        }
-      }
-      buffer = lines[lines.length - 1];
-    });
-
-    socket.on('error', (err) => {
-      clearTimeout(timeoutHandle);
-      if (!responseReceived) {
-        emitEvent('error', 'Codeinsight socket error', { action: request.action, error: err.message, sessionId, durationMs: Date.now() - startTime });
-        resolve({ ok: false, error: `Socket error: ${err.message}`, durationMs: Date.now() - startTime });
-      }
-    });
-
-    socket.on('end', () => {
-      if (!responseReceived) {
-        clearTimeout(timeoutHandle);
-        emitEvent('warn', 'Socket closed without response', { action: request.action, sessionId, durationMs: Date.now() - startTime });
-        resolve({ ok: false, error: 'Socket closed without response', durationMs: Date.now() - startTime });
-      }
-    });
-  });
+  try {
+    if (request.action === 'search') {
+      const q = request.discipline && request.discipline !== 'default' ? `@${request.discipline} ${request.query}` : request.query;
+      const result = await spool.execCodesearch(q, { timeoutMs: REQUEST_TIMEOUT_MS, sessionId });
+      if (!result.ok) return { ok: false, error: result.stderr || result.stdout || 'codesearch failed', durationMs: Date.now() - startTime };
+      return { ok: true, raw: result.stdout || '', durationMs: Date.now() - startTime };
+    }
+    return { ok: false, error: `Unsupported action via spool: ${request.action}`, durationMs: Date.now() - startTime };
+  } catch (err) {
+    return { ok: false, error: err.message, durationMs: Date.now() - startTime };
+  }
 }
 
 async function searchCode(query, discipline = 'default', sessionId = 'unknown') {

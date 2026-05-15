@@ -1,9 +1,9 @@
 const fs = require('fs');
 const path = require('path');
-const net = require('net');
 const crypto = require('crypto');
 const { spawn, execSync } = require('child_process');
 const os = require('os');
+const spool = require('./spool.js');
 
 const LOG_DIR = path.join(os.homedir(), '.claude', 'gm-log');
 const GM_STATE_DIR = path.join(os.homedir(), '.gm');
@@ -65,24 +65,9 @@ function isDaemonRunning(daemonName) {
 }
 
 function checkPortReachable(host, port, timeoutMs = 500) {
-  return new Promise((resolve) => {
-    const socket = new net.Socket();
-    const timeoutHandle = setTimeout(() => {
-      socket.destroy();
-      resolve(false);
-    }, timeoutMs);
-
-    socket.connect(port, host, () => {
-      clearTimeout(timeoutHandle);
-      socket.destroy();
-      resolve(true);
-    });
-
-    socket.on('error', () => {
-      clearTimeout(timeoutHandle);
-      resolve(false);
-    });
-  });
+  return spool.execSpool('health', 'health', { timeoutMs, sessionId: getSessionId() })
+    .then((r) => !!(r && r.ok))
+    .catch(() => false);
 }
 
 function computeIndexDigest(cwd = process.cwd()) {

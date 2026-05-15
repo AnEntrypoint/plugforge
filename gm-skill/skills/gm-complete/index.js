@@ -1,7 +1,9 @@
 const fs = require('fs');
 const path = require('path');
-const yaml = require('yaml');
+const yaml = require('js-yaml');
+const { execSync } = require('child_process');
 const git = require('../../lib/git.js');
+const hooks = require('../../lib/hook-bridge.js');
 
 async function completeSkill(input, parentContext) {
   const context = parentContext || {
@@ -15,13 +17,14 @@ async function completeSkill(input, parentContext) {
   const mutablesPath = path.join(gmDir, 'mutables.yml');
 
   console.error(`[gm-complete] COMPLETE phase starting`);
+  hooks.preToolUse();
 
   let prd = [];
 
   try {
     if (fs.existsSync(prdPath)) {
       const prdContent = fs.readFileSync(prdPath, 'utf8');
-      prd = yaml.parse(prdContent) || [];
+      prd = yaml.load(prdContent) || [];
     }
   } catch (err) {
     console.error(`[gm-complete] ERROR reading prd.yml:`, err.message);
@@ -66,17 +69,29 @@ async function completeSkill(input, parentContext) {
     console.error(`[gm-complete] no test.js found, skipping tests`);
   }
 
-  verifications.prdEmpty = !fs.existsSync(prdPath) || prd.length === 0;
+  const pendingCount = prd.filter(item => item.status !== 'completed').length;
+  verifications.prdEmpty = !fs.existsSync(prdPath) || prd.length === 0 || pendingCount === 0;
   console.error(`[gm-complete] prd empty: ${verifications.prdEmpty}`);
 
-  verifications.mutablesResolved = !fs.existsSync(mutablesPath);
+  if (!fs.existsSync(mutablesPath)) {
+    verifications.mutablesResolved = true;
+  } else {
+    try {
+      const raw = fs.readFileSync(mutablesPath, 'utf8');
+      const parsed = yaml.load(raw) || [];
+      const arr = Array.isArray(parsed) ? parsed : [];
+      verifications.mutablesResolved = arr.every(m => (m && String(m.status || '').toLowerCase() === 'witnessed'));
+    } catch (e) {
+      verifications.mutablesResolved = false;
+    }
+  }
   console.error(`[gm-complete] mutables resolved: ${verifications.mutablesResolved}`);
 
   const allVerified = Object.values(verifications).every(v => v);
 
   if (!allVerified) {
     console.error(`[gm-complete] Verifications failed, checking for incomplete work...`);
-    if (prd.length > 0) {
+    if (pendingCount > 0) {
       console.error(`[gm-complete] PRD still has items, returning to EXECUTE`);
       return {
         nextSkill: 'gm-execute',
@@ -88,6 +103,10 @@ async function completeSkill(input, parentContext) {
 
   console.error(`[gm-complete] All verifications passed`);
 
+  if (pendingCount === 0 && fs.existsSync(prdPath)) {
+    try { fs.unlinkSync(prdPath); } catch (e) {}
+  }
+
   const completeState = {
     timestamp: new Date().toISOString(),
     verifications,
@@ -97,6 +116,7 @@ async function completeSkill(input, parentContext) {
   fs.writeFileSync(path.join(gmDir, 'complete-state.json'), JSON.stringify(completeState, null, 2), 'utf8');
 
   context.verifications = verifications;
+  hooks.postToolUse();
 
   return {
     nextSkill: allVerified ? 'update-docs' : null,

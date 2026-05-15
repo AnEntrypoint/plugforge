@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
-const yaml = require('yaml');
+const yaml = require('js-yaml');
+const hooks = require('../../lib/hook-bridge.js');
 
 async function planningSkill(input, parentContext) {
   const context = parentContext || {
@@ -14,6 +15,7 @@ async function planningSkill(input, parentContext) {
   const mutablesPath = path.join(gmDir, 'mutables.yml');
 
   console.error(`[planning] PLAN phase starting`);
+  hooks.preToolUse();
   console.error(`[planning] request="${context.request}"`);
 
   const prd = [];
@@ -73,7 +75,7 @@ async function planningSkill(input, parentContext) {
   console.error(`[planning] writing .gm/prd.yml`);
 
   try {
-    fs.writeFileSync(prdPath, yaml.stringify(prd, { indent: 2 }), 'utf8');
+    fs.writeFileSync(prdPath, yaml.dump(prd, { indent: 2 }), 'utf8');
   } catch (err) {
     console.error(`[planning] ERROR writing prd.yml:`, err.message);
     return {

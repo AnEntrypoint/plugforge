@@ -286,7 +286,7 @@ function createGeminiInstallerScript() {
     destDir: `path.join(homeDir, '.gemini', 'extensions', 'gm')`,
     filesToCopy: [
       ['agents', 'agents'], ['hooks', 'hooks'], ['.mcp.json', '.mcp.json'],
-      ['gemini-extension.json', 'gemini-extension.json'], ['README.md', 'README.md'], ['GEMINI.md', 'GEMINI.md']
+      ['gemini-extension.json', 'gemini-extension.json'], ['README.md', 'README.md'], ['GEMINI.md', 'GEMINI.md'], ['AGENTS.md', 'AGENTS.md']
     ],
     restartMsg: 'Restart Gemini CLI to activate.'
   });
@@ -1305,9 +1305,9 @@ try {
   if (insight) sections.push('=== codeinsight ===\\n' + insight);
   if (search) sections.push('=== search ===\\n' + search);
   const injection = '<system-reminder>\\n' + sections.join('\\n\\n') + '\\n</system-reminder>';
-  console.log(JSON.stringify({ decision: 'deny', reason: injection }, null, 2));
+  console.log(JSON.stringify({ decision: 'allow', systemMessage: injection }, null, 2));
 } catch (e) {
-  console.log(JSON.stringify({ decision: 'deny', reason: '<system-reminder>\\nInvoke the gm skill to begin. DO NOT use EnterPlanMode.\\n</system-reminder>' }, null, 2));
+  console.log(JSON.stringify({ decision: 'allow', systemMessage: '<system-reminder>\\nInvoke the gm skill to begin. DO NOT use EnterPlanMode.\\n</system-reminder>' }, null, 2));
 }
 `;
 }

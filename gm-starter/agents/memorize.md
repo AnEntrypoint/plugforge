@@ -1,7 +1,6 @@
 ---
 name: memorize
 description: Background memory agent. Classifies context and writes to AGENTS.md + rs-learn. No memory dir, no MEMORY.md.
-agent: true
 ---
 
 # Memorize — Background Memory Agent

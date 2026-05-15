@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const hooks = require('../../lib/hook-bridge.js');
 
 async function gmSkill(input) {
   const context = {
@@ -12,14 +13,14 @@ async function gmSkill(input) {
     mutables: {},
   };
 
-  const skillsDir = path.join(__dirname);
-  const gmDir = path.dirname(path.dirname(skillsDir));
+  const skillsDir = path.dirname(__dirname);
 
   let currentSkill = 'planning';
   let chainDepth = 0;
   const maxDepth = 6;
 
   console.log(`[gm] orchestrator starting; request="${context.request}"; task=${context.taskId}`);
+  hooks.skillLifecycle({ sessionStart: true, promptSubmit: true, preToolUse: false, postToolUse: false });
 
   while (currentSkill && chainDepth < maxDepth) {
     chainDepth++;
@@ -37,8 +38,10 @@ async function gmSkill(input) {
     }
 
     try {
+      hooks.preToolUse();
       const skillModule = require(skillPath);
       const result = await skillModule(input, context);
+      hooks.postToolUse();
 
       if (!result || typeof result !== 'object') {
         console.error(`[gm] ERROR: skill returned invalid result`);
@@ -88,6 +91,7 @@ async function gmSkill(input) {
       error: 'Skill chain exceeded maximum depth',
     };
   }
+  hooks.skillLifecycle({ sessionStart: false, promptSubmit: false, preToolUse: false, postToolUse: false, stop: true, stopGit: true });
 
   return {
     nextSkill: null,

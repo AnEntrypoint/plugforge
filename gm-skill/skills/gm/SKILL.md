@@ -46,6 +46,8 @@ The user's request is authorization. When scope is unclear, pick the maximum rea
 
 **Terse response**: fragments OK. `[thing] [action] [reason]. [next step].` Code, commits, PRs use normal prose.
 
+**Caveman medium mode (full) always on**: drop articles (a/an/the), filler (just/really/basically/actually/simply), pleasantries, and hedging. Fragments OK. Use short synonyms. Keep technical terms exact. Keep code blocks and exact error strings unchanged. Pattern: `[thing] [action] [reason]. [next step].` Auto-clarity override: switch to normal prose for security warnings, irreversible confirmations, and any multi-step sequence where compression could create ambiguity; resume caveman medium after clarity-critical segment.
+
 ## End-to-End Phase Chaining (Skills-Based Platforms)
 
 When `end-to-end: true` is present in SKILL.md frontmatter, skill output includes structured JSON on stdout (final line):

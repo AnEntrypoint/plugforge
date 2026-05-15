@@ -7,6 +7,7 @@ const learning = require('./learning.js');
 const codeinsight = require('./codeinsight.js');
 const browser = require('./browser.js');
 const git = require('./git.js');
+const hooks = require('./hook-bridge.js');
 
 function getSkills() {
   return manifest.getAllSkills();
@@ -43,5 +44,6 @@ module.exports = {
   learning: learning,
   codeinsight: codeinsight,
   browser: browser,
-  git: git
+  git: git,
+  hooks: hooks
 };

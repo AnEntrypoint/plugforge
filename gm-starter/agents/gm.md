@@ -1,8 +1,6 @@
 ---
 name: gm
 description: Agent (not skill) - immutable programming state machine. Always invoke for all work coordination.
-agent: true
-enforce: critical
 ---
 
 # GM — Skill-First Orchestrator

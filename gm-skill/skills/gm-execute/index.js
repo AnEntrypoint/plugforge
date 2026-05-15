@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
-const yaml = require('yaml');
+const yaml = require('js-yaml');
+const hooks = require('../../lib/hook-bridge.js');
 
 async function executeSkill(input, parentContext) {
   const context = parentContext || {
@@ -14,6 +15,7 @@ async function executeSkill(input, parentContext) {
   const mutablesPath = path.join(gmDir, 'mutables.yml');
 
   console.error(`[gm-execute] EXECUTE phase starting`);
+  hooks.preToolUse();
 
   let prd = [];
   let mutables = [];
@@ -21,7 +23,7 @@ async function executeSkill(input, parentContext) {
   try {
     if (fs.existsSync(prdPath)) {
       const prdContent = fs.readFileSync(prdPath, 'utf8');
-      prd = yaml.parse(prdContent) || [];
+      prd = yaml.load(prdContent) || [];
     }
   } catch (err) {
     console.error(`[gm-execute] ERROR reading prd.yml:`, err.message);
@@ -36,7 +38,7 @@ async function executeSkill(input, parentContext) {
     console.error(`[gm-execute] Processing: ${item.id}`);
 
     item.status = 'in_progress';
-    fs.writeFileSync(prdPath, yaml.stringify(prd, { indent: 2 }), 'utf8');
+    fs.writeFileSync(prdPath, yaml.dump(prd, { indent: 2 }), 'utf8');
 
     try {
       const startTime = Date.now();
@@ -54,7 +56,8 @@ async function executeSkill(input, parentContext) {
     }
   }
 
-  fs.writeFileSync(prdPath, yaml.stringify(prd, { indent: 2 }), 'utf8');
+  fs.writeFileSync(prdPath, yaml.dump(prd, { indent: 2 }), 'utf8');
+  hooks.postToolUse();
 
   context.prd = prd;
 

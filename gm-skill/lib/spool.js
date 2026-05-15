@@ -157,7 +157,7 @@ function cleanupTempFiles(taskId) {
 
 module.exports = {
   writeSpool, writeSpoolVerb, readSpoolOutput, waitForCompletion,
-  execNodejs, execBash, execCodesearch, execRecall, execMemorize,
+  execSpool, execNodejs, execBash, execCodesearch, execRecall, execMemorize,
   getAllOutputs, cleanupTempFiles, getSpoolBaseDir, generateTaskId,
   validateLang, getExtForLang, validateVerb
 };

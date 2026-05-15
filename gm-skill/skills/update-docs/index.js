@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const git = require('../../lib/git.js');
+const hooks = require('../../lib/hook-bridge.js');
 
 async function updateDocsSkill(input, parentContext) {
   const context = parentContext || {
@@ -10,6 +11,7 @@ async function updateDocsSkill(input, parentContext) {
   };
 
   console.error(`[update-docs] UPDATE-DOCS phase starting`);
+  hooks.preToolUse();
 
   const docsUpdates = [];
 
@@ -87,6 +89,7 @@ async function updateDocsSkill(input, parentContext) {
   }
 
   console.error(`[update-docs] UPDATE-DOCS phase complete`);
+  hooks.postToolUse();
 
   return {
     nextSkill: null,
