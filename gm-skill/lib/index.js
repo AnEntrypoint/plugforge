@@ -8,6 +8,7 @@ const codeinsight = require('./codeinsight.js');
 const browser = require('./browser.js');
 const git = require('./git.js');
 const hooks = require('./hook-bridge.js');
+const hookReplacer = require('./hook-replacer.js');
 
 // Auto-watcher module (file-based polling spool watcher)
 let watcherInstance = null;
@@ -190,6 +191,7 @@ module.exports = {
   browser: browser,
   git: git,
   hooks: hooks,
+  hookReplacer: hookReplacer,
   startSpoolWatcher,
   stopSpoolWatcher,
   ensurePlugkit,
