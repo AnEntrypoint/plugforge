@@ -1434,6 +1434,9 @@ const gc = factory('gc', 'Gemini CLI', 'gemini-extension.json', 'GEMINI.md', {
 });
 
 const codex = factory('codex', 'Codex', 'plugin.json', 'CLAUDE.md', {
+  loadSkillsFromSource(sourceDir) {
+    return TemplateBuilder.loadSkillsFromSource(sourceDir, 'skills');
+  },
   formatConfigJson(config) {
     return makePackageJson({ ...config, author: { name: config.author, url: 'https://github.com/AnEntrypoint' }, hooks: './hooks/hooks.json', skills: './skills', mcpServers: {} });
   },
