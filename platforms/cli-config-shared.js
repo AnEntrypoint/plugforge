@@ -748,7 +748,7 @@ function pluginMjsSource(pluginFile) {
     "      const textPart = msg.parts && msg.parts.find(p => p.type === 'text' && p.text && p.text.trim());",
     "      const prompt = textPart ? textPart.text.trim() : '';",
     "      const parts = [];",
-    "      parts.push('Invoke the `gm` skill to begin. DO NOT use EnterPlanMode. Treat the `exec:` preamble as authoritative; host auto-detection is fallback only. Raw JIT code can also be written to `.gm/exec-spool/in/<lang>/<N>.<ext>` (e.g. in/nodejs/42.js) — the spool watcher executes it and writes out/<N>.json. Keep stale running tasks in view and prefer the latest task reminder over starting duplicate work.');",
+    "      parts.push('Invoke the `gm` skill to begin. Treat the `exec:` preamble as authoritative; host auto-detection is fallback only. Raw JIT code can also be written to `.gm/exec-spool/in/<lang>/<N>.<ext>` (e.g. in/nodejs/42.js) — the spool watcher executes it and writes out/<N>.json. Keep stale running tasks in view and prefer the latest task reminder over starting duplicate work.');",
     "      const insight = runPlugkit(['codeinsight', directory]);",
     "      if (insight && !insight.startsWith('Error')) parts.push('=== codeinsight ===\\n'+insight);",
     "      if (prompt) {",
@@ -1276,9 +1276,9 @@ try {
 function createGcPromptSubmitHook() {
   return `#!/usr/bin/env node
 try {
-  console.log(JSON.stringify({ decision: 'allow', systemMessage: '<system-reminder>\\nInvoke the gm skill to begin. DO NOT use EnterPlanMode.\\n</system-reminder>' }, null, 2));
+  console.log(JSON.stringify({ decision: 'allow' }, null, 2));
 } catch (e) {
-  console.log(JSON.stringify({ decision: 'allow', systemMessage: '<system-reminder>\\nInvoke the gm skill to begin. DO NOT use EnterPlanMode.\\n</system-reminder>' }, null, 2));
+  console.log(JSON.stringify({ decision: 'allow' }, null, 2));
 }
 `;
 }
