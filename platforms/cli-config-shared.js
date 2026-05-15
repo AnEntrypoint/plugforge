@@ -768,6 +768,11 @@ function pluginMjsSource(pluginFile) {
     "      const noMemoPath = join(gmDir, 'no-memorize-this-turn');",
     "      const tool = input.tool || '';",
     "      const args = (input.args || (output && output.args) || {});",
+    "      if (!sessionStarted) {",
+    "        sessionStarted = true;",
+    "        try { runPlugkit(['hook', 'session-start']); } catch(e) {}",
+    "        try { runPlugkit(['bootstrap', directory]); } catch(e) {}",
+    "      }",
     "      const skillName = (args.skill || args.name || '').toString();",
     "      if (FORBIDDEN_TOOLS.has(input.tool)) {",
     "        throw new Error('Use the code-search skill for codebase exploration instead of '+input.tool+'. Describe what you need in plain language.');",
@@ -1270,42 +1275,8 @@ try {
 
 function createGcPromptSubmitHook() {
   return `#!/usr/bin/env node
-const fs = require('fs');
-const path = require('path');
-const { spawnSync } = require('child_process');
-const pluginRoot = process.env.GEMINI_PROJECT_DIR ? path.join(__dirname, '..') : (process.env.CLAUDE_PLUGIN_ROOT || path.join(__dirname, '..'));
-const plugkitBin = path.join(pluginRoot, 'bin', 'plugkit.js');
-const projectDir = process.env.GEMINI_PROJECT_DIR || process.cwd();
-const readStdinPrompt = () => {
-  try { return JSON.parse(fs.readFileSync(0, 'utf-8')).prompt || ''; } catch (e) { return ''; }
-};
-const runCodeinsight = () => {
-  if (!projectDir || !fs.existsSync(projectDir)) return '';
-  try {
-    const r = spawnSync('node', [plugkitBin, 'codeinsight', projectDir], { encoding: 'utf-8', stdio: 'pipe', windowsHide: true, cwd: projectDir, timeout: 10000 });
-    const out = (r.stdout || '').trim();
-    if (!out || out.startsWith('Error') || r.status !== 0) return '';
-    return out;
-  } catch (e) { return ''; }
-};
-const runSearch = (query) => {
-  if (!query || !projectDir) return '';
-  try {
-    const r = spawnSync('node', [plugkitBin, 'search', '--path', projectDir, query.substring(0, 200)], { encoding: 'utf-8', stdio: 'pipe', windowsHide: true, cwd: projectDir, timeout: 5000 });
-    const out = (r.stdout || '').trim();
-    if (!out || r.status !== 0) return '';
-    return out;
-  } catch (e) { return ''; }
-};
 try {
-  const prompt = readStdinPrompt();
-  const insight = runCodeinsight();
-  const search = runSearch(prompt);
-  const sections = ['Invoke the gm skill to begin. DO NOT use EnterPlanMode.'];
-  if (insight) sections.push('=== codeinsight ===\\n' + insight);
-  if (search) sections.push('=== search ===\\n' + search);
-  const injection = '<system-reminder>\\n' + sections.join('\\n\\n') + '\\n</system-reminder>';
-  console.log(JSON.stringify({ decision: 'allow', systemMessage: injection }, null, 2));
+  console.log(JSON.stringify({ decision: 'allow', systemMessage: '<system-reminder>\\nInvoke the gm skill to begin. DO NOT use EnterPlanMode.\\n</system-reminder>' }, null, 2));
 } catch (e) {
   console.log(JSON.stringify({ decision: 'allow', systemMessage: '<system-reminder>\\nInvoke the gm skill to begin. DO NOT use EnterPlanMode.\\n</system-reminder>' }, null, 2));
 }
@@ -1371,7 +1342,7 @@ try {
     writeCounter(counter);
     if (counter.count === 1) {
       console.log(JSON.stringify({ decision: 'block', reason: 'Git: ' + issues.join(', ') + '. Commit and push before ending session.' }, null, 2));
-      process.exit(2);
+      process.exit(0);
     }
     console.log(JSON.stringify({ decision: 'approve', reason: 'Git warning #' + counter.count + ': ' + issues.join(', ') }, null, 2));
     process.exit(0);
@@ -1388,24 +1359,10 @@ try {
 
 function createGcSessionStartHook() {
   return `#!/usr/bin/env node
-const fs = require('fs');
-const path = require('path');
-const { execSync } = require('child_process');
-const pluginRoot = path.join(__dirname, '..');
-const projectDir = process.env.GEMINI_PROJECT_DIR || process.cwd();
 try {
-  const parts = [];
-  try { parts.push(fs.readFileSync(path.join(pluginRoot, 'agents/gm.md'), 'utf-8')); } catch (e) {}
-  if (projectDir && fs.existsSync(projectDir)) {
-    try {
-      const out = execSync('plugkit codeinsight ' + JSON.stringify(projectDir), { encoding: 'utf-8', stdio: 'pipe', cwd: projectDir, timeout: 55000 });
-      if (out && !out.startsWith('Error')) parts.push('=== This is your initial insight of the repository, look at every possible aspect of this for initial opinionation and to offset the need for code exploration ===\\n' + out);
-    } catch (e) {}
-  }
-  parts.push('Use gm as a philosophy to coordinate all plans and the gm subagent to create and execute all plans');
-  console.log(JSON.stringify({ systemMessage: parts.join('\\n\\n') }, null, 2));
+  console.log(JSON.stringify({ systemMessage: '<system-reminder>\\nUse gm orchestration and invoke the gm skill first.\\n</system-reminder>' }, null, 2));
 } catch (e) {
-  console.log(JSON.stringify({ systemMessage: 'use gm agent' }, null, 2));
+  console.log(JSON.stringify({ systemMessage: '<system-reminder>\\nUse gm orchestration and invoke the gm skill first.\\n</system-reminder>' }, null, 2));
 }
 `;
 }
