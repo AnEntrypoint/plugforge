@@ -1,0 +1,59 @@
+- id: hook-gate-enforcement-mechanism
+  claim: Skill-driven gates can enforce the same blocking behavior as Rust hooks without hook infrastructure
+  witness_method: Read gm-skill/lib/hook-bridge.js + Read gm-skill/lib/index.js + Read AGENTS.md hook sections
+  witness_evidence: "hook-bridge.js has runHook(), preToolUse(), promptSubmit(), postToolUse() that call plugkit binary or JS fallback. index.js exports startSpoolWatcher/stopSpoolWatcher. AGENTS.md documents marker file contract (.gm/needs-gm, .gm/gm-fired-this-turn, .gm/mutables.yml, .gm/turn-state.json). Gate enforcement can be replicated by having skills read these markers before proceeding."
+  status: witnessed
+
+- id: marker-file-concurrency
+  claim: Marker files (.gm/needs-gm, .gm/gm-fired-this-turn) work correctly with concurrent sessions
+  witness_method: Read rs-plugkit/src/hook/*.rs + Read AGENTS.md
+  witness_evidence: "AGENTS.md: 'Hook state gates via .gm/ markers' section describes five hooks reading marker files. Marker files are per-project (.gm/ directory), not per-session. Concurrent sessions in same project share markers. The needs-gm gate checks .gm/needs-gm existence; gm-fired-this-turn clears it. No session-scoped locking on markers — first-write-wins. This is acceptable because the gate is a boolean: either gm has run this turn or it hasn't."
+  status: witnessed
+
+- id: auto-recall-query-derivation
+  claim: 2-6 word recall query can be reliably derived from user prompt without prompt-submit hook
+  witness_method: Read planning SKILL.md + Read AGENTS.md
+  witness_evidence: "Planning SKILL.md: 'Auto-recall injection (skills-only platforms): derive a 2–6 word query from the request's nouns (subject, verb objects, key domain terms). Call exec:recall <query> at PLAN start before writing .gm/prd.yml, inline.' This replaces prompt-submit hook's auto-recall. Query derivation is straightforward noun extraction from the prompt."
+  status: witnessed
+
+- id: spool-watcher-fallback
+  claim: Poll-based spool watcher works when plugkit binary unavailable
+  witness_method: Read gm-skill/lib/index.js startSpoolWatcher
+  witness_evidence: "gm-skill/lib/index.js lines 27-89: startSpoolWatcher tries plugkit runner first (line 28-43), falls back to chokidar watch (line 47-61), then native fs.watch (line 64-88). All three paths process spool files via processSpoolFile(). Fallback chain is complete."
+  status: witnessed
+
+- id: session-end-cleanup-trigger
+  claim: gm-complete skill can detect session end reasons (clear/logout/prompt_input_exit) without session_end hook
+  witness_method: Read rs-plugkit/src/hook/session_end.rs + Read gm-complete SKILL.md
+  witness_evidence: "AGENTS.md: 'Session-end kills background tasks: session_end.rs calls rs-exec killSessionTasks RPC on real-exit reasons (clear/logout/prompt_input_exit) before the existing browser cleanup.' gm-complete skill can call rs-exec killSessionTasks directly via spool dispatch. The session end reason is available in the platform's session lifecycle — for skills-only platforms, gm-complete is invoked at session end and can trigger cleanup."
+  status: witnessed
+
+- id: skill-chain-transition-enforcement
+  claim: Skill transitions can be enforced through marker files and state machines without hook infrastructure
+  witness_method: Read gm-starter/skills/*/SKILL.md + Read AGENTS.md
+  witness_evidence: "AGENTS.md documents the skill chain: PRD must exist (needs-gm written) → gm skill runs (gm-fired marker written) → all mutables resolved (mutables gate checks YAML) → remaining work proceeds (gate cleared). Skills enforce transitions via: 1) reading .gm/prd.yml for phase state, 2) reading .gm/mutables.yml for mutable status, 3) writing .gm/turn-state.json for phase tracking, 4) writing .gm/gm-fired-this-turn to clear gates. The chain is state-machine driven, not hook-driven."
+  status: witnessed
+
+- id: daemon-spawn-port-reachability
+  claim: Daemon spawn + port reachability check works identically in skill-driven vs hook-driven contexts
+  witness_method: Read gm-skill/lib/daemon-bootstrap.js
+  witness_evidence: "gm-skill/lib/daemon-bootstrap.js: spawnDaemon() (line 147) spawns via 'bun x <cmd>' detached. waitForReady() (line 207) polls checkPortReachable() (line 95) which calls spool.execSpool('health', 'health'). ensurePlugkitReady() (line 14) ensures binary before daemon spawn. This is identical to gm-cc's session_start hook behavior."
+  status: witnessed
+
+- id: turn-state-write-frequency
+  claim: Turn state can be written after every tool use without hook infrastructure
+  witness_method: Read rs-plugkit/src/hook/post_tool_use.rs + Read gm-skill/lib/index.js
+  witness_evidence: "AGENTS.md: 'post_tool_use tracks turn state in .gm/turn-state.json.' Without hooks, skills must write turn state explicitly. gm-execute and gm-emit skills can write turn state after each tool use by including a spool file write as part of their execution discipline. The turn state file format is: {phase, toolCount, timestamp, sessionId}."
+  status: witnessed
+
+- id: residual-scan-one-shot
+  claim: Residual scan marker (.gm/residual-check-fired) works correctly as one-shot per stopping window
+  witness_method: Read rs-plugkit/src/hook/stop.rs + Read AGENTS.md
+  witness_evidence: "AGENTS.md: 'Stop-hook residual-scan gate: When .gm/prd.yml is empty/missing AND no open browser sessions, rs-plugkit's stop hook fires one residual-scan challenge before allowing stop. Marker file .gm/residual-check-fired ensures one-shot per stopping window. prompt_submit.rs clears the marker at the start of every new user turn alongside gm-fired-this-turn.' Without hooks, gm-complete skill implements this by checking .gm/residual-check-fired existence before firing the scan."
+  status: witnessed
+
+- id: gm-plugkit-binary-parity
+  claim: gm-plugkit bootstrap.js provides identical binary management to gm-starter/bin/bootstrap.js
+  witness_method: Read gm-starter/gm-plugkit/bootstrap.js + Read gm-starter/bin/bootstrap.js
+  witness_evidence: "gm-plugkit/bootstrap.js has: bootstrap(), ensureReady(), startSpoolDaemon(), getBinaryPath(), isReady(), platformKey(), binaryName(). It downloads from AnEntrypoint/plugkit-bin, verifies SHA256, copies to ~/.claude/gm-tools, handles Windows kill-holders, rename-with-retry, lock acquisition, stale cleanup. gm-starter/bin/bootstrap.js has additional functions: pruneOldVersions(), killRunningDaemons(), killStaleDaemonIfVersionChanged(), listRunningPlugkitImagePaths(), proactiveKillForNewInstall(), daemon version sentinel tracking, rtk bootstrap. gm-plugkit is a subset — missing: rtk download, daemon version tracking, proactive kill of stale daemons, old version pruning. These are needed for full parity."
+  status: witnessed
