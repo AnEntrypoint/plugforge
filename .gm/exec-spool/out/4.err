@@ -1,0 +1,7 @@
+Check failed: Command failed: cd C:\dev\rs-plugkit && cargo check --offline 2>&1
+
+Stdout: error: failed to download `serde_yaml v0.9.34+deprecated`
+
+Caused by:
+  attempting to make an HTTP request, but --offline was specified
+

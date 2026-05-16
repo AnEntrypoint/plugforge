@@ -23,8 +23,9 @@
 
 ### 4. Hook Configuration
 - ✓ `build/gm-gc/hooks/hooks.json` properly formatted
-- ✓ All 4 hook events mapped to plugkit subcommands:
+- ✓ All 5 hook events mapped to plugkit subcommands for maximum parity with gm-cc:
   - BeforeTool → pre-tool-use (3600ms timeout)
+  - AfterTool → post-tool-use (35000ms timeout)
   - SessionStart → session-start (180000ms timeout)
   - BeforeAgent → prompt-submit (60000ms timeout)
   - SessionEnd → stop (300000ms) + stop-git (60000ms)
@@ -34,42 +35,27 @@
 ### 5. Package Configuration
 - ✓ `build/gm-gc/package.json` includes:
   - name: gm-gc
-  - version: 2.0.1058
-  - files: agents/, bin/, hooks/, scripts/, skills/, prompts/, .github/, README.md, GEMINI.md, .mcp.json, gemini-extension.json, cli.js
+  - version: 2.0.1064
+  - files: agents/, bin/, hooks/, scripts/, skills/, prompts/, .github/, README.md, GEMINI.md, .mcp.json, gemini-extension.json, cli.js, install.js
   - bin commands: gm-gc (cli.js), gm-gc-install (install.js)
+- ✓ install.js explicitly added to files array for reliable npm publishing
 
-### 6. Extension Manifest
-- ✓ `build/gm-gc/gemini-extension.json`:
-  - name: gm
-  - version: 2.0.1058
-  - contextFileName: GEMINI.md (shown to users)
-  - Proper hook reference structure
-
-### 7. Documentation (GEMINI.md)
-- ✓ Feature parity table (8 features, all ✓)
-- ✓ Installation instructions (git clone + npm)
-- ✓ Hook event mapping table
-- ✓ 5 Elegant Workarounds:
-  1. Hook Execution Model (JS vs plugkit)
-  2. File Installation Paths (.claude vs .gemini)
-  3. Skills Distribution (filesystem loading)
-  4. Prompts and Context (turn-state.json)
-  5. Agent Dispatch (native vs ACP)
-- ✓ Directory structure documentation
-- ✓ Operational differences explained
-- ✓ Limitations & future work section
-- ✓ Troubleshooting guide
+### 6. Build Reporter Enhancements
+- ✓ Fixed false positive warnings for path variables like `${extensionPath}` in `lib/build-reporter.js`
+- ✓ Improved regex to handle lowercase letters in environment variable placeholders
+- ✓ Hook validation now reports "✅ hooks.json valid with 5 event types" for gm-gc
 
 ## Current Status
 
 ### Build Verification
 ```
 gm-gc Build:
-- ✓ 57 files generated
-- ✓ All directories present
-- ✓ All skills included
-- ✓ Hooks properly configured
-- ✓ Package.json validated
+- ✓ 63 files generated
+- ✓ All directories present (agents, bin, hooks, scripts, skills, prompts, .github)
+- ✓ All 24 skills included
+- ✓ All 5 hook events properly configured (parity with gm-cc)
+- ✓ Package.json validated and includes install.js
+- ✓ Validation report: 0 Errors, 0 Warnings for gc
 ```
 
 ### File Inventory Verified

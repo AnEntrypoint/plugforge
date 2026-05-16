@@ -1,0 +1,11 @@
+Upgrading Rust toolchain to latest stable...
+
+  stable-x86_64-pc-windows-msvc unchanged - rustc 1.95.0 (59807616e 2026-04-14)
+
+
+
+Verifying Rustc version...
+rustc 1.85.1 (4eb161250 2025-03-15)
+
+
+Running cargo check for rs-plugkit...

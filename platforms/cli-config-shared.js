@@ -101,8 +101,6 @@ function createGeminiInstallScript() {
    process.stderr.write(\`[gm-gc-install] destination: \${geminiDir}\\n\`);
    const agentsOk = safeCopyDirectory(path.join(sourceDir, 'agents'), path.join(geminiDir, 'agents'));
    process.stderr.write(\`[gm-gc-install] agents: \${agentsOk ? 'ok' : 'failed'}\\n\`);
-   const hooksOk = safeCopyDirectory(path.join(sourceDir, 'hooks'), path.join(geminiDir, 'hooks'));
-   process.stderr.write(\`[gm-gc-install] hooks: \${hooksOk ? 'ok' : 'failed'}\\n\`);
    const skillsOk = safeCopyDirectory(path.join(sourceDir, 'skills'), path.join(geminiDir, 'skills'));
    process.stderr.write(\`[gm-gc-install] skills: \${skillsOk ? 'ok' : 'failed'}\\n\`);
    const scriptsOk = safeCopyDirectory(path.join(sourceDir, 'scripts'), path.join(geminiDir, 'scripts'));
@@ -133,7 +131,6 @@ function install() {
   const codexDir = path.join(projectRoot, '.codex', 'plugins', 'gm-codex');
   const sourceDir = __dirname;
   safeCopyDirectory(path.join(sourceDir, 'agents'), path.join(codexDir, 'agents'));
-  safeCopyDirectory(path.join(sourceDir, 'hooks'), path.join(codexDir, 'hooks'));
   safeCopyDirectory(path.join(sourceDir, 'scripts'), path.join(codexDir, 'scripts'));
   safeCopyDirectory(path.join(sourceDir, 'skills'), path.join(codexDir, 'skills'));
   safeCopyDirectory(path.join(sourceDir, 'bin'), path.join(codexDir, 'bin'));
@@ -168,7 +165,6 @@ function install() {
   const ocDir = path.join(projectRoot, '.opencode', 'plugins', 'gm-oc');
   const sourceDir = __dirname;
   safeCopyDirectory(path.join(sourceDir, 'agents'), path.join(ocDir, 'agents'));
-  safeCopyDirectory(path.join(sourceDir, 'hooks'), path.join(ocDir, 'hooks'));
   safeCopyDirectory(path.join(sourceDir, 'bin'), path.join(ocDir, 'bin'));
   safeCopyDirectory(path.join(sourceDir, 'skills'), path.join(ocDir, 'skills'));
   safeCopyDirectory(path.join(sourceDir, 'lang'), path.join(ocDir, 'lang'));
@@ -193,7 +189,6 @@ function install() {
   const kiloDir = path.join(projectRoot, '.kilo', 'plugins', 'gm-kilo');
   const sourceDir = __dirname;
   safeCopyDirectory(path.join(sourceDir, 'agents'), path.join(kiloDir, 'agents'));
-  safeCopyDirectory(path.join(sourceDir, 'hooks'), path.join(kiloDir, 'hooks'));
   safeCopyDirectory(path.join(sourceDir, 'bin'), path.join(kiloDir, 'bin'));
   safeCopyDirectory(path.join(sourceDir, 'skills'), path.join(kiloDir, 'skills'));
   safeCopyDirectory(path.join(sourceDir, 'lang'), path.join(kiloDir, 'lang'));
@@ -253,7 +248,6 @@ function install() {
   const claudeDir = path.join(projectRoot, '.claude');
   const sourceDir = __dirname.replace(/[\\/]scripts$/, '');
   safeCopyDirectoryFull(path.join(sourceDir, 'agents'), path.join(claudeDir, 'agents'));
-  safeCopyDirectoryFull(path.join(sourceDir, 'hooks'), path.join(claudeDir, 'hooks'));
   safeCopyFile(path.join(sourceDir, '.mcp.json'), path.join(claudeDir, '.mcp.json'));
   updateGitignore(projectRoot);
 }
@@ -303,8 +297,9 @@ function createGeminiInstallerScript() {
      destDir: `path.join(homeDir, '.gemini', 'extensions', 'gm')`,
      filesToCopy: [
        ['agents', 'agents'], ['hooks', 'hooks'], ['skills', 'skills'], ['scripts', 'scripts'], ['bin', 'bin'],
+       ['lang', 'lang'],
        ['.mcp.json', '.mcp.json'], ['gemini-extension.json', 'gemini-extension.json'], ['README.md', 'README.md'],
-       ['GEMINI.md', 'GEMINI.md'], ['AGENTS.md', 'AGENTS.md'], ['prompts', 'prompts']
+       ['GEMINI.md', 'GEMINI.md'], ['AGENTS.md', 'AGENTS.md'], ['prompts', 'prompts'], ['LICENSE', 'LICENSE']
      ],
      restartMsg: 'Restart Gemini CLI to activate.'
    });
@@ -954,7 +949,7 @@ const cc = factory('cc', 'Claude Code', 'CLAUDE.md', 'CLAUDE.md', {
       author: pluginSpec.author, license: pluginSpec.license,
       ...repoFields('gm-cc'), engines: pluginSpec.engines, publishConfig: pluginSpec.publishConfig,
       bin: { 'gm-cc': './cli.js', 'gm-install': './install.js' },
-      files: ['agents/', 'bin/', 'hooks/', 'scripts/', 'skills/', '.github/', '.mcp.json', '.claude-plugin/', 'plugin.json', 'gm.json', 'README.md', 'LICENSE', '.gitignore', '.editorconfig', 'CONTRIBUTING.md', 'CLAUDE.md', 'AGENTS.md'],
+      files: ['agents/', 'bin/', 'hooks/', 'scripts/', 'skills/', 'lang/', '.github/', '.mcp.json', '.claude-plugin/', 'plugin.json', 'gm.json', 'README.md', 'LICENSE', '.gitignore', '.editorconfig', 'CONTRIBUTING.md', 'CLAUDE.md', 'AGENTS.md'],
       keywords: ['claude-code', 'agent', 'state-machine', 'mcp', 'automation', 'gm'],
       peerDependencies: { '@anthropic-ai/claude-code': '*' },
       peerDependenciesMeta: { '@anthropic-ai/claude-code': { optional: true } },
@@ -963,7 +958,7 @@ const cc = factory('cc', 'Claude Code', 'CLAUDE.md', 'CLAUDE.md', {
   },
   getPackageJsonFields() {
     return {
-      files: ['agents/', 'bin/', 'hooks/', 'scripts/', 'skills/', '.github/', '.mcp.json', '.claude-plugin/', 'plugin.json', 'cli.js', 'install.js', 'README.md', 'LICENSE', '.gitignore', '.editorconfig', 'CONTRIBUTING.md', 'CLAUDE.md', 'AGENTS.md'],
+      files: ['agents/', 'bin/', 'hooks/', 'scripts/', 'skills/', 'lang/', '.github/', '.mcp.json', '.claude-plugin/', 'plugin.json', 'cli.js', 'install.js', 'README.md', 'LICENSE', '.gitignore', '.editorconfig', 'CONTRIBUTING.md', 'CLAUDE.md', 'AGENTS.md'],
       keywords: ['claude-code', 'agent', 'state-machine', 'mcp', 'automation', 'gm'],
       peerDependencies: { '@anthropic-ai/claude-code': '*' },
       peerDependenciesMeta: { '@anthropic-ai/claude-code': { optional: true } }
@@ -993,6 +988,10 @@ const cc = factory('cc', 'Claude Code', 'CLAUDE.md', 'CLAUDE.md', {
         ]},
         { eventKey: 'UserPromptSubmit', commands: [
           { kind: 'plugkit', subcommand: 'prompt-submit', timeout: 60000 }
+        ]},
+        { eventKey: 'Stop', commands: [
+          { kind: 'plugkit', subcommand: 'stop', timeout: 300000 },
+          { kind: 'plugkit', subcommand: 'stop-git', timeout: 60000 }
         ]}
       ]
     };
@@ -1456,8 +1455,15 @@ const gc = factory('gc', 'Gemini CLI', 'gemini-extension.json', 'GEMINI.md', {
     }
     return `---\n${out.join('\n')}\n---\n${body}`;
   },
-  formatConfigJson(config) {
-    return makePackageJson({ ...config, contextFileName: this.contextFile });
+  formatConfigJson(config, spec) {
+    return makePackageJson({
+      ...config,
+      author: { name: config.author, url: 'https://github.com/AnEntrypoint' },
+      hooks: './hooks/hooks.json',
+      skills: './skills',
+      mcpServers: (spec && spec.mcp) || {},
+      contextFileName: this.contextFile
+    });
   },
   generatePackageJson(pluginSpec, extraFields = {}) {
     return makePackageJson({
@@ -1465,14 +1471,14 @@ const gc = factory('gc', 'Gemini CLI', 'gemini-extension.json', 'GEMINI.md', {
       author: pluginSpec.author, license: pluginSpec.license,
       ...repoFields('gm-gc'), engines: pluginSpec.engines, publishConfig: pluginSpec.publishConfig,
       bin: { 'gm-gc': './cli.js', 'gm-gc-install': './install.js' },
-      files: ['agents/', 'bin/', 'hooks/', 'scripts/', 'skills/', 'prompts/', '.github/', 'README.md', 'GEMINI.md', '.mcp.json', 'gemini-extension.json', 'cli.js', 'install.js'],
+      files: ['agents/', 'bin/', 'hooks/', 'scripts/', 'skills/', 'prompts/', 'lang/', '.github/', 'README.md', 'GEMINI.md', '.mcp.json', 'gemini-extension.json', 'cli.js', 'install.js'],
       ...(pluginSpec.scripts && { scripts: pluginSpec.scripts }), ...extraFields
     });
   },
 getPackageJsonFields() {
      return {
        bin: { 'gm-gc': './cli.js', 'gm-gc-install': './install.js' },
-       files: ['agents/', 'bin/', 'hooks/', 'scripts/', 'skills/', 'prompts/', '.github/', 'README.md', 'GEMINI.md', '.mcp.json', 'gemini-extension.json', 'cli.js']
+       files: ['agents/', 'bin/', 'hooks/', 'scripts/', 'skills/', 'prompts/', 'lang/', '.github/', 'README.md', 'GEMINI.md', '.mcp.json', 'gemini-extension.json', 'cli.js', 'install.js']
      };
    },
 getAdditionalFiles(spec) {
@@ -1486,6 +1492,7 @@ buildHookSpec() {
        envVar: 'extensionPath',
        events: [
          { eventKey: 'BeforeTool', commands: [{ kind: 'plugkit', subcommand: 'pre-tool-use', timeout: 3600 }] },
+         { eventKey: 'AfterTool', commands: [{ kind: 'plugkit', subcommand: 'post-tool-use', timeout: 35000 }] },
          { eventKey: 'SessionStart', commands: [{ kind: 'plugkit', subcommand: 'session-start', timeout: 180000 }] },
          { eventKey: 'BeforeAgent', commands: [{ kind: 'plugkit', subcommand: 'prompt-submit', timeout: 60000 }] },
          { eventKey: 'SessionEnd', commands: [

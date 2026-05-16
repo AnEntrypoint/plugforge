@@ -1,0 +1,29 @@
+
+Processing rs-exec...
+  Changes:
+     M .github/workflows/build.yml
+     M Cargo.toml
+  ✓ Committed
+
+Processing rs-codeinsight...
+  Changes:
+     M .github/workflows/ci.yml
+     M Cargo.toml
+  ✓ Committed
+
+Processing rs-search...
+  Changes:
+     M .github/workflows/build.yml
+     M Cargo.toml
+  ✓ Committed
+
+Processing rs-learn...
+  Changes:
+     M Cargo.toml
+  ✓ Committed
+
+=== Summary ===
+rs-exec: f2414bd refactor: convert to WASM-only build (wasm32-unknown-unknown)
+rs-codeinsight: 2004be7 refactor: convert to WASM-only build (wasm32-unknown-unknown)
+rs-search: 4bcd372 refactor: convert to WASM-only build (wasm32-unknown-unknown)
+rs-learn: 2ba15ba refactor: convert to WASM-only build (wasm32-unknown-unknown)

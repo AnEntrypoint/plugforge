@@ -1,0 +1,6 @@
+Checking Rust installation and dependencies...
+Rustc: rustc 1.85.1 (4eb161250 2025-03-15)
+Cargo: cargo 1.85.1 (d73d2caf9 2024-12-31)
+WASM target installed: no
+
+Attempting cargo check (without updating crates.io)...

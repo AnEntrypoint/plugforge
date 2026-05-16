@@ -1,0 +1,78 @@
+{
+  "bootstrap_error": null,
+  "cache_dirs": {
+    "gm_log_root": "C:\\Users\\user\\.claude\\gm-log",
+    "spool_root": "C:/dev/gm\\.gm\\exec-spool"
+  },
+  "last_session_start": {
+    "plugkit_version": "0.1.365",
+    "spawn_error": "",
+    "spawn_ok": true,
+    "ts": "2026-05-16T14:52:27Z",
+    "watcher_pid_attempted": 9292
+  },
+  "plugkit": {
+    "binary_path": "C:\\Users\\user\\.claude\\gm-tools\\plugkit.exe",
+    "pin_match": false,
+    "pinned_version": "0.1.366",
+    "version": "0.1.365"
+  },
+  "recent_errors": [],
+  "recent_hook_fires": [
+    "{\"event\":\"post-tool-use.tool\",\"out_len\":0,\"pid\":17700,\"project\":\"gm\",\"sub\":\"hook\",\"tool_name\":\"Write\",\"ts\":\"2026-05-16T15:36:47.372Z\"}",
+    "",
+    "{\"err_stream\":\"C:\\\\dev\\\\gm\\\\.gm\\\\exec-spool\\\\out\\\\1.err\",\"event\":\"post-tool-use.spool-write\",\"meta_path\":\"C:\\\\dev\\\\gm\\\\.gm\\\\exec-spool\\\\out\\\\1.json\",\"out_stream\":\"C:\\\\dev\\\\gm\\\\.gm\\\\exec-spool\\\\out\\\\1.out\",\"pid\":17700,\"project\":\"gm\",\"sub\":\"hook\",\"task_id\":1,\"ts\":\"2026-05-16T15:36:47.385Z\"}",
+    "",
+    "{\"dur_ms\":64,\"event\":\"post-tool-use\",\"phase\":\"end\",\"pid\":17700,\"project\":\"gm\",\"sub\":\"hook\",\"ts\":\"2026-05-16T15:36:47.402Z\"}"
+  ],
+  "rs_learn": {
+    "acp_status": "unknown",
+    "db_path": "C:/dev/gm\\.gm\\rs-learn.db",
+    "http_status": "unknown"
+  },
+  "runner": {
+    "alive": true,
+    "pid": true,
+    "port": 52173
+  },
+  "spool_inbox": {
+    "pending": 22,
+    "subdirs": [
+      "bash",
+      "codesearch",
+      "health",
+      "nodejs",
+      "rust",
+      "sleep",
+      "status",
+      "wait"
+    ]
+  },
+  "spool_outbox": {
+    "recent": [
+      "1.json",
+      "5.json"
+    ]
+  },
+  "watcher": {
+    "alive": true,
+    "heartbeat_age_ms": 241,
+    "pid": 13764,
+    "status_json": {
+      "binary_version": "0.1.365",
+      "errors_last_5": [],
+      "last_dispatched_task": {
+        "at": "2026-05-16T15:36:47.498Z",
+        "id": 1,
+        "input_path": "C:/dev/gm\\.gm\\exec-spool\\in\\health\\1.txt",
+        "lang_or_verb": "health"
+      },
+      "last_tick_at": "2026-05-16T15:36:47.501Z",
+      "pending_in_inbox": 22,
+      "pid": 13764,
+      "started_at": "2026-05-16T14:52:28.179Z",
+      "tasks_dispatched_this_session": 4
+    },
+    "tasks_dispatched_session": 4
+  }
+}

@@ -1,0 +1,15 @@
+Rust files in rs-exec:
+  rs-exec\src\background_tasks.rs
+  rs-exec\src\daemon.rs
+  rs-exec\src\exec_process.rs
+  rs-exec\src\kill.rs
+  rs-exec\src\lib.rs
+  rs-exec\src\main.rs
+  rs-exec\src\obs.rs
+  rs-exec\src\rpc.rs
+  rs-exec\src\rpc_client.rs
+  rs-exec\src\runner.rs
+  rs-exec\src\runtime.rs
+  rs-exec\src\spool.rs
+  rs-exec\src\wasm_host.rs
+  rs-exec\src\wasm_spool.rs

@@ -1,0 +1,24 @@
+Verifying WASM configurations:
+
+rs-plugkit:
+  wasm feature: ✓
+  crate-type cdylib: ✓
+rs-exec:
+  wasm feature: ✓
+  crate-type cdylib: ✓
+rs-learn:
+  wasm feature: ✓
+  crate-type cdylib: ✓
+rs-codeinsight:
+  wasm feature: ✓
+  crate-type cdylib: ✓
+rs-search:
+  wasm feature: ✓
+  crate-type cdylib: ✓
+
+Workflow files (WASM build):
+
+rs-plugkit: build.yml - ✗ OS binaries
+rs-exec: build.yml - ✓ WASM
+rs-codeinsight: ci.yml - ✓ WASM
+rs-search: build.yml - ✓ WASM

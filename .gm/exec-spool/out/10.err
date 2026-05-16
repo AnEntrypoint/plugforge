@@ -1,0 +1,4 @@
+warning: in the working copy of '.github/workflows/build.yml', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '.github/workflows/ci.yml', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '.github/workflows/build.yml', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'Cargo.toml', CRLF will be replaced by LF the next time Git touches it

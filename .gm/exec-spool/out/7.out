@@ -1,0 +1,7 @@
+Workflows in rs-exec:
+  auto-declaudeify.yml
+  build.yml
+  cascade.yml
+  gh-pages.yml
+  wasm-check.yml
+  wasm.yml
