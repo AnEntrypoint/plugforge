@@ -6,7 +6,7 @@ hero:
   body: "gm convinces your coding agent that it already is a deterministic state machine. PLAN → EXECUTE → EMIT → VERIFY → COMPLETE. it cushions the seat your agent has to sit on to actually finish the job. named after glootius maximus — the muscle that holds you in the chair while you finish the work."
   badges:
     - { label: "PLAN→EXECUTE→EMIT→VERIFY" }
-    - { label: "13 platforms, one source" }
+    - { label: "15 platforms, one source" }
     - { label: "rust-backed, no daemons in your face" }
     - { label: "covering family of bounded subsets" }
     - { label: "every dispatch through one spool folder" }
@@ -26,8 +26,8 @@ features:
       desc: "every unknown is resolved by running code, not by guessing. exec:<lang> for proofs, exec:codesearch for whereabouts, exec:recall for what we already learned. the words 'I think this should work' are physically blocked at the hook layer."
     - name: "covering family of bounded subsets"
       desc: "when a request exceeds reach, the agent does not pick one piece and call the rest 'follow-up'. it enumerates every witnessable subset of the ask, executes each, and names the residual complement explicitly. partial delivery dressed up as triage is refusal in disguise — and we don't refuse."
-    - name: "13 platforms, one source"
-      desc: "claude code, gemini cli, opencode, kilo, codex, copilot cli, qwen, hermes, vscode, cursor, zed, jetbrains, windsurf. one gm-starter directory; CI fans the build out to thirteen downstream repos as single-commit orphan histories. add a hook once, it shows up everywhere — like a really persistent subscription you actually want."
+    - name: "15 platforms, one source"
+      desc: "claude code, gemini cli, opencode, kilo, codex, copilot cli, qwen, hermes, vscode, cursor, zed, jetbrains, copilot-cli, antigravity, windsurf. one gm-starter directory; CI fans the build out to fifteen downstream repos as single-commit orphan histories. add a hook once, it shows up everywhere — like a really persistent subscription you actually want."
     - name: "rust-backed runtime"
       desc: "rs-exec is the runner. rs-codeinsight is the AST x-ray. rs-search is the fast file finder. rs-learn is the memory store. rs-plugkit is the binary that ties it together. every push to any of them auto-cascades to the binary in your plugin within minutes — no manual cargo build, no version jujitsu."
     - name: "ccsniff says you're 100% compliant"

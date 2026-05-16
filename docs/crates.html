@@ -81,7 +81,7 @@ sequenceDiagram
   participant Plugkit as rs-plugkit
   participant Bin as plugkit-bin Releases
   participant GM as gm
-  participant Plug as 12 plugin repos
+  participant Plug as 15 plugin repos
   participant User as /plugin user
 
   Dev->>RsExec: git push main
@@ -95,7 +95,7 @@ sequenceDiagram
 
 <div class="gm-callout"><span class="who">from the gm field guide</span>"You did not type cargo once. You did not bump a version. You pushed and the cushion did the rest. This is the correct order of operations."</div>
 
-<p>Five repos contribute. One binary deploys. Twelve plugins update.</p>
+<p>Five repos contribute. One binary deploys. Fifteen plugins update.</p>
 
 <!-- ============================================================== -->
 
@@ -273,13 +273,13 @@ sequenceDiagram
     <div class="cell"><span class="label">version source</span><span class="value">Cargo.toml (single)</span></div>
     <div class="cell"><span class="label">cascade target</span><span class="value">plugkit-bin Releases</span></div>
     <div class="cell"><span class="label">platforms</span><span class="value">6 prebuilt binaries</span></div>
-    <div class="cell"><span class="label">downstream</span><span class="value">12 plugin repos</span></div>
+    <div class="cell"><span class="label">downstream</span><span class="value">15 plugin repos</span></div>
   </div>
 </div>
 
 <h2>How to update any of them</h2>
 
-<p><strong>Push to the relevant repo. That's it.</strong> No <code>cargo update</code>, no local cargo build, no version bumps. The cascade pipeline detects the push, rebuilds the six prebuilt binaries, bumps <code>gm-starter/gm.json::plugkitVersion</code>, and triggers gm's twelve-platform fan-out. The next time anyone's editor calls <code>/plugin</code>, they get the new binary via <code>bootstrap.js</code>.</p>
+<p><strong>Push to the relevant repo. That's it.</strong> No <code>cargo update</code>, no local cargo build, no version bumps. The cascade pipeline detects the push, rebuilds the six prebuilt binaries, bumps <code>gm-starter/gm.json::plugkitVersion</code>, and triggers gm's fifteen-platform fan-out. The next time anyone's editor calls <code>/plugin</code>, they get the new binary via <code>bootstrap.js</code>.</p>
 
 <p>The PUBLISHER_TOKEN secret in rs-exec, rs-codeinsight, and rs-search is what authorizes the cascade.yml in those repos to trigger rs-plugkit's workflow_dispatch. If the cascade ever stops working, that token has rotated. Set it with <code>gh secret set PUBLISHER_TOKEN --repo AnEntrypoint/&lt;repo&gt;</code>.</p>
 

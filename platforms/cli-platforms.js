@@ -34,10 +34,6 @@ function createAdapterClass(cfg) {
       return cfg.generatePackageJson ? cfg.generatePackageJson(pluginSpec, extraFields) : super.generatePackageJson(pluginSpec, extraFields);
     }
 
-    buildHookSpec(pluginSpec) {
-      return cfg.buildHookSpec ? cfg.buildHookSpec.call(this, pluginSpec) : super.buildHookSpec(pluginSpec);
-    }
-
     loadSkillsFromSource(sourceDir) {
       return cfg.loadSkillsFromSource ? cfg.loadSkillsFromSource(sourceDir) : super.loadSkillsFromSource(sourceDir);
     }

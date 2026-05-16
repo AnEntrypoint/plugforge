@@ -207,3 +207,9 @@ exec:nodejs code that hits fs.readFileSync ENOENT or other synchronous system er
 ## Made with gm Page
 
 `docs/made-with.html` is a static showcase of notable AnEntrypoint projects. Update the PROJECTS array when a new notable project is added — projects with interesting descriptions, meaningful star counts, or technically unusual scope. Static data, no runtime API calls. Standalone HTML, not bundled.
+
+## acptoapi Provider Integrations
+
+**Functional Providers:** acptoapi successfully integrates 12 commercial brand providers (groq, nvidia, cerebras, mistral, together, perplexity, anthropic, openai, google, xai, meta, cohere) via API keys. All are fully operational as HTTP-based providers.
+
+**Stdio-Based Agents (Future Work):** kilo-code and opencode-ai provide `acp` subcommands that implement the Agent Client Protocol (ACP) over stdio (ndjson), not HTTP. Current acptoapi architecture assumes all providers expose HTTP endpoints on fixed ports. Integrating stdio-based agents (kilo on port 4780, opencode on port 4790) requires a wrapper layer that spawns the subprocess and translates between HTTP and stdio transports. This is a known limitation; the infrastructure exists but the wrapper implementation is not yet complete. Both tools are documented and installable (`which kilo`, `which opencode` return paths), but `kilo acp` and `opencode acp` spawn as subprocesses expecting stdio communication, not HTTP servers.

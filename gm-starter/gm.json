@@ -1,7 +1,7 @@
 {
   "name": "gm",
   "version": "2.0.1067",
-  "description": "State machine agent with hooks, skills, and automated git enforcement",
+  "description": "Spool-dispatch orchestration engine with unified state machine, skills, and automated git enforcement",
   "author": "AnEntrypoint",
   "license": "MIT",
   "keywords": [

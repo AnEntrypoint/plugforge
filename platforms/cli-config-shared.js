@@ -972,30 +972,6 @@ const cc = factory('cc', 'Claude Code', 'CLAUDE.md', 'CLAUDE.md', {
       'install.js': createClaudeCodeInstallScript(),
     };
   },
-  buildHookSpec() {
-    return {
-      envVar: 'CLAUDE_PLUGIN_ROOT',
-      plugkitInvoker: 'node',
-      events: [
-        { eventKey: 'PreToolUse', commands: [
-          { kind: 'plugkit', subcommand: 'pre-tool-use', timeout: 3600 }
-        ]},
-        { eventKey: 'PostToolUse', commands: [
-          { kind: 'plugkit', subcommand: 'post-tool-use', timeout: 35000 }
-        ]},
-        { eventKey: 'SessionStart', commands: [
-          { kind: 'plugkit', subcommand: 'session-start', timeout: 180000 }
-        ]},
-        { eventKey: 'UserPromptSubmit', commands: [
-          { kind: 'plugkit', subcommand: 'prompt-submit', timeout: 60000 }
-        ]},
-        { eventKey: 'Stop', commands: [
-          { kind: 'plugkit', subcommand: 'stop', timeout: 300000 },
-          { kind: 'plugkit', subcommand: 'stop-git', timeout: 60000 }
-        ]}
-      ]
-    };
-  },
   generateReadme(spec) {
     const repoName = 'gm-cc';
     return `# ${repoName} for Claude Code
@@ -1459,7 +1435,6 @@ const gc = factory('gc', 'Gemini CLI', 'gemini-extension.json', 'GEMINI.md', {
     return makePackageJson({
       ...config,
       author: { name: config.author, url: 'https://github.com/AnEntrypoint' },
-      hooks: './hooks/hooks.json',
       skills: './skills',
       mcpServers: (spec && spec.mcp) || {},
       contextFileName: this.contextFile
@@ -1487,21 +1462,6 @@ getAdditionalFiles(spec) {
        'install.js': createGeminiInstallScript(),
      };
    },
-buildHookSpec() {
-     return {
-       envVar: 'extensionPath',
-       events: [
-         { eventKey: 'BeforeTool', commands: [{ kind: 'plugkit', subcommand: 'pre-tool-use', timeout: 3600 }] },
-         { eventKey: 'AfterTool', commands: [{ kind: 'plugkit', subcommand: 'post-tool-use', timeout: 35000 }] },
-         { eventKey: 'SessionStart', commands: [{ kind: 'plugkit', subcommand: 'session-start', timeout: 180000 }] },
-         { eventKey: 'BeforeAgent', commands: [{ kind: 'plugkit', subcommand: 'prompt-submit', timeout: 60000 }] },
-         { eventKey: 'SessionEnd', commands: [
-           { kind: 'plugkit', subcommand: 'stop', timeout: 300000 },
-           { kind: 'plugkit', subcommand: 'stop-git', timeout: 60000 }
-         ]}
-       ]
-     };
-   },
   generateReadme(spec) {
     return `# ${spec.name} for Gemini CLI\n\n## Installation\n\n**Windows and Unix:**\n\`\`\`bash\ngit clone https://github.com/AnEntrypoint/gm-gc ~/.gemini/extensions/${spec.name}\n\`\`\`\n\n**Windows PowerShell:**\n\`\`\`powershell\ngit clone https://github.com/AnEntrypoint/gm-gc \"\\$env:APPDATA\\gemini\\extensions\\${spec.name}\"\n\`\`\`\n\n## Automatic Path Resolution\n\nHooks automatically use \`\${extensionPath}\` for path resolution. No manual environment variable setup required. The extension is fully portable.\n\n## Features\n\n- MCP tools for code execution and search\n- State machine agent policy (gm)\n- Stop hook verification loop\n- Git enforcement on session end\n- AST analysis via thorns at session start\n\nThe extension activates automatically on session start.\n`;
   }
@@ -1512,7 +1472,7 @@ const codex = factory('codex', 'Codex', 'plugin.json', 'CLAUDE.md', {
     return TemplateBuilder.loadSkillsFromSource(sourceDir, 'skills');
   },
   formatConfigJson(config) {
-    return makePackageJson({ ...config, author: { name: config.author, url: 'https://github.com/AnEntrypoint' }, hooks: './hooks/hooks.json', skills: './skills', mcpServers: {} });
+    return makePackageJson({ ...config, author: { name: config.author, url: 'https://github.com/AnEntrypoint' }, skills: './skills', mcpServers: {} });
   },
   generatePackageJson(pluginSpec, extraFields = {}) {
     return makePackageJson({
@@ -1676,30 +1636,6 @@ MIT
       '.agents/plugins/marketplace.json': TemplateBuilder.generateCodexMarketplaceJson('gm-codex'),
     };
   },
-  buildHookSpec() {
-    return {
-      envVar: 'CODEX_PLUGIN_ROOT',
-      plugkitInvoker: 'node',
-      events: [
-        { eventKey: 'PreToolUse', commands: [
-          { kind: 'plugkit', subcommand: 'pre-tool-use', timeout: 3600 }
-        ]},
-        { eventKey: 'PostToolUse', commands: [
-          { kind: 'plugkit', subcommand: 'post-tool-use', timeout: 35000 }
-        ]},
-        { eventKey: 'SessionStart', commands: [
-          { kind: 'plugkit', subcommand: 'session-start', timeout: 180000 }
-        ]},
-        { eventKey: 'UserPromptSubmit', commands: [
-          { kind: 'plugkit', subcommand: 'prompt-submit', timeout: 60000 }
-        ]},
-        { eventKey: 'Stop', commands: [
-          { kind: 'plugkit', subcommand: 'stop', timeout: 15000 },
-          { kind: 'plugkit', subcommand: 'stop-git', timeout: 210000 }
-        ]}
-      ]
-    };
-  }
 });
 
 const oc = factory('oc', 'OpenCode', 'opencode.json', 'GM.md', {
@@ -1742,24 +1678,6 @@ const oc = factory('oc', 'OpenCode', 'opencode.json', 'GM.md', {
         }
       }
     });
-  },
-  buildHookSpec() {
-    return {
-      envVar: 'OC_PLUGIN_ROOT',
-      plugkitInvoker: 'node',
-      events: [
-        { eventKey: 'tool.execute.before', commands: [
-          { kind: 'plugkit', subcommand: 'pre-tool-use', timeout: 3600 }
-        ]},
-        { eventKey: 'message.updated', commands: [
-          { kind: 'plugkit', subcommand: 'prompt-submit', timeout: 60000 }
-        ]},
-        { eventKey: 'session.closing', commands: [
-          { kind: 'plugkit', subcommand: 'stop', timeout: 300000 },
-          { kind: 'plugkit', subcommand: 'stop-git', timeout: 60000 }
-        ]}
-      ]
-    };
   },
   getAdditionalFiles(spec) {
     return {
@@ -1878,24 +1796,6 @@ const kilo = factory('kilo', 'Kilo CLI', 'kilocode.json', 'KILO.md', {
       }
     });
   },
-  buildHookSpec() {
-    return {
-      envVar: 'KILO_PLUGIN_ROOT',
-      plugkitInvoker: 'node',
-      events: [
-        { eventKey: 'tool.execute.before', commands: [
-          { kind: 'plugkit', subcommand: 'pre-tool-use', timeout: 3600 }
-        ]},
-        { eventKey: 'message.updated', commands: [
-          { kind: 'plugkit', subcommand: 'prompt-submit', timeout: 60000 }
-        ]},
-        { eventKey: 'session.closing', commands: [
-          { kind: 'plugkit', subcommand: 'stop', timeout: 300000 },
-          { kind: 'plugkit', subcommand: 'stop-git', timeout: 60000 }
-        ]}
-      ]
-    };
-  },
   getAdditionalFiles(spec) {
     return {
       'index.js': `module.exports = { GmPlugin: require('./gm-kilo.mjs').GmPlugin };\n`,
@@ -1990,7 +1890,6 @@ function createQwenInstallerScript() {
       name: 'gm',
       version: pkg.version,
       description: pkg.description,
-      hooks: './hooks/hooks.json',
       skills: './skills'
     }, null, 2) + '\\n');
   }
@@ -2017,23 +1916,10 @@ const qwen = factory('qwen', 'Qwen Code', 'qwen-extension.json', 'CLAUDE.md', {
         description: spec.description,
         author: { name: spec.author, url: 'https://github.com/AnEntrypoint' },
         homepage: spec.homepage,
-        hooks: './hooks/hooks.json',
         skills: './skills',
         mcpServers: {}
       }, null, 2),
       'cli.js': createQwenInstallerScript(),
-    };
-  },
-  buildHookSpec() {
-    return {
-      envVar: 'CLAUDE_PLUGIN_ROOT',
-      plugkitInvoker: 'node',
-      events: [
-        { eventKey: 'PreToolUse', commands: [{ kind: 'plugkit', subcommand: 'pre-tool-use', timeout: 3600 }] },
-        { eventKey: 'PostToolUse', commands: [{ kind: 'plugkit', subcommand: 'post-tool-use', timeout: 35000 }] },
-        { eventKey: 'SessionStart', commands: [{ kind: 'plugkit', subcommand: 'session-start', timeout: 180000 }] },
-        { eventKey: 'UserPromptSubmit', commands: [{ kind: 'plugkit', subcommand: 'prompt-submit', timeout: 60000 }] }
-      ]
     };
   },
   generateReadme(spec) {
@@ -2104,9 +1990,6 @@ const hermes = factory('hermes', 'Hermes Agent', 'hermes-skill.json', 'AGENTS.md
       }, null, 2),
       'cli.js': createHermesInstallerScript()
     };
-  },
-  buildHooksMap() {
-    return {};
   },
   loadSkillsFromSource(sourceDir) {
     const fs = require('fs');
@@ -2243,18 +2126,6 @@ const thebird = factory('thebird', 'thebird', 'plugin.json', 'AGENTS.md', {
     return {
       'plugin.json': TemplateBuilder.generatePluginJson(spec),
       'cli.js': createThebirdInstallerScript()
-    };
-  },
-  buildHookSpec() {
-    return {
-      envVar: 'CLAUDE_PLUGIN_ROOT',
-      plugkitInvoker: 'node',
-      events: [
-        { eventKey: 'PreToolUse',       commands: [{ kind: 'wasm', subcommand: 'pre-tool-use',  timeout: 3600 }] },
-        { eventKey: 'PostToolUse',      commands: [{ kind: 'wasm', subcommand: 'post-tool-use', timeout: 35000 }] },
-        { eventKey: 'SessionStart',     commands: [{ kind: 'wasm', subcommand: 'session-start', timeout: 180000 }] },
-        { eventKey: 'UserPromptSubmit', commands: [{ kind: 'wasm', subcommand: 'prompt-submit', timeout: 60000 }] }
-      ]
     };
   },
   generateReadme(spec) {

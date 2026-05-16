@@ -1,1 +1,1 @@
-{"durationMs":410,"endedAt":1778945807909,"exitCode":0,"lang":"health","ok":true,"startedAt":1778945807499,"taskId":1,"timedOut":false}
+{"durationMs":1175,"endedAt":1778948464071,"exitCode":1,"lang":"nodejs","ok":false,"startedAt":1778948462896,"taskId":1,"timedOut":false}

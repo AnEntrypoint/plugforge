@@ -129,30 +129,6 @@ State in \`~/.gh/extensions/gm/state.json\`.
     return super.getHookSourcePaths(hook);
   }
 
-  buildHookSpec() {
-    return {
-      envVar: 'COPILOT_EXTENSION_DIR',
-      plugkitInvoker: 'binary',
-      events: [
-        { eventKey: 'tool:invoke', commands: [
-          { kind: 'plugkit', subcommand: 'pre-tool-use', timeout: 3600 }
-        ]},
-        { eventKey: 'tool:result', commands: [
-          { kind: 'plugkit', subcommand: 'post-tool-use', timeout: 5000 }
-        ]},
-        { eventKey: 'session:start', commands: [
-          { kind: 'plugkit', subcommand: 'session-start', timeout: 180000 }
-        ]},
-        { eventKey: 'prompt:submit', commands: [
-          { kind: 'plugkit', subcommand: 'prompt-submit', timeout: 60000 }
-        ]},
-        { eventKey: 'session:end', commands: [
-          { kind: 'plugkit', subcommand: 'stop', subcommandRename: 'session-end', timeout: 15000 },
-          { kind: 'plugkit', subcommand: 'stop-git', subcommandRename: 'session-end-git', timeout: 210000 }
-        ]}
-      ]
-    };
-  }
 }
 
 module.exports = CopilotCLIAdapter;

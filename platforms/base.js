@@ -9,8 +9,6 @@ class PlatformAdapter {
     this.label = config.label;
     this.configFile = config.configFile;
     this.contextFile = config.contextFile;
-    this.hookEventNames = config.hookEventNames;
-    this.hookOutputFormat = config.hookOutputFormat;
     this.tools = config.tools;
     this.env = config.env;
   }
@@ -68,10 +66,6 @@ class PlatformAdapter {
     return TemplateBuilder.generateMcpJson(pluginSpec);
   }
 
-  generateHooksJson(hookEventNames) {
-    throw new Error('generateHooksJson must be implemented by subclass');
-  }
-
   readSourceFile(sourceDir, paths) {
     const fs = require('fs');
     if (Array.isArray(paths)) {
@@ -89,25 +83,6 @@ class PlatformAdapter {
     } catch (e) {
       return null;
     }
-  }
-
-  getDefaultHooks(pluginSpec) {
-    return Object.keys(pluginSpec.hooks).map(hookName => ({
-      name: hookName,
-      file: pluginSpec.hooks[hookName],
-      event: this.hookEventNames[this.mapHookName(hookName)]
-    }));
-  }
-
-  mapHookName(hookName) {
-    const map = {
-      'session-start': 'sessionStart',
-      'pre-tool': 'preTool',
-      'prompt-submit': 'promptSubmit',
-      'stop': 'stop',
-      'stop-git': 'stopGit'
-    };
-    return map[hookName] || hookName;
   }
 
   getAgentSourcePaths(agent) {

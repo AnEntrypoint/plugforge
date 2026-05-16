@@ -1,29 +1,20 @@
+15-Platform Cascade Results:
+===========================
 
-Processing rs-exec...
-  Changes:
-     M .github/workflows/build.yml
-     M Cargo.toml
-  ✓ Committed
+gm-cc: bootstrap=YES, spool=YES
+gm-gc: bootstrap=YES, spool=YES
+gm-oc: bootstrap=YES, spool=YES
+gm-codex: bootstrap=YES, spool=YES
+gm-kilo: bootstrap=YES, spool=YES
+gm-qwen: bootstrap=YES, spool=YES
+gm-hermes: bootstrap=YES, spool=YES
+gm-thebird: bootstrap=YES, spool=YES
+gm-vscode: bootstrap=YES, spool=YES
+gm-cursor: bootstrap=YES, spool=YES
+gm-zed: bootstrap=YES, spool=YES
+gm-jetbrains: bootstrap=YES, spool=YES
+gm-copilot-cli: bootstrap=YES, spool=YES
+gm-antigravity: bootstrap=YES, spool=YES
+gm-windsurf: bootstrap=YES, spool=YES
 
-Processing rs-codeinsight...
-  Changes:
-     M .github/workflows/ci.yml
-     M Cargo.toml
-  ✓ Committed
-
-Processing rs-search...
-  Changes:
-     M .github/workflows/build.yml
-     M Cargo.toml
-  ✓ Committed
-
-Processing rs-learn...
-  Changes:
-     M Cargo.toml
-  ✓ Committed
-
-=== Summary ===
-rs-exec: f2414bd refactor: convert to WASM-only build (wasm32-unknown-unknown)
-rs-codeinsight: 2004be7 refactor: convert to WASM-only build (wasm32-unknown-unknown)
-rs-search: 4bcd372 refactor: convert to WASM-only build (wasm32-unknown-unknown)
-rs-learn: 2ba15ba refactor: convert to WASM-only build (wasm32-unknown-unknown)
+✓ 15/15 platforms verified with spool-dispatch files

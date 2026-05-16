@@ -1,11 +1,21 @@
-Upgrading Rust toolchain to latest stable...
+Verifying hooks/ directories are absent...
 
-  stable-x86_64-pc-windows-msvc unchanged - rustc 1.95.0 (59807616e 2026-04-14)
+✓ gm-cc                | hooks/ correctly absent
+✓ gm-gc                | hooks/ correctly absent
+✓ gm-oc                | hooks/ correctly absent
+✓ gm-codex             | hooks/ correctly absent
+✓ gm-kilo              | hooks/ correctly absent
+✓ gm-qwen              | hooks/ correctly absent
+✓ gm-hermes            | hooks/ correctly absent
+✓ gm-thebird           | hooks/ correctly absent
+✓ gm-vscode            | hooks/ correctly absent
+✓ gm-cursor            | hooks/ correctly absent
+✓ gm-zed               | hooks/ correctly absent
+✓ gm-jetbrains         | hooks/ correctly absent
+✓ gm-copilot-cli       | hooks/ correctly absent
+✓ gm-antigravity       | hooks/ correctly absent
+✓ gm-windsurf          | hooks/ correctly absent
 
-
-
-Verifying Rustc version...
-rustc 1.85.1 (4eb161250 2025-03-15)
-
-
-Running cargo check for rs-plugkit...
+================================
+Results: 15/15 platforms have no hooks/ directory
+✓ SUCCESS: All 15 platforms transitioned to file-spool dispatch

@@ -1,26 +1,15 @@
+Testing GH API access...
+gm-cc latest commit: Auto-build: Claude Code plugin from gm (v2.0.1067)
 
-rs-codeinsight workflows:
-  auto-declaudeify.yml
-  cascade.yml
-  ci.yml
-  gh-pages.yml
-  publish.yml
-  release.yml
-  wasm-check.yml
-  wasm.yml
+Checking gm-oc lib directory...
+Lib files in gm-oc:
+browser-spool-handler.js
+browser.js
+codeinsight.js
+daemon-bootstrap.js
+git.js
+learning.js
+skill-bootstrap.js
+spool-dispatch.js
+spool.js
 
-rs-search workflows:
-  auto-declaudeify.yml
-  build.yml
-  cascade.yml
-  gh-pages.yml
-  wasm-check.yml
-  wasm.yml
-
-rs-learn workflows:
-  cascade.yml
-  gh-pages.yml
-  publish.yml
-  test.yml
-  wasm-check.yml
-  wasm.yml

@@ -1,5 +1,15 @@
-Installing wasm32-unknown-unknown target...
-info: downloading component rust-std
-
-
-Running cargo check for rs-plugkit...
+Workflows in .github/workflows:
+  audit-blobs.yml
+  auto-declaudeify.yml
+  gh-pages.yml
+  gm-skill-publish.yml
+  insights.yml
+  metrics-badges.yml
+  notify-failures.yml
+  pr-stats.yml
+  publish-releases-api.yml
+  publish.yml
+  releases-changelog.yml
+  squash-binaries.yml
+  track-npm-downloads.yml
+  track-stars.yml
