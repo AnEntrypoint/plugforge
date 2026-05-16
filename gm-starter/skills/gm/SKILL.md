@@ -17,13 +17,17 @@ The user's request is authorization. When scope is unclear, pick the maximum rea
 
 **Every issue surfaces this turn**: pre-existing breaks, lint failures, drift, broken deps, stale generated files — all become PRD items and finish before COMPLETE.
 
-**LLM provider**: acptoapi (127.0.0.1:4800) is the preferred provider when available. rs-plugkit session_start spawns acptoapi daemon and auto-detects ACP agents (opencode, kilo-code, codex, gemini-cli, qwen-code). All downstream platforms (rs-learn, freddie, gm-skill daemon mode) read OPENAI_BASE_URL environment variable and default to 127.0.0.1:4800. Anthropic SDK is fallback only when acptoapi socket is unavailable (CI, headless mode).
+**LLM provider**: rs-learn uses a 3-tier fallback chain: acptoapi HTTP (127.0.0.1:4800) → ACP subprocess (opencode/kilo-code/codex/gemini-cli/qwen-code) → AGENTS.md content. All errors reported explicitly — never silently absorbed. SWE-bench scores rank model fallback ordering (highest first). Downstream platforms read OPENAI_BASE_URL defaulting to 127.0.0.1:4800. Anthropic SDK only when acptoapi socket unavailable. acptoapi strips internal tools (fs_*, bash, python, ssh, recall, memorize, codesearch, etc.) before forwarding to providers.
 
 **rs-learn failure contract**: memorize, recall, and codesearch spool dispatch failures must be reported explicitly with error details to the user. Fallback to AGENTS.md for memory preservation when socket/network unavailable. Never silently absorb errors because memory preservation requires explicit fallback. This rule applies across all phases (PLAN through UPDATE-DOCS).
 
 **Spool watcher restart**: at session start, check `.gm/exec-spool/.watcher.heartbeat`. If older than 30s, the watcher is dead. Write a nodejs spool file to `.gm/exec-spool/in/nodejs/restart-watcher.js` that kills stale plugkit processes and spawns `plugkit runner --watch .gm/exec-spool/in --out .gm/exec-spool/out` detached. Wait 2s for initialization before dispatching any exec commands.
 
 **Spool dispatch chain**: write to `.gm/exec-spool/in/<lang>/<N>.<ext>` or `in/<verb>/<N>.txt`. Watcher executes and streams `out/<N>.out` + `out/<N>.err` + `out/<N>.json` metadata. Languages: nodejs, python, bash, typescript, go, rust, c, cpp, java, deno. Verbs: codesearch, recall, memorize, wait, sleep, status, close, browser, runner, type, kill-port, forget, feedback, learn-status, learn-debug, learn-build, discipline, pause, health.
+
+**Data layout**: `.gm/` for ephemeral state (excluded from git), `gm-data/` for persistent DBs (rs-learn.db, code-search/ — tracked in git). Legacy `.gm/rs-learn.db` auto-migrates to `gm-data/rs-learn.db` on first access.
+
+**WASM parity**: All CLI verbs available in browser/WASM via thebird host emulation. Python/bash/ssh/powershell map to exec_js; status/wait/sleep/close/kill-port/forget/feedback/learn-status/learn-debug/learn-build/discipline/pause/runner/type/browser all have WASM handlers. rs-search WASM uses fusion search (vector + BM25 + git via RRF scoring).
 
 **Session isolation**: SESSION_ID environment variable (or uuid fallback) threads through task dispatch for cleanup scope. rs-exec RPC handlers verify session_id match on all task-scoped operations.
 
