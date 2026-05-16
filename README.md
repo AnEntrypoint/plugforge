@@ -1,6 +1,6 @@
 # gm
 
-Convention-driven multi-platform AI plugin generator. One source, 13 platforms.
+Convention-driven multi-platform AI plugin generator. One source, 15 platforms.
 
 **Hub page:** https://AnEntrypoint.github.io/gm
 
@@ -25,6 +25,8 @@ Convention-driven multi-platform AI plugin generator. One source, 13 platforms.
 | Kilo CLI | https://AnEntrypoint.github.io/gm-kilo | https://github.com/AnEntrypoint/gm-kilo |
 | Codex | https://AnEntrypoint.github.io/gm-codex | https://github.com/AnEntrypoint/gm-codex |
 | GitHub Copilot CLI | https://AnEntrypoint.github.io/gm-copilot-cli | https://github.com/AnEntrypoint/gm-copilot-cli |
+| QwenCode | https://AnEntrypoint.github.io/gm-qwen | https://github.com/AnEntrypoint/gm-qwen |
+| Hermes | https://AnEntrypoint.github.io/gm-hermes | https://github.com/AnEntrypoint/gm-hermes |
 
 ### IDE Extensions
 
@@ -35,3 +37,5 @@ Convention-driven multi-platform AI plugin generator. One source, 13 platforms.
 | Zed Editor | https://AnEntrypoint.github.io/gm-zed | https://github.com/AnEntrypoint/gm-zed |
 | JetBrains IDEs | https://AnEntrypoint.github.io/gm-jetbrains | https://github.com/AnEntrypoint/gm-jetbrains |
 | Antigravity | https://AnEntrypoint.github.io/gm-antigravity | https://github.com/AnEntrypoint/gm-antigravity |
+| The Bird | https://AnEntrypoint.github.io/gm-thebird | https://github.com/AnEntrypoint/gm-thebird |
+| Windsurf | https://AnEntrypoint.github.io/gm-windsurf | https://github.com/AnEntrypoint/gm-windsurf |
