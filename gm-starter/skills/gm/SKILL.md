@@ -19,7 +19,9 @@ The user's request is authorization. When scope is unclear, pick the maximum rea
 
 **LLM provider**: acptoapi (127.0.0.1:4800) is the preferred provider when available. rs-plugkit session_start spawns acptoapi daemon and auto-detects ACP agents (opencode, kilo-code, codex, gemini-cli, qwen-code). All downstream platforms (rs-learn, freddie, gm-skill daemon mode) read OPENAI_BASE_URL environment variable and default to 127.0.0.1:4800. Anthropic SDK is fallback only when acptoapi socket is unavailable (CI, headless mode).
 
-**rs-learn failure contract**: exec:memorize, exec:recall, and exec:codesearch failures must be reported explicitly with error details to the user. Fallback to AGENTS.md for memory preservation when socket/network unavailable. Never silently absorb errors because memory preservation requires explicit fallback. This rule applies across all phases (PLAN through UPDATE-DOCS).
+**rs-learn failure contract**: memorize, recall, and codesearch spool dispatch failures must be reported explicitly with error details to the user. Fallback to AGENTS.md for memory preservation when socket/network unavailable. Never silently absorb errors because memory preservation requires explicit fallback. This rule applies across all phases (PLAN through UPDATE-DOCS).
+
+**Spool watcher restart**: at session start, check `.gm/exec-spool/.watcher.heartbeat`. If older than 30s, the watcher is dead. Write a nodejs spool file to `.gm/exec-spool/in/nodejs/restart-watcher.js` that kills stale plugkit processes and spawns `plugkit runner --watch .gm/exec-spool/in --out .gm/exec-spool/out` detached. Wait 2s for initialization before dispatching any exec commands.
 
 **Spool dispatch chain**: write to `.gm/exec-spool/in/<lang>/<N>.<ext>` or `in/<verb>/<N>.txt`. Watcher executes and streams `out/<N>.out` + `out/<N>.err` + `out/<N>.json` metadata. Languages: nodejs, python, bash, typescript, go, rust, c, cpp, java, deno. Verbs: codesearch, recall, memorize, wait, sleep, status, close, browser, runner, type, kill-port, forget, feedback, learn-status, learn-debug, learn-build, discipline, pause, health.
 

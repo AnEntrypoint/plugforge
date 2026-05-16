@@ -16,4 +16,4 @@ AI-native software engineering orchestrated via skill chain: PLAN â†’ EXECUTE â†
 
 **End-to-end skill chaining (skills-based platforms)**: When gm SKILL.md includes `end-to-end: true`, adapter detects signal and parses stdout for trailing JSON: `{"nextSkill": "...", "context": {...}, "phase": "..."}`. If nextSkill is non-null, invoke `Skill(skill="gm:<nextSkill>")` with context dict, repeat until null. This auto-chains 5 invocations into 1 user invocation.
 
-Every task returns complete: taskId, exitCode, durationMs, timedOut, stdout, stderr. Background tasks return immediately with task_id; continue with exec:tail, exec:watch, or exec:close.
+Every task returns complete: taskId, exitCode, durationMs, timedOut, stdout, stderr. Background tasks return immediately with task_id; continue with `in/status/<N>.txt` (tail), `in/watch/<N>.txt` (watch), or `in/close/<N>.txt` (close).

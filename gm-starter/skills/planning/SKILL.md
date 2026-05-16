@@ -21,11 +21,47 @@ Cross-cutting dispositions (autonomy, fix-on-sight, nothing-fake, browser-witnes
 
 Cannot stop while `.gm/prd.yml` has items, git is dirty, or commits are unpushed.
 
+## Session start: restart spool watcher
+
+Before any orient or PRD work, ensure the spool watcher is running. Check `.gm/exec-spool/.watcher.heartbeat` — if older than 30s, the watcher is dead. Restart it:
+
+```
+# write .gm/exec-spool/in/nodejs/restart-watcher.js
+const { spawn, spawnSync } = require('child_process');
+const fs = require('fs');
+const path = require('path');
+const os = require('os');
+const bin = path.join(os.homedir(), '.claude', 'gm-tools', process.platform === 'win32' ? 'plugkit.exe' : 'plugkit');
+const root = process.cwd();
+const spoolIn = path.join(root, '.gm', 'exec-spool', 'in');
+const spoolOut = path.join(root, '.gm', 'exec-spool', 'out');
+const pidFile = path.join(os.tmpdir(), 'gm-plugkit-spool.pid');
+if (fs.existsSync(pidFile)) {
+  const pid = parseInt(fs.readFileSync(pidFile, 'utf8').trim(), 10);
+  if (Number.isFinite(pid)) { try { process.kill(pid); } catch (_) {} }
+  try { fs.unlinkSync(pidFile); } catch (_) {}
+}
+if (process.platform === 'win32') {
+  try { spawnSync('taskkill', ['/F', '/IM', 'plugkit.exe'], { windowsHide: true, timeout: 3000, stdio: 'ignore' }); } catch (_) {}
+} else {
+  try { spawnSync('pkill', ['-f', 'plugkit'], { timeout: 3000, stdio: 'ignore' }); } catch (_) {}
+}
+fs.mkdirSync(spoolIn, { recursive: true });
+fs.mkdirSync(spoolOut, { recursive: true });
+const proc = spawn(bin, ['runner', '--watch', spoolIn, '--out', spoolOut], {
+  detached: true, stdio: 'ignore', windowsHide: true, cwd: root,
+});
+proc.unref();
+fs.writeFileSync(pidFile, String(proc.pid));
+```
+
+Wait 2s for watcher to initialize, then proceed with orient.
+
 ## Orient
 
-Open every plan with one parallel pack of `exec:recall` + `exec:codesearch` against the request's nouns. Hits land as `weak_prior`; misses confirm the unknown is fresh. The pack runs in one message.
+Open every plan with one parallel pack of recall + codesearch against the request's nouns. Write queries to `.gm/exec-spool/in/recall/<N>.txt` and `.gm/exec-spool/in/codesearch/<N>.txt`. Read results from `.gm/exec-spool/out/<N>.out`. Hits land as `weak_prior`; misses confirm the unknown is fresh. The pack runs in one message.
 
-**Auto-recall injection (skills-only platforms)**: derive a 2–6 word query from the request's nouns (subject, verb objects, key domain terms). Call `exec:recall <query>` at PLAN start before writing `.gm/prd.yml`, inline. This replaces the prompt-submit hook's auto-recall for platforms without hook infrastructure. Recall hits are injected as context into mutable discovery and PRD item acceptance criteria.
+**Auto-recall injection (skills-only platforms)**: derive a 2–6 word query from the request's nouns (subject, verb objects, key domain terms). Write recall query to `.gm/exec-spool/in/recall/<N>.txt` at PLAN start before writing `.gm/prd.yml`. Read result from `.gm/exec-spool/out/<N>.out`. This replaces the prompt-submit hook's auto-recall for platforms without hook infrastructure. Recall hits are injected as context into mutable discovery and PRD item acceptance criteria.
 
 ## Mutable discovery
 
@@ -35,7 +71,7 @@ Fault surfaces to scan: file existence, API shape, data format, dep versions, ru
 
 Tag every item with a route family (grounding | reasoning | state | execution | observability | boundary | representation) and cross-reference the 16-failure taxonomy. `governance` skill holds the table.
 
-`existingImpl=UNKNOWN` is the default; resolve via `exec:codesearch` before adding the item. An existing concern routes to consolidation, not addition.
+`existingImpl=UNKNOWN` is the default; resolve via codesearch (write to `.gm/exec-spool/in/codesearch/<N>.txt`) before adding the item. An existing concern routes to consolidation, not addition.
 
 Plan exits when zero new unknowns surfaced last pass AND every item has acceptance criteria AND deps are mapped.
 
@@ -46,7 +82,7 @@ Every unknown surfaced during PLAN lands as an entry in `.gm/mutables.yml` the s
 ```yaml
 - id: kebab-id
   claim: One-line statement of what is assumed
-  witness_method: exec:codesearch <query> | exec:nodejs import | exec:recall <query> | Read <path>
+  witness_method: codesearch <query> | nodejs import | recall <query> | Read <path>
   witness_evidence: ""
   status: unknown
 ```
@@ -107,7 +143,7 @@ The 200 lines are a *budget* for maximum surface coverage, not a target. Subsyst
 
 Code execution AND utility verbs both write to `.gm/exec-spool/in/<lang-or-verb>/<N>.<ext>`. Languages live under `in/<lang>/` (nodejs, python, bash, typescript, go, rust, c, cpp, java, deno); verbs live under `in/<verb>/` (codesearch, recall, memorize, wait, sleep, status, close, browser, runner, type, kill-port, forget, feedback, learn-status, learn-debug, learn-build, discipline, pause, health). The spool watcher runs the file and streams to `out/<N>.out` (stdout) + `out/<N>.err` (stderr) line-by-line, then writes `out/<N>.json` metadata (exitCode, durationMs, timedOut, startedAt, endedAt) at completion. Both streams return as systemMessage with `--- stdout ---` / `--- stderr ---` separators. `in/` and `out/` are wiped at session start and at real-exit session end. Only `git` (and `gh`) run directly via Bash; never `Bash(node/npm/npx/bun)`, never `Bash(exec:<anything>)`. Spool paths in nodejs files are platform-literal — use `os.tmpdir()` and `path.join`. The spool enforces per-task timeouts; on timeout, partial output is preserved and the watcher emits `[exec timed out after Nms; partial output above]`.
 
-`exec:codesearch` only — Grep/Glob/Find/Explore are hook-blocked. Start two words, change/add one per pass, minimum four attempts before concluding absent.
+Codesearch only — Grep/Glob/Find/Explore are hook-blocked. Write to `.gm/exec-spool/in/codesearch/<N>.txt`. Start two words, change/add one per pass, minimum four attempts before concluding absent.
 
 Pack runs use `Promise.allSettled`, each idea its own try/catch, under 12s per call.
 

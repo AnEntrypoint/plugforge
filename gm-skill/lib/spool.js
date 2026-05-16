@@ -35,7 +35,7 @@ function writeSpool(body, lang = 'nodejs', options = {}) {
 
   fs.mkdirSync(inDir, { recursive: true });
 
-  const sessionId = options.sessionId || process.env.CLAUDE_SESSION_ID;
+  const sessionId = options.sessionId || process.env.SESSION_ID || process.env.CLAUDE_SESSION_ID || 'default';
   const code = sessionId ? `const SESSION_ID = '${sessionId}';\n${body}` : body;
   fs.writeFileSync(inFile, code, 'utf8');
 
@@ -102,9 +102,9 @@ async function waitForCompletion(id, timeoutMs = 30000) {
 }
 
 async function execSpool(body, lang, options = {}) {
-  const timeoutMs = options.timeoutMs || 30000;
-  const sessionId = options.sessionId || process.env.CLAUDE_SESSION_ID;
-  const task = lang === 'nodejs' || lang === 'bash' ? writeSpool(body, lang, { sessionId }) : writeSpoolVerb(body, lang, {});
+   const timeoutMs = options.timeoutMs || 30000;
+   const sessionId = options.sessionId || process.env.SESSION_ID || process.env.CLAUDE_SESSION_ID || 'default';
+   const task = lang === 'nodejs' || lang === 'bash' ? writeSpool(body, lang, { sessionId }) : writeSpoolVerb(body, lang, {});
   const result = await waitForCompletion(task.id, timeoutMs);
   if (options.cleanup !== false) {
     try { fs.unlinkSync(task.path); } catch (e) {}

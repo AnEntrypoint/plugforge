@@ -142,7 +142,7 @@ function startWatcher(cwd) {
       cwd,
       env: {
         ...process.env,
-        SESSION_ID: process.env.SESSION_ID || 'default',
+        SESSION_ID: process.env.SESSION_ID || process.env.CLAUDE_SESSION_ID || 'default',
         CLAUDE_PROJECT_DIR: cwd,
         SPOOL_DIR: path.join(cwd, '.gm', 'exec-spool')
       }

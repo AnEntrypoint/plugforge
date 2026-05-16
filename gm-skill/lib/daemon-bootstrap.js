@@ -66,7 +66,7 @@ function getPlatformKey() {
 }
 
 function getSessionId() {
-  return process.env.CLAUDE_SESSION_ID || 'unknown';
+  return process.env.CLAUDE_SESSION_ID || process.env.SESSION_ID || 'default';
 }
 
 function isDaemonRunning(daemonName) {

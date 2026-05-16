@@ -1,37 +1,38 @@
 const fs = require('fs');
 const path = require('path');
 const hooks = require('../../lib/hook-bridge.js');
+const lib = require('../../lib/index.js');
 
 async function gmSkill(input) {
-  const context = {
-    request: input.request || '',
-    taskId: input.taskId || require('crypto').randomUUID(),
-    sessionId: process.env.SESSION_ID || require('crypto').randomUUID(),
-    timestamp: new Date().toISOString(),
-    phases: [],
-    prd: [],
-    mutables: {},
-  };
+   const context = {
+     request: input.request || '',
+     taskId: input.taskId || require('crypto').randomUUID(),
+     sessionId: process.env.SESSION_ID || process.env.CLAUDE_SESSION_ID || require('crypto').randomUUID(),
+     timestamp: new Date().toISOString(),
+     phases: [],
+     prd: [],
+     mutables: {},
+   };
 
-  const skillsDir = path.dirname(__dirname);
+   const skillsDir = path.dirname(__dirname);
 
-  let currentSkill = 'planning';
-  let chainDepth = 0;
-  const maxDepth = 6;
+   let currentSkill = 'planning';
+   let chainDepth = 0;
+   const maxDepth = 6;
 
-  console.log(`[gm] orchestrator starting; request="${context.request}"; task=${context.taskId}`);
+   console.log(`[gm] orchestrator starting; request="${context.request}"; task=${context.taskId}`);
 
-  // Auto-start the spool watcher before entering the skill chain
-  // This replaces post-write hooks with a file-watcher pattern
-  const watcherStarted = hooks.startWatcher(process.cwd());
-  if (watcherStarted) {
-    console.log(`[gm] spool watcher started (pid=${watcherStarted})`);
-  } else {
-    console.log('[gm] spool watcher not available (binary not ready or watch mode unsupported)');
-  }
+   // Auto-start the spool watcher before entering the skill chain
+   // This replaces post-write hooks with a file-watcher pattern
+   const watcherStarted = lib.startSpoolWatcher(process.cwd());
+   if (watcherStarted) {
+     console.log(`[gm] spool watcher started (pid=${watcherStarted})`);
+   } else {
+     console.log('[gm] spool watcher not available (binary not ready or watch mode unsupported)');
+   }
 
-  // Activate hook bridge lifecycle (session-start, prompt-submit hooks)
-  hooks.skillLifecycle({ sessionStart: true, promptSubmit: true, preToolUse: false, postToolUse: false });
+   // Activate hook bridge lifecycle (session-start, prompt-submit hooks)
+   hooks.skillLifecycle({ sessionStart: true, promptSubmit: true, preToolUse: false, postToolUse: false });
 
   while (currentSkill && chainDepth < maxDepth) {
     chainDepth++;

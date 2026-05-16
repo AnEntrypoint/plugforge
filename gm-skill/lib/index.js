@@ -1,3 +1,5 @@
+const fs = require('fs');
+const path = require('path');
 const daemon = require('./daemon-bootstrap.js');
 const manifest = require('./manifest.js');
 const loader = require('./loader.js');
@@ -14,8 +16,9 @@ const hookReplacer = require('./hook-replacer.js');
 let watcherInstance = null;
 
 function startSpoolWatcher(cwd) {
-  const inDir = path.join(cwd || process.cwd(), '.gm', 'exec-spool', 'in');
-  const outDir = path.join(cwd || process.cwd(), '.gm', 'exec-spool', 'out');
+  cwd = cwd || process.cwd();
+  const inDir = path.join(cwd, '.gm', 'exec-spool', 'in');
+  const outDir = path.join(cwd, '.gm', 'exec-spool', 'out');
 
   try {
     fs.mkdirSync(inDir, { recursive: true });
@@ -25,22 +28,29 @@ function startSpoolWatcher(cwd) {
     return null;
   }
 
-  // Try plugkit watcher first
+  // Try plugkit spool watcher first
   const binary = hooks.getPlugkitBinary();
   if (binary) {
     try {
       const { spawn } = require('child_process');
-      const proc = spawn(binary, ['runner', '--watch', inDir, '--out', outDir], {
+      const sessionId = process.env.SESSION_ID || process.env.CLAUDE_SESSION_ID || 'default';
+      const proc = spawn(binary, ['spool'], {
         detached: true,
         stdio: 'ignore',
         windowsHide: true,
-        cwd: cwd || process.cwd(),
+        cwd,
+        env: {
+          ...process.env,
+          SESSION_ID: sessionId,
+          CLAUDE_PROJECT_DIR: cwd,
+          SPOOL_DIR: path.join(cwd, '.gm', 'exec-spool')
+        }
       });
       proc.unref();
       watcherInstance = proc;
       return proc.pid;
     } catch (e) {
-      console.error('[spool-watcher] plugkit runner failed, falling back to poll:', e.message);
+      console.error('[spool-watcher] plugkit spool failed, falling back to poll:', e.message);
     }
   }
 
@@ -54,7 +64,6 @@ function startSpoolWatcher(cwd) {
     });
 
     watcher.on('add', (filePath) => {
-      // Process the spool file
       processSpoolFile(filePath, outDir);
     });
 
@@ -121,15 +130,8 @@ function processSpoolFile(filePath, outDir) {
   try {
     fs.writeFileSync(procMarker, String(process.pid));
 
-    // Execute via spawn
-    const runPath = path.join(__dirname, '..', 'gm-starter', 'bin', 'plugkit.js');
-    if (!fs.existsSync(runPath)) {
-      // Fallback: try rs-plugkit
-      const rsPath = path.join(__dirname, 'bin', 'rs-plugkit.js');
-      if (!fs.existsSync(rsPath)) return;
-    }
-
-    // Just let the hook bridge handle execution on demand
+    // Execute via the hook-replacer which has proper session handling
+    hookReplacer.processSpoolFile(filePath, outDir);
   } catch (e) {
     console.error('[spool-watcher] error processing:', e.message);
   } finally {

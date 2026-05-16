@@ -57,26 +57,27 @@ function startSpoolWatcher(cwd, options = {}) {
   }
 
   const bin = getToolsBin();
-  if (bin) {
-try {
-       watcherProc = spawn(bin, ['spool'], {
-         detached: true,
-         stdio: options.stdio || 'ignore',
-         windowsHide: true,
-         cwd: cwd || process.cwd(),
-         env: {
-           ...process.env,
-           CLAUDE_PROJECT_DIR: cwd || process.cwd(),
-           SPOOL_DIR: path.join(cwd || process.cwd(), '.gm', 'exec-spool')
-         }
-       });
-       watcherProc.unref();
-       watcherStarted = true;
-       return watcherProc.pid;
-     } catch (e) {
-       console.error('[hook-replacer] plugkit spool failed:', e.message);
-     }
-  }
+if (bin) {
+    try {
+        watcherProc = spawn(bin, ['spool'], {
+          detached: true,
+          stdio: options.stdio || 'ignore',
+          windowsHide: true,
+          cwd: cwd || process.cwd(),
+          env: {
+            ...process.env,
+            SESSION_ID: process.env.SESSION_ID || process.env.CLAUDE_SESSION_ID || 'default',
+            CLAUDE_PROJECT_DIR: cwd || process.cwd(),
+            SPOOL_DIR: path.join(cwd || process.cwd(), '.gm', 'exec-spool')
+          }
+        });
+        watcherProc.unref();
+        watcherStarted = true;
+        return watcherProc.pid;
+      } catch (e) {
+        console.error('[hook-replacer] plugkit spool failed:', e.message);
+      }
+    }
 
   try {
     const chokidar = require('chokidar');
@@ -178,7 +179,7 @@ function processSpoolFile(filePath, outDir) {
     }
 
     const content = fs.readFileSync(filePath, 'utf8');
-    const sessionId = process.env.CLAUDE_SESSION_ID || process.env.GM_SESSION_ID || 'default';
+    const sessionId = process.env.SESSION_ID || process.env.CLAUDE_SESSION_ID || process.env.GM_SESSION_ID || 'default';
     
     let result;
     if (['nodejs', 'typescript'].includes(langDir)) {
@@ -192,12 +193,14 @@ function processSpoolFile(filePath, outDir) {
         stdio: 'pipe',
       });
     } else if (langDir === 'bash') {
-      result = spawnSync(bin, ['bash', '--timeout-ms', '300000', content], {
+      const shellRuntime = process.platform === 'win32' ? 'powershell' : 'bash';
+      result = spawnSync(bin, ['exec', '--lang', shellRuntime, '--session', sessionId, '--timeout-ms', '300000', content], {
         cwd: process.cwd(),
         encoding: 'utf8',
         timeout: 600000,
         windowsHide: true,
         stdio: 'pipe',
+        env: { ...process.env, SESSION_ID: sessionId }
       });
     } else if (langDir === 'python') {
       tmpFile = path.join(os.tmpdir(), `spool-${taskId}.py`);

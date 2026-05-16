@@ -1,6 +1,6 @@
 ---
 name: gm-execute
-description: EXECUTE phase AND the foundational execution contract for every skill. Every exec:<lang> run, every witnessed check, every code search, in every phase, follows this skill's discipline. Resolve all mutables via witnessed execution. Any new unknown triggers immediate snake back to planning — restart chain from PLAN.
+description: EXECUTE phase AND the foundational execution contract for every skill. Every spool dispatch run, every witnessed check, every code search, in every phase, follows this skill's discipline. Resolve all mutables via witnessed execution. Any new unknown triggers immediate snake back to planning — restart chain from PLAN.
 ---
 
 # GM EXECUTE — Resolve every unknown by witness
@@ -50,18 +50,13 @@ Every utility verb dispatches via `in/<verb>/<N>.txt`; the body of the file is t
 
 ## Codebase search
 
-`exec:codesearch` only. Grep, Glob, Find, Explore, raw grep/rg/find inside `exec:bash` are all hook-blocked.
+Codesearch only. Grep, Glob, Find, Explore, raw grep/rg/find inside Bash are all hook-blocked. Write query to `.gm/exec-spool/in/codesearch/<N>.txt`. Read result from `.gm/exec-spool/out/<N>.out`.
 
-```
-exec:codesearch
-<two-word query>
-```
-
-Start two words, change/add one per pass, minimum four attempts before concluding absent. Known absolute path → `Read`. Known directory → `exec:nodejs` + `fs.readdirSync`.
+Start two words, change/add one per pass, minimum four attempts before concluding absent. Known absolute path → `Read`. Known directory → nodejs spool file + `fs.readdirSync`.
 
 ## Utility verb failure handling
 
-**Utility verb failures must surface**: exec:memorize, exec:recall, exec:codesearch, and other utility verbs may fail (socket unavailable, timeout, network error). Failures do not block witness completion but must be reported to the user with error context. Fallback mechanisms (AGENTS.md for memorize) ensure memory preservation even when rs-learn is temporarily unavailable.
+**Utility verb failures must surface**: memorize, recall, codesearch, and other utility verbs may fail (socket unavailable, timeout, network error). Failures do not block witness completion but must be reported to the user with error context. Fallback mechanisms (AGENTS.md for memorize) ensure memory preservation even when rs-learn is temporarily unavailable.
 
 ## Import-based execution
 
@@ -77,11 +72,11 @@ Differential diagnosis: smallest reproduction → compare actual vs expected →
 
 ## Edits depend on witnesses
 
-Hypothesis → run → witness → edit. An edit before a witness is a guess. Scan via `exec:codesearch` before creating or modifying — duplicate concern regresses to `planning`. Code-quality preference: native → library → structure → write.
+Hypothesis → run → witness → edit. An edit before a witness is a guess. Scan via codesearch (write to `.gm/exec-spool/in/codesearch/<N>.txt`) before creating or modifying — duplicate concern regresses to `planning`. Code-quality preference: native → library → structure → write.
 
 ## Parallel subagents
 
-Up to 3 `gm:gm` subagents for independent items in one message. Browser escalation: `exec:browser` → `browser` skill → screenshot only as last resort.
+Up to 3 `gm:gm` subagents for independent items in one message. Browser escalation: write to `.gm/exec-spool/in/browser/<N>.txt` → `browser` skill → screenshot only as last resort.
 
 ## CI is automated
 
