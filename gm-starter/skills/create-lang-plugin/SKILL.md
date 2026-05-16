@@ -98,16 +98,16 @@ context: `=== mytool ===\nexec:mytool\n<expression>\n\nRuns via <how>. Use for <
 
 ## Verify
 
-```
-exec:nodejs
+Write to `.gm/exec-spool/in/nodejs/<N>.js`:
+
+```js
 const p = require('/abs/path/lang/mytool.js');
 console.log(p.id, typeof p.exec.run, p.exec.match.toString());
 ```
 
-Then test dispatch:
+Then test dispatch by writing to `.gm/exec-spool/in/mytool/<N>.txt`:
 
 ```
-exec:mytool
 <simple test expression>
 ```
 

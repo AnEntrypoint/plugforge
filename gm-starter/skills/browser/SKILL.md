@@ -6,7 +6,7 @@ allowed-tools: Skill
 
 # Browser automation
 
-Two pathways — never mix in the same Bash call.
+Two pathways — never mix in the same spool dispatch.
 
 `exec:browser` runs JS against `page`. Globals available: `page`, `snapshot`, `screenshotWithAccessibilityLabels`, `state`. 15s live window, then backgrounds; output drains automatically on every subsequent plugkit call.
 
@@ -14,8 +14,9 @@ Two pathways — never mix in the same Bash call.
 
 ## Core
 
+Write to `.gm/exec-spool/in/browser/<N>.txt`:
+
 ```
-exec:browser
 await page.goto('https://example.com')
 await snapshot({ page })
 ```
@@ -36,8 +37,9 @@ Session state persists across `browser:` calls. `-e` arg uses single quotes outs
 
 Never `await setTimeout(N)` with N > 10000. Poll instead.
 
+Write to `.gm/exec-spool/in/browser/<N>.txt`:
+
 ```
-exec:browser
 const start = Date.now()
 while (!state.done && Date.now() - start < 12000) {
   await new Promise(r => setTimeout(r, 500))
@@ -49,31 +51,30 @@ console.log(state.result)
 
 ## Patterns
 
-Data extraction:
+Data extraction — write to `.gm/exec-spool/in/browser/<N>.txt`:
 
 ```
-exec:browser
 const items = await page.$$eval('.title', els => els.map(e => e.textContent))
 console.log(JSON.stringify(items))
 ```
 
-Console monitoring — set listeners first, then poll:
+Console monitoring — set listeners first, then poll. Write to `.gm/exec-spool/in/browser/<N>.txt`:
 
 ```
-exec:browser
 state.logs = []
 page.on('console', msg => state.logs.push({ type: msg.type(), text: msg.text() }))
 ```
 
+Then write to `.gm/exec-spool/in/browser/<N+1>.txt`:
+
 ```
-exec:browser
 console.log(JSON.stringify(state.logs.slice(-20)))
 ```
 
 ## Constraints
 
 - One playwriter command per `browser:` block
-- `exec:browser` is plain JS, no shell quoting
+- `exec:browser` body is plain JS, no shell quoting
 - Browser tasks drain automatically on every plugkit interaction
 - Sessions reap after 5–15 min idle; cleaned up on session end
 - Never write standalone `.mjs`/`.js` Playwright scripts as a fallback — `exec:browser` errors must be debugged through `exec:browser` retries, not by creating test files on disk

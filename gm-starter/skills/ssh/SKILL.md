@@ -60,9 +60,12 @@ setsid nohup bash -c 'myprogram > /tmp/out.log 2>&1' &
 
 ## Dependency
 
-Requires `ssh2` in `~/.claude/gm-tools`:
+Requires `ssh2` in `~/.claude/gm-tools`. Write to `.gm/exec-spool/in/nodejs/<N>.js`:
 
-```
-exec:bash
-cd ~/.claude/gm-tools && npm install ssh2
+```js
+const { execSync } = require('child_process');
+const path = require('path');
+const os = require('os');
+const gmTools = path.join(os.homedir(), '.claude', 'gm-tools');
+execSync('npm install ssh2', { cwd: gmTools, stdio: 'inherit' });
 ```
