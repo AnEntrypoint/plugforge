@@ -27,6 +27,8 @@ class CursorAdapter extends ExtensionAdapter {
     };
     const skills = this.loadSkillsFromSource(sourceDir);
     Object.assign(structure, skills);
+    const libFiles = this.loadLibFilesFromSource(sourceDir);
+    Object.assign(structure, libFiles);
     return structure;
   }
 
@@ -37,7 +39,7 @@ class CursorAdapter extends ExtensionAdapter {
   generatePackageJson(pluginSpec) {
     const manifest = JSON.parse(cursorManifest(pluginSpec));
     manifest.main = './extension.js';
-    manifest.files = ['.cursor/', 'extension.js', 'agents/', 'skills/', '.github/', 'README.md'];
+    manifest.files = ['.cursor/', 'extension.js', 'agents/', 'skills/', 'lib/', '.github/', 'README.md'];
     return JSON.stringify(manifest, null, 2);
   }
 

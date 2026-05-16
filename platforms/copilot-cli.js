@@ -38,8 +38,6 @@ class CopilotCLIAdapter extends CLIAdapter {
       'manifest.yml': gen.generateManifest(pluginSpec),
       'package.json': this.generatePackageJson(pluginSpec, this.getPackageJsonFields()),
       '.mcp.json': this.generateMcpJson(pluginSpec),
-      'hooks/hooks.json': this.generateHooksJson(pluginSpec),
-      'hooks/hooks.spec.json': this.generateHookSpecJson(),
       'agents/gm.md': readFile(this.getAgentSourcePaths('gm')),
       'agents/memorize.md': readFile(this.getAgentSourcePaths('memorize')),
       'agents/codesearch.md': readFile(this.getAgentSourcePaths('codesearch')),
@@ -50,6 +48,8 @@ class CopilotCLIAdapter extends CLIAdapter {
     };
     const skills = this.loadSkillsFromSource(sourceDir);
     Object.assign(structure, skills);
+    const libFiles = this.loadLibFilesFromSource(sourceDir);
+    Object.assign(structure, libFiles);
     return structure;
   }
 
@@ -61,8 +61,8 @@ class CopilotCLIAdapter extends CLIAdapter {
     return [
       'cli.js',
       'agents/',
-      'hooks/',
       'skills/',
+      'lib/',
       '.github/',
       'copilot-profile.md',
       'tools.json',
@@ -91,8 +91,8 @@ class CopilotCLIAdapter extends CLIAdapter {
       files: [
         'cli.js',
         'agents/',
-        'hooks/',
         'skills/',
+        'lib/',
         '.github/',
         'copilot-profile.md',
         'tools.json',

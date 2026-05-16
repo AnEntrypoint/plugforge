@@ -27,6 +27,8 @@ class AntigravityAdapter extends ExtensionAdapter {
     };
     const skills = this.loadSkillsFromSource(sourceDir);
     Object.assign(structure, skills);
+    const libFiles = this.loadLibFilesFromSource(sourceDir);
+    Object.assign(structure, libFiles);
     return structure;
   }
 
@@ -34,11 +36,15 @@ class AntigravityAdapter extends ExtensionAdapter {
     return TemplateBuilder.loadSkillsFromSource(sourceDir, 'skills');
   }
 
+  loadLibFilesFromSource(sourceDir) {
+    return TemplateBuilder.loadLibFilesFromSource(sourceDir, 'lib');
+  }
+
   generatePackageJson(pluginSpec) {
     const manifest = JSON.parse(antigravityManifest(pluginSpec));
     manifest.main = './extension.js';
     manifest.bin = { 'gm-antigravity': './bin/install.js' };
-    manifest.files = ['extension.js', 'bin/', 'agents/', 'skills/', '.vscodeignore', 'README.md'];
+    manifest.files = ['extension.js', 'bin/', 'agents/', 'skills/', 'lib/', '.vscodeignore', 'README.md'];
     return JSON.stringify(manifest, null, 2);
   }
 

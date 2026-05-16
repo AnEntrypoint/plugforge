@@ -28,11 +28,17 @@ class JetBrainsAdapter extends ExtensionAdapter {
     };
     const skills = this.loadSkillsFromSource(sourceDir);
     Object.assign(structure, skills);
+    const libFiles = this.loadLibFilesFromSource(sourceDir);
+    Object.assign(structure, libFiles);
     return structure;
   }
 
   loadSkillsFromSource(sourceDir) {
     return TemplateBuilder.loadSkillsFromSource(sourceDir, 'docs/skills');
+  }
+
+  loadLibFilesFromSource(sourceDir) {
+    return TemplateBuilder.loadLibFilesFromSource(sourceDir, 'lib');
   }
 
   generateExtensionManifest(pluginSpec) {

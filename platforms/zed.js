@@ -27,11 +27,17 @@ class ZedAdapter extends ExtensionAdapter {
     };
     const skills = this.loadSkillsFromSource(sourceDir);
     Object.assign(structure, skills);
+    const libFiles = this.loadLibFilesFromSource(sourceDir);
+    Object.assign(structure, libFiles);
     return structure;
   }
 
   loadSkillsFromSource(sourceDir) {
     return TemplateBuilder.loadSkillsFromSource(sourceDir, 'skills');
+  }
+
+  loadLibFilesFromSource(sourceDir) {
+    return TemplateBuilder.loadLibFilesFromSource(sourceDir, 'lib');
   }
 
   generateCargoToml(pluginSpec) {

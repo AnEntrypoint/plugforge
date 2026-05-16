@@ -26,6 +26,8 @@ class VSCodeAdapter extends ExtensionAdapter {
     };
     const skills = this.loadSkillsFromSource(sourceDir);
     Object.assign(structure, skills);
+    const libFiles = this.loadLibFilesFromSource(sourceDir);
+    Object.assign(structure, libFiles);
     return structure;
   }
 
@@ -36,7 +38,7 @@ class VSCodeAdapter extends ExtensionAdapter {
   generatePackageJson(pluginSpec) {
     const manifest = JSON.parse(vscodeManifest(pluginSpec));
     manifest.main = './extension.js';
-    manifest.files = ['extension.js', 'agents/', 'skills/', '.github/', 'README.md'];
+    manifest.files = ['extension.js', 'agents/', 'skills/', 'lib/', '.github/', 'README.md'];
     return JSON.stringify(manifest, null, 2);
   }
 

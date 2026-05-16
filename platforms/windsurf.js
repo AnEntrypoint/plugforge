@@ -27,6 +27,8 @@ class WindsurfAdapter extends ExtensionAdapter {
     };
     const skills = this.loadSkillsFromSource(sourceDir);
     Object.assign(structure, skills);
+    const libFiles = this.loadLibFilesFromSource(sourceDir);
+    Object.assign(structure, libFiles);
     return structure;
   }
 
@@ -34,10 +36,14 @@ class WindsurfAdapter extends ExtensionAdapter {
     return TemplateBuilder.loadSkillsFromSource(sourceDir, 'skills');
   }
 
+  loadLibFilesFromSource(sourceDir) {
+    return TemplateBuilder.loadLibFilesFromSource(sourceDir, 'lib');
+  }
+
   generatePackageJson(pluginSpec) {
     const manifest = JSON.parse(windsurfManifest(pluginSpec));
     manifest.main = './extension.js';
-    manifest.files = ['.windsurf/', 'extension.js', 'agents/', 'skills/', '.github/', 'README.md'];
+    manifest.files = ['.windsurf/', 'extension.js', 'agents/', 'skills/', 'lib/', '.github/', 'README.md'];
     return JSON.stringify(manifest, null, 2);
   }
 
