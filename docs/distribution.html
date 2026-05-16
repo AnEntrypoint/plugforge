@@ -208,9 +208,9 @@ downstream
 
 <p>The fetch path is hardened against the failure modes encountered during early production: a 60-second per-attempt socket timeout, a 20-second stall watchdog that fires when the response stream stops producing bytes (a TCP connection can stay open and idle indefinitely otherwise), five attempts with backoff, a 5-minute lock TTL so a stale lockfile from a crashed install does not block forever, and HTTP <code>Range</code>-resumable downloads so a partially complete fetch survives a retry. These details are not user-visible; the user sees a small progress line on first run and never sees it again.</p>
 
-<h2>7. The 13-Platform Matrix</h2>
+<h2>7. The 15-Platform Matrix</h2>
 
-<p class="first">The same core (Rust binary, skills, prompts, hooks, lang plugins) ships to thirteen hosts. Each host has a different conception of what a &ldquo;plugin&rdquo; is &mdash; a Claude Code plugin is a marketplace package, a VS Code extension is a VSIX, a JetBrains plugin is a ZIP, OpenCode wants a directory, Codex wants a config block. The <code>cli.js gm-starter ./build</code> step is a code generator that emits thirteen different shapes of the same payload.</p>
+<p class="first">The same core (Rust binary, skills, prompts, hooks, lang plugins) ships to fifteen hosts. Each host has a different conception of what a &ldquo;plugin&rdquo; is &mdash; a Claude Code plugin is a marketplace package, a VS Code extension is a VSIX, a JetBrains plugin is a ZIP, OpenCode wants a directory, Codex wants a config block. The <code>cli.js gm-starter ./build</code> step is a code generator that emits fifteen different shapes of the same payload.</p>
 
 <table>
 <thead><tr><th>id</th><th>host</th><th>shape</th></tr></thead>
@@ -229,6 +229,7 @@ downstream
 <tr><td>gm-jetbrains</td><td>IntelliJ family</td><td>plugin ZIP</td></tr>
 <tr><td>gm-antigravity</td><td>Antigravity</td><td>VS Code extension</td></tr>
 <tr><td>gm-windsurf</td><td>Windsurf</td><td>extension</td></tr>
+<tr><td>gm-thebird</td><td>thebird</td><td>extension</td></tr>
 </tbody>
 </table>
 

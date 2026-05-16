@@ -54,5 +54,5 @@ examples:
   items:
     - { name: "the complete discipline", desc: "lifecycle control, governance, and operational hard rules — one paper, every rule the agent runs under", cta: "open paper", href: "./paper/" }
     - { name: "every rust crate", desc: "rs-exec, rs-codeinsight, rs-search, rs-learn, rs-plugkit — what each does, why it exists, what it kills if it misbehaves", cta: "open crates", href: "./crates/" }
-    - { name: "every skill", desc: "thirteen skills in the chain — gm, planning, gm-execute, gm-emit, gm-complete, update-docs, governance, code-search, browser, ssh, pages, create-lang-plugin, plus the memorize and textprocessing sub-agents", cta: "open skills", href: "./skills/" }
+    - { name: "every skill", desc: "fourteen skills in the chain — gm, planning, gm-execute, gm-emit, gm-complete, update-docs, governance, code-search, browser, ssh, pages, create-lang-plugin, research, textprocessing, plus the memorize and research-worker sub-agents", cta: "open skills", href: "./skills/" }
     - { name: "distribution", desc: "the cascade pipeline that puts a fresh binary in your plugin every time anyone touches a rust crate", cta: "open distribution", href: "./distribution/" }
