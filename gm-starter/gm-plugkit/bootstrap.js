@@ -51,18 +51,6 @@ function clearBootstrapError() {
   } catch (_) {}
 }
 
-function platformKey() {
-  const p = os.platform();
-  const a = os.arch();
-  if (p === 'win32') return a === 'arm64' ? 'win32-arm64' : 'win32-x64';
-  if (p === 'darwin') return a === 'arm64' ? 'darwin-arm64' : 'darwin-x64';
-  return (a === 'arm64' || a === 'aarch64') ? 'linux-arm64' : 'linux-x64';
-}
-
-function binaryName() {
-  const key = platformKey();
-  return key.startsWith('win32') ? `plugkit-${key}.exe` : `plugkit-${key}`;
-}
 
 function cacheRoot() {
   const home = os.homedir();
@@ -223,74 +211,13 @@ async function extractNpmPackageWithRetry(destPath, version) {
   throw lastErr;
 }
 
-function killHoldersOfPath(targetPath) {
-  if (process.platform !== 'win32') return 0;
-  try {
-    const norm = path.resolve(targetPath).replace(/\//g, '\\');
-    const r = spawnSync('wmic', ['process', 'where', `ExecutablePath='${norm.replace(/\\/g, '\\\\')}'`, 'get', 'ProcessId', '/format:value'], { encoding: 'utf8', windowsHide: true, timeout: 5000 });
-    if (r.status !== 0 || !r.stdout) return 0;
-    const pids = [];
-    for (const line of r.stdout.split(/\r?\n/)) {
-      const m = line.match(/ProcessId=(\d+)/);
-      if (m) {
-        const pid = parseInt(m[1], 10);
-        if (Number.isFinite(pid) && pid !== process.pid) pids.push(pid);
-      }
-    }
-    for (const pid of pids) {
-      try { spawnSync('taskkill', ['/F', '/PID', String(pid)], { windowsHide: true, timeout: 3000 }); } catch (_) {}
-    }
-    return pids.length;
-  } catch (_) { return 0; }
-}
 
-function renameWithRetry(src, dst, attempts) {
-  for (let i = 0; i < attempts; i++) {
-    try { fs.renameSync(src, dst); return true; }
-    catch (err) {
-      if (err.code !== 'EEXIST' && err.code !== 'EPERM' && err.code !== 'EBUSY' && err.code !== 'EACCES') throw err;
-      if (i === Math.floor(attempts / 2)) killHoldersOfPath(dst);
-      try { spawnSync(process.execPath, ['-e', 'setTimeout(()=>{}, 200)'], { timeout: 400, killSignal: 'SIGKILL', stdio: 'ignore', windowsHide: true }); } catch (_) {}
-    }
-  }
-  return false;
-}
-
-function copyToGmTools(finalPath, version) {
-  const dst = gmToolsDir();
-  fs.mkdirSync(dst, { recursive: true });
-  const exeName = process.platform === 'win32' ? 'plugkit.exe' : 'plugkit';
-  const target = path.join(dst, exeName);
-  const targetTmp = target + '.new';
-
-  if (fs.existsSync(target)) {
-    let needsRefresh = true;
-    try {
-      const cur = sha256OfFileSync(target);
-      const src = sha256OfFileSync(finalPath);
-      if (cur === src) needsRefresh = false;
-    } catch (_) {}
-    if (!needsRefresh) {
-      try { fs.writeFileSync(path.join(dst, 'plugkit.version'), version); } catch (_) {}
-      return;
-    }
-    try { killHoldersOfPath(target); } catch (_) {}
-  }
-
-  fs.copyFileSync(finalPath, targetTmp);
-  if (!renameWithRetry(targetTmp, target, 8)) {
-    try { killHoldersOfPath(target); } catch (_) {}
-    try { fs.unlinkSync(target); } catch (_) {}
-    try { fs.renameSync(targetTmp, target); }
-    catch (_) {
-      try { fs.unlinkSync(targetTmp); } catch (_) {}
-      throw new Error(`gm-tools update blocked: cannot replace ${target}`);
-    }
-  }
-  if (process.platform !== 'win32') {
-    try { fs.chmodSync(target, 0o755); } catch (_) {}
-  }
-  fs.writeFileSync(path.join(dst, 'plugkit.version'), version);
+function platformKey() {
+  const p = os.platform();
+  const a = os.arch();
+  if (p === 'win32') return a === 'arm64' ? 'win32-arm64' : 'win32-x64';
+  if (p === 'darwin') return a === 'arm64' ? 'darwin-arm64' : 'darwin-x64';
+  return (a === 'arm64' || a === 'aarch64') ? 'linux-arm64' : 'linux-x64';
 }
 
 function rtkBinaryName() {
@@ -389,71 +316,6 @@ function killSpoolWatcherInCwd(reason) {
   return null;
 }
 
-function listRunningPlugkitImagePaths() {
-  const out = [];
-  try {
-    if (os.platform() === 'win32') {
-      let parsed = null;
-      try {
-        const p = spawnSync('powershell', ['-NoProfile', '-NonInteractive', '-Command', "Get-Process plugkit* -ErrorAction SilentlyContinue | Select-Object Id,Path | ConvertTo-Json -Compress"], { windowsHide: true, encoding: 'utf8', timeout: 5000, killSignal: 'SIGKILL', stdio: ['ignore', 'pipe', 'pipe'] });
-        const text = ((p && p.stdout) || '').trim();
-        if (text) {
-          const j = JSON.parse(text);
-          parsed = Array.isArray(j) ? j : [j];
-        }
-      } catch (_) {}
-      if (parsed) {
-        for (const item of parsed) {
-          if (!item) continue;
-          const pid = parseInt(item.Id, 10);
-          if (!Number.isFinite(pid)) continue;
-          out.push({ pid, path: (item.Path || '').trim() });
-        }
-      } else {
-        const r = spawnSync('tasklist', ['/FI', 'IMAGENAME eq plugkit*', '/FO', 'CSV', '/NH'], { windowsHide: true, encoding: 'utf8', timeout: 5000, killSignal: 'SIGKILL', stdio: ['ignore', 'pipe', 'pipe'] });
-        const text = (r && r.stdout) || '';
-        const seen = new Set();
-        for (const line of text.split(/\r?\n/)) {
-          const m = line.match(/^"([^"]+)","(\d+)"/);
-          if (!m) continue;
-          const pid = parseInt(m[2], 10);
-          if (!Number.isFinite(pid) || seen.has(pid)) continue;
-          seen.add(pid);
-          out.push({ pid, path: '' });
-        }
-      }
-    } else if (os.platform() === 'linux') {
-      let entries = [];
-      try { entries = fs.readdirSync('/proc'); } catch (_) {}
-      for (const e of entries) {
-        if (!/^\d+$/.test(e)) continue;
-        const pid = parseInt(e, 10);
-        let comm = '';
-        try { comm = fs.readFileSync(`/proc/${pid}/comm`, 'utf8').trim(); } catch (_) { continue; }
-        if (!/^plugkit/i.test(comm)) continue;
-        let imagePath = '';
-        try { imagePath = fs.readlinkSync(`/proc/${pid}/exe`); } catch (_) {}
-        out.push({ pid, path: imagePath });
-      }
-    } else {
-      const r = spawnSync('ps', ['-axo', 'pid=,comm='], { encoding: 'utf8', timeout: 5000, killSignal: 'SIGKILL', stdio: ['ignore', 'pipe', 'pipe'] });
-      const text = (r && r.stdout) || '';
-      for (const line of text.split(/\r?\n/)) {
-        const m = line.match(/^\s*(\d+)\s+(.+?)\s*$/);
-        if (!m) continue;
-        if (!/plugkit/i.test(m[2])) continue;
-        const pid = parseInt(m[1], 10);
-        let imagePath = '';
-        try {
-          const p = spawnSync('ps', ['-p', String(pid), '-o', 'command='], { encoding: 'utf8', timeout: 3000, killSignal: 'SIGKILL', stdio: ['ignore', 'pipe', 'pipe'] });
-          imagePath = ((p && p.stdout) || '').trim().split(/\s+/)[0] || '';
-        } catch (_) {}
-        out.push({ pid, path: imagePath });
-      }
-    }
-  } catch (_) {}
-  return out;
-}
 
 function isLockStale(lockPath) {
   try {
@@ -486,25 +348,9 @@ function pruneOldVersions(root, keepVersion, keepRtkVersion) {
   } catch (_) {}
 }
 
-function proactiveKillForNewInstall(installedVersion, finalPath) {
+function proactiveKillForNewInstall(installedVersion) {
   try {
     const reason = `install:v${installedVersion}`;
-    const target = finalPath ? path.resolve(finalPath).toLowerCase() : null;
-    const cacheRootNorm = (() => {
-      try { return path.resolve(cacheRoot()).toLowerCase(); } catch (_) { return null; }
-    })();
-    const procs = listRunningPlugkitImagePaths();
-    for (const { pid, path: imagePath } of procs) {
-      if (!Number.isFinite(pid) || pid === process.pid) continue;
-      if (!imagePath) continue;
-      const norm = path.resolve(imagePath).toLowerCase();
-      if (target && norm === target) continue;
-      if (!cacheRootNorm || !norm.startsWith(cacheRootNorm + path.sep.toLowerCase())) continue;
-      if (killPid(pid)) {
-        try { process.stderr.write(`[bootstrap] killed stale daemon pid=${pid} path=${imagePath} (current install: v${installedVersion})\n`); } catch (_) {}
-        obsEvent('bootstrap', 'daemon.killed', { pid, oldPath: imagePath, installedVersion, mechanism: 'process-path' });
-      }
-    }
     killRunningDaemons(reason);
     killSpoolWatcherInCwd(reason);
     writeDaemonVersion(installedVersion);
@@ -525,19 +371,6 @@ function killStaleDaemonIfVersionChanged() {
   writeDaemonVersion(currentVersion);
 }
 
-function resolveCachedBinary(opts) {
-  opts = opts || {};
-  const version = opts.version || readVersionFile();
-  const root = (() => {
-    try { const r = cacheRoot(); ensureDir(r); return r; }
-    catch (_) { const r = fallbackCacheRoot(); ensureDir(r); return r; }
-  })();
-  const verDir = path.join(root, `v${version}`);
-  const finalPath = path.join(verDir, binaryName());
-  const okSentinel = path.join(verDir, '.ok');
-  if (fs.existsSync(finalPath) && fs.existsSync(okSentinel)) return finalPath;
-  return null;
-}
 
 function resolveCachedRtk() {
   const version = readVersionFile();
@@ -638,8 +471,8 @@ async function bootstrap(opts) {
   opts = opts || {};
   const version = readVersionFile();
   const shaManifest = readShaManifest();
-  const binName = binaryName();
-  const expectedSha = shaManifest ? shaManifest[binName] : null;
+  const wasmName = 'plugkit.wasm';
+  const expectedSha = shaManifest ? shaManifest[wasmName] : null;
 
   let root = cacheRoot();
   try { ensureDir(root); }
@@ -648,7 +481,7 @@ async function bootstrap(opts) {
   const verDir = path.join(root, `v${version}`);
   ensureDir(verDir);
 
-  const finalPath = path.join(verDir, binName);
+  const finalPath = path.join(verDir, wasmName);
   const okSentinel = path.join(verDir, '.ok');
   const partialPath = `${finalPath}.partial`;
 
@@ -657,7 +490,7 @@ async function bootstrap(opts) {
       const actualSha = sha256OfFileSync(finalPath);
       if (actualSha === expectedSha) {
         obsEvent('bootstrap', 'decision.hit', { reason: 'sha-match', version, path: finalPath });
-        copyToGmTools(finalPath, version);
+        copyWasmToGmTools(finalPath, version);
         clearBootstrapError();
         return finalPath;
       }
@@ -665,22 +498,22 @@ async function bootstrap(opts) {
       writeBootstrapError({
         expected_version: version, cached_version: null,
         error_phase: 'cache-hit-sha-mismatch',
-        error_message: `cached binary at ${finalPath} sha=${actualSha} but manifest expects ${expectedSha}`,
+        error_message: `cached wasm at ${finalPath} sha=${actualSha} but manifest expects ${expectedSha}`,
       });
       try { fs.unlinkSync(finalPath); } catch (_) {}
       try { fs.unlinkSync(okSentinel); } catch (_) {}
     } else {
       obsEvent('bootstrap', 'decision.hit', { reason: 'sentinel+no-sha-manifest', path: finalPath });
-      copyToGmTools(finalPath, version);
+      copyWasmToGmTools(finalPath, version);
       clearBootstrapError();
       return finalPath;
     }
   }
 
-  if (healIfShaMatches(finalPath, expectedSha, okSentinel, partialPath, 'plugkit')) {
+  if (healIfShaMatches(finalPath, expectedSha, okSentinel, partialPath, 'plugkit-wasm')) {
     obsEvent('bootstrap', 'decision.heal', { reason: 'sha-match', path: finalPath });
     spawnDetachedRtkFetch();
-    copyToGmTools(finalPath, version);
+    copyWasmToGmTools(finalPath, version);
     clearBootstrapError();
     return finalPath;
   }
@@ -690,14 +523,14 @@ async function bootstrap(opts) {
   try {
     if (fs.existsSync(finalPath) && fs.existsSync(okSentinel)) {
       obsEvent('bootstrap', 'decision.hit', { reason: 'lock-race-resolved', path: finalPath });
-      copyToGmTools(finalPath, version);
+      copyWasmToGmTools(finalPath, version);
       clearBootstrapError();
       return finalPath;
     }
-    if (healIfShaMatches(finalPath, expectedSha, okSentinel, partialPath, 'plugkit')) {
+    if (healIfShaMatches(finalPath, expectedSha, okSentinel, partialPath, 'plugkit-wasm')) {
       obsEvent('bootstrap', 'decision.heal', { reason: 'sha-match-under-lock', path: finalPath });
       spawnDetachedRtkFetch();
-      copyToGmTools(finalPath, version);
+      copyWasmToGmTools(finalPath, version);
       clearBootstrapError();
       return finalPath;
     }
@@ -729,9 +562,9 @@ async function bootstrap(opts) {
         writeBootstrapError({
           expected_version: version, cached_version: null,
           error_phase: 'sha256-mismatch',
-          error_message: `sha256 mismatch for ${binName}: expected ${expectedSha}, got ${got}`,
+          error_message: `sha256 mismatch for ${wasmName}: expected ${expectedSha}, got ${got}`,
         });
-        throw new Error(`sha256 mismatch for ${binName}: expected ${expectedSha}, got ${got}`);
+        throw new Error(`sha256 mismatch for ${wasmName}: expected ${expectedSha}, got ${got}`);
       }
       log('sha256 verified');
     } else {
@@ -746,17 +579,13 @@ async function bootstrap(opts) {
       } else throw err;
     }
 
-    if (os.platform() !== 'win32') {
-      try { fs.chmodSync(finalPath, 0o755); } catch (_) {}
-    }
-
     fs.writeFileSync(okSentinel, new Date().toISOString());
     log(`decision: fetch reason: install-complete (${finalPath})`);
-    obsEvent('bootstrap', 'install.done', { path: finalPath, version, kind: 'plugkit' });
-    proactiveKillForNewInstall(version, finalPath);
+    obsEvent('bootstrap', 'install.done', { path: finalPath, version, kind: 'plugkit-wasm' });
+    proactiveKillForNewInstall(version);
     pruneOldVersions(root, version, readRtkVersion());
     spawnDetachedRtkFetch();
-    copyToGmTools(finalPath, version);
+    copyWasmToGmTools(finalPath, version);
     clearBootstrapError();
     return finalPath;
   } finally {
@@ -764,61 +593,51 @@ async function bootstrap(opts) {
   }
 }
 
-function getBinaryPath() {
+function copyWasmToGmTools(wasmPath, version) {
+  const dst = gmToolsDir();
+  fs.mkdirSync(dst, { recursive: true });
+  const target = path.join(dst, 'plugkit.wasm');
+
+  if (fs.existsSync(target)) {
+    let needsRefresh = true;
+    try {
+      const cur = sha256OfFileSync(target);
+      const src = sha256OfFileSync(wasmPath);
+      if (cur === src) needsRefresh = false;
+    } catch (_) {}
+    if (!needsRefresh) {
+      try { fs.writeFileSync(path.join(dst, 'plugkit.version'), version); } catch (_) {}
+      return;
+    }
+  }
+
+  fs.copyFileSync(wasmPath, target);
+  fs.writeFileSync(path.join(dst, 'plugkit.version'), version);
+}
+
+function getWasmPath() {
   const home = process.env.USERPROFILE || process.env.HOME || os.homedir();
-  const exe = process.platform === 'win32' ? 'plugkit.exe' : 'plugkit';
-  return path.join(home, '.claude', 'gm-tools', exe);
+  return path.join(home, '.claude', 'gm-tools', 'plugkit.wasm');
 }
 
 function isReady() {
-  const bin = getBinaryPath();
-  if (!fs.existsSync(bin)) return false;
-  try {
-    const r = spawnSync(bin, ['--version'], { timeout: 3000, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true });
-    return r.status === 0;
-  } catch (_) { return false; }
-}
-
-function startSpoolDaemon() {
-  const bin = getBinaryPath();
-  if (!fs.existsSync(bin)) return { ok: false, error: 'binary not found' };
-
-  const pidFile = path.join(os.tmpdir(), 'gm-plugkit-spool.pid');
-  if (fs.existsSync(pidFile)) {
-    const pid = parseInt(fs.readFileSync(pidFile, 'utf8').trim(), 10);
-    if (Number.isFinite(pid) && pidAlive(pid)) {
-      return { ok: true, pid, status: 'already-running' };
-    }
-    try { fs.unlinkSync(pidFile); } catch (_) {}
-  }
-
-  const child = spawn(bin, ['spool'], {
-    detached: true,
-    stdio: 'ignore',
-    windowsHide: true,
-  });
-  child.unref();
-
-  try { fs.writeFileSync(pidFile, String(child.pid)); } catch (_) {}
-  return { ok: true, pid: child.pid, status: 'started' };
+  const wasm = getWasmPath();
+  return fs.existsSync(wasm);
 }
 
 async function ensureReady() {
   if (isReady()) {
-    return { ok: true, binaryPath: getBinaryPath(), status: 'already-ready' };
+    return { ok: true, wasmPath: getWasmPath(), status: 'already-ready' };
   }
-  const binaryPath = await bootstrap();
-  return { ok: true, binaryPath, status: 'bootstrapped' };
+  const wasmPath = await bootstrap();
+  return { ok: true, wasmPath, status: 'bootstrapped' };
 }
 
 module.exports = {
   bootstrap,
   ensureReady,
-  startSpoolDaemon,
-  getBinaryPath,
+  getWasmPath,
   isReady,
-  platformKey,
-  binaryName,
   rtkBinaryName,
   cacheRoot,
   obsEvent,
@@ -826,7 +645,6 @@ module.exports = {
   killStaleDaemonIfVersionChanged,
   killSpoolWatcherInCwd,
   proactiveKillForNewInstall,
-  resolveCachedBinary,
   resolveCachedRtk,
   bootstrapRtk,
   readDaemonVersion,
@@ -847,38 +665,18 @@ if (require.main === module) {
         ensureDir(verDir);
         await bootstrapRtk(verDir, version, true, root);
         process.exit(0);
-      } else if (args.includes('--daemon')) {
-        const result = await ensureReady();
-        if (!result.ok) {
-          console.error('Bootstrap failed:', result.error);
-          process.exit(1);
-        }
-        const daemon = startSpoolDaemon();
-        console.log(JSON.stringify({ bootstrap: result, daemon }));
-        process.exit(0);
-      } else if (args.includes('--binary')) {
-        const result = await ensureReady();
-        if (result.ok) {
-          console.log(result.binaryPath);
-          process.exit(0);
-        } else {
-          console.error('Bootstrap failed:', result.error);
-          process.exit(1);
-        }
       } else if (args.includes('--status')) {
         console.log(JSON.stringify({
           ready: isReady(),
-          binaryPath: getBinaryPath(),
-          platform: platformKey(),
+          wasmPath: getWasmPath(),
           daemonVersion: readDaemonVersion(),
           cachedRtk: resolveCachedRtk(),
         }));
         process.exit(0);
       } else {
         const result = await ensureReady();
-        const daemon = startSpoolDaemon();
-        console.log(JSON.stringify({ bootstrap: result, daemon }));
-        process.exit(result.ok && daemon.ok ? 0 : 1);
+        console.log(JSON.stringify({ bootstrap: result }));
+        process.exit(result.ok ? 0 : 1);
       }
     } catch (err) {
       obsEvent('bootstrap', 'fatal', { err: String(err.message || err) });

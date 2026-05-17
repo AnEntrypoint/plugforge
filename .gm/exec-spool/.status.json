@@ -1,15 +1,10 @@
 {
   "binary_version": "0.1.365",
   "errors_last_5": [],
-  "last_dispatched_task": {
-    "at": "2026-05-16T16:27:00.640Z",
-    "id": 12,
-    "input_path": "C:/dev/gm\\.gm\\exec-spool\\in\\nodejs\\12.js",
-    "lang_or_verb": "nodejs"
-  },
-  "last_tick_at": "2026-05-16T16:30:02.289Z",
-  "pending_in_inbox": 53,
-  "pid": 13764,
-  "started_at": "2026-05-16T14:52:28.179Z",
-  "tasks_dispatched_this_session": 37
+  "last_dispatched_task": null,
+  "last_tick_at": "2026-05-17T08:24:07.098Z",
+  "pending_in_inbox": 1,
+  "pid": 24260,
+  "started_at": "2026-05-17T07:34:20.781Z",
+  "tasks_dispatched_this_session": 0
 }
