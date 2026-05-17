@@ -5,9 +5,10 @@ const config = [ccConfig, gcConfig, ocConfig, codexConfig, kiloConfig, qwenConfi
 
 function createAdapterClass(cfg) {
   class DynamicCLIAdapter extends CLIAdapter {
-    constructor() {
+    constructor(options = {}) {
       super(cfg);
       this.shouldAlwaysGeneratePackageJson = !!cfg.generatePackageJson;
+      this.skillsCache = options.skillsCache || null;
     }
 
     formatConfigJson(config, pluginSpec) {
@@ -35,6 +36,13 @@ function createAdapterClass(cfg) {
     }
 
     loadSkillsFromSource(sourceDir) {
+      if (this.skillsCache) {
+        const skills = {};
+        for (const [skillName, content] of this.skillsCache.entries()) {
+          skills[`skills/${skillName}/SKILL.md`] = content;
+        }
+        return skills;
+      }
       return cfg.loadSkillsFromSource ? cfg.loadSkillsFromSource(sourceDir) : super.loadSkillsFromSource(sourceDir);
     }
 

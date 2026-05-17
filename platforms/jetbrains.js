@@ -3,13 +3,14 @@ const { jetbrainsPluginXml } = require('./ide-manifests');
 const TemplateBuilder = require('../lib/template-builder');
 
 class JetBrainsAdapter extends ExtensionAdapter {
-  constructor() {
+  constructor(options = {}) {
     super({
       name: 'jetbrains',
       label: 'JetBrains IDEs',
       configFile: 'plugin.xml',
       manifestType: 'jetbrains'
     });
+    this.skillsCache = options.skillsCache || null;
   }
 
   createFileStructure(pluginSpec, sourceDir) {
@@ -34,6 +35,13 @@ class JetBrainsAdapter extends ExtensionAdapter {
   }
 
   loadSkillsFromSource(sourceDir) {
+    if (this.skillsCache) {
+      const skills = {};
+      for (const [skillName, content] of this.skillsCache.entries()) {
+        skills[`docs/skills/${skillName}/SKILL.md`] = content;
+      }
+      return skills;
+    }
     return TemplateBuilder.loadSkillsFromSource(sourceDir, 'docs/skills');
   }
 

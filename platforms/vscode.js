@@ -3,13 +3,14 @@ const { vscodeManifest } = require('./ide-manifests');
 const TemplateBuilder = require('../lib/template-builder');
 
 class VSCodeAdapter extends ExtensionAdapter {
-  constructor() {
+  constructor(options = {}) {
     super({
       name: 'vscode',
       label: 'VSCode',
       configFile: 'package.json',
       manifestType: 'vscode'
     });
+    this.skillsCache = options.skillsCache || null;
   }
 
   createFileStructure(pluginSpec, sourceDir) {
@@ -32,6 +33,13 @@ class VSCodeAdapter extends ExtensionAdapter {
   }
 
   loadSkillsFromSource(sourceDir) {
+    if (this.skillsCache) {
+      const skills = {};
+      for (const [skillName, content] of this.skillsCache.entries()) {
+        skills[`skills/${skillName}/SKILL.md`] = content;
+      }
+      return skills;
+    }
     return TemplateBuilder.loadSkillsFromSource(sourceDir, 'skills');
   }
 

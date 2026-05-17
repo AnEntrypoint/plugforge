@@ -3,13 +3,14 @@ const { zedManifest } = require('./ide-manifests');
 const TemplateBuilder = require('../lib/template-builder');
 
 class ZedAdapter extends ExtensionAdapter {
-  constructor() {
+  constructor(options = {}) {
     super({
       name: 'zed',
       label: 'Zed Editor',
       configFile: 'Cargo.toml',
       manifestType: 'zed'
     });
+    this.skillsCache = options.skillsCache || null;
   }
 
   createFileStructure(pluginSpec, sourceDir) {
@@ -33,6 +34,13 @@ class ZedAdapter extends ExtensionAdapter {
   }
 
   loadSkillsFromSource(sourceDir) {
+    if (this.skillsCache) {
+      const skills = {};
+      for (const [skillName, content] of this.skillsCache.entries()) {
+        skills[`skills/${skillName}/SKILL.md`] = content;
+      }
+      return skills;
+    }
     return TemplateBuilder.loadSkillsFromSource(sourceDir, 'skills');
   }
 

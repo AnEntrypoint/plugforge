@@ -2,7 +2,7 @@ const CLIAdapter = require('../lib/cli-adapter');
 const gen = require('./copilot-cli-gen');
 
 class CopilotCLIAdapter extends CLIAdapter {
-  constructor() {
+  constructor(options = {}) {
     super({
       name: 'copilot-cli',
       label: 'GitHub Copilot CLI',
@@ -28,6 +28,7 @@ class CopilotCLIAdapter extends CLIAdapter {
         projectDir: 'COPILOT_PROJECT_DIR'
       }
     });
+    this.skillsCache = options.skillsCache || null;
   }
 
   createFileStructure(pluginSpec, sourceDir) {

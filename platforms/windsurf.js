@@ -3,13 +3,14 @@ const { windsurfManifest } = require('./ide-manifests');
 const TemplateBuilder = require('../lib/template-builder');
 
 class WindsurfAdapter extends ExtensionAdapter {
-  constructor() {
+  constructor(options = {}) {
     super({
       name: 'windsurf',
       label: 'Windsurf IDE',
       configFile: 'package.json',
       manifestType: 'windsurf'
     });
+    this.skillsCache = options.skillsCache || null;
   }
 
   createFileStructure(pluginSpec, sourceDir) {
@@ -33,6 +34,13 @@ class WindsurfAdapter extends ExtensionAdapter {
   }
 
   loadSkillsFromSource(sourceDir) {
+    if (this.skillsCache) {
+      const skills = {};
+      for (const [skillName, content] of this.skillsCache.entries()) {
+        skills[`skills/${skillName}/SKILL.md`] = content;
+      }
+      return skills;
+    }
     return TemplateBuilder.loadSkillsFromSource(sourceDir, 'skills');
   }
 
