@@ -7,6 +7,7 @@ hero:
   badges:
     - { label: "PLAN→EXECUTE→EMIT→VERIFY" }
     - { label: "15 platforms, one source" }
+    - { label: "WASM polymorphism for IDEs" }
     - { label: "rust-backed, no daemons in your face" }
     - { label: "covering family of bounded subsets" }
     - { label: "every dispatch through one spool folder" }
@@ -28,6 +29,8 @@ features:
       desc: "when a request exceeds reach, the agent does not pick one piece and call the rest 'follow-up'. it enumerates every witnessable subset of the ask, executes each, and names the residual complement explicitly. partial delivery dressed up as triage is refusal in disguise — and we don't refuse."
     - name: "15 platforms, one source"
       desc: "claude code, gemini cli, opencode, kilo, codex, copilot cli, qwen, hermes, vscode, cursor, zed, jetbrains, copilot-cli, antigravity, windsurf. one gm-starter directory; CI fans the build out to fifteen downstream repos as single-commit orphan histories. add a hook once, it shows up everywhere — like a really persistent subscription you actually want."
+    - name: "WASM polymorphism for IDE plugins"
+      desc: "seven platforms (vs code, cursor, zed, jetbrains, antigravity, windsurf, thebird) ship a single plugkit.wasm binary that runs natively on all operating systems. no platform-specific builds, no multi-megabyte bundles per architecture. the wasm host delegates to node.js for filesystem, subprocess, and fetch — same performance profile as the native binary, simpler distribution."
     - name: "rust-backed runtime"
       desc: "rs-exec is the runner. rs-codeinsight is the AST x-ray. rs-search is the fast file finder. rs-learn is the memory store. rs-plugkit is the binary that ties it together. every push to any of them auto-cascades to the binary in your plugin within minutes — no manual cargo build, no version jujitsu."
     - name: "ccsniff says you're 100% compliant"

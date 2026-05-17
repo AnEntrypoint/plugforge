@@ -213,27 +213,37 @@ downstream
 <p class="first">The same core (Rust binary, skills, prompts, hooks, lang plugins) ships to fifteen hosts. Each host has a different conception of what a &ldquo;plugin&rdquo; is &mdash; a Claude Code plugin is a marketplace package, a VS Code extension is a VSIX, a JetBrains plugin is a ZIP, OpenCode wants a directory, Codex wants a config block. The <code>cli.js gm-starter ./build</code> step is a code generator that emits fifteen different shapes of the same payload.</p>
 
 <table>
-<thead><tr><th>id</th><th>host</th><th>shape</th></tr></thead>
+<thead><tr><th>id</th><th>host</th><th>shape</th><th>binary</th></tr></thead>
 <tbody>
-<tr><td>gm-cc</td><td>Claude Code</td><td>marketplace plugin</td></tr>
-<tr><td>gm-gc</td><td>Gemini CLI</td><td>config + skills directory</td></tr>
-<tr><td>gm-oc</td><td>OpenCode</td><td>npm package, skills bundled</td></tr>
-<tr><td>gm-kilo</td><td>Kilo Code</td><td>npm package, skills bundled</td></tr>
-<tr><td>gm-codex</td><td>Codex</td><td>config + agents directory</td></tr>
-<tr><td>gm-copilot-cli</td><td>GitHub Copilot CLI</td><td>extension package</td></tr>
-<tr><td>gm-qwen</td><td>Qwen Code</td><td>config directory</td></tr>
-<tr><td>gm-hermes</td><td>Hermes Agent</td><td>plugin (work-in-progress)</td></tr>
-<tr><td>gm-vscode</td><td>VS Code</td><td>VSIX extension</td></tr>
-<tr><td>gm-cursor</td><td>Cursor</td><td>extension</td></tr>
-<tr><td>gm-zed</td><td>Zed</td><td>extension</td></tr>
-<tr><td>gm-jetbrains</td><td>IntelliJ family</td><td>plugin ZIP</td></tr>
-<tr><td>gm-antigravity</td><td>Antigravity</td><td>VS Code extension</td></tr>
-<tr><td>gm-windsurf</td><td>Windsurf</td><td>extension</td></tr>
-<tr><td>gm-thebird</td><td>thebird</td><td>extension</td></tr>
+<tr><td>gm-cc</td><td>Claude Code</td><td>marketplace plugin</td><td>native OS binary</td></tr>
+<tr><td>gm-gc</td><td>Gemini CLI</td><td>config + skills directory</td><td>native OS binary</td></tr>
+<tr><td>gm-oc</td><td>OpenCode</td><td>npm package, skills bundled</td><td>native OS binary</td></tr>
+<tr><td>gm-kilo</td><td>Kilo Code</td><td>npm package, skills bundled</td><td>native OS binary</td></tr>
+<tr><td>gm-codex</td><td>Codex</td><td>config + agents directory</td><td>native OS binary</td></tr>
+<tr><td>gm-copilot-cli</td><td>GitHub Copilot CLI</td><td>extension package</td><td>native OS binary</td></tr>
+<tr><td>gm-qwen</td><td>Qwen Code</td><td>config directory</td><td>native OS binary</td></tr>
+<tr><td>gm-hermes</td><td>Hermes Agent</td><td>plugin (work-in-progress)</td><td>native OS binary</td></tr>
+<tr><td>gm-vscode</td><td>VS Code</td><td>VSIX extension</td><td>WASM polymorphic</td></tr>
+<tr><td>gm-cursor</td><td>Cursor</td><td>extension</td><td>WASM polymorphic</td></tr>
+<tr><td>gm-zed</td><td>Zed</td><td>extension</td><td>WASM polymorphic</td></tr>
+<tr><td>gm-jetbrains</td><td>IntelliJ family</td><td>plugin ZIP</td><td>WASM polymorphic</td></tr>
+<tr><td>gm-antigravity</td><td>Antigravity</td><td>VS Code extension</td><td>WASM polymorphic</td></tr>
+<tr><td>gm-windsurf</td><td>Windsurf</td><td>extension</td><td>WASM polymorphic</td></tr>
+<tr><td>gm-thebird</td><td>thebird</td><td>extension</td><td>WASM polymorphic</td></tr>
 </tbody>
 </table>
 
 <p>Adding a sixteenth host is a single registration in <code>lib/page-generator.js::PLATFORM_META</code> plus an adapter class under <code>platforms/</code>. The build matrix picks it up automatically; the cascade fans out to it on the next publish.</p>
+
+<h2>7.1 WASM Polymorphism for IDE and Browser Platforms</h2>
+
+<p class="first">Seven of the fifteen platforms (VS Code, Cursor, Zed, JetBrains, Antigravity, Windsurf, thebird) use WASM polymorphism instead of OS-specific native binaries. This enables a single <code>plugkit.wasm</code> binary to run on Windows, macOS, and Linux without separate platform builds. The WASM binary is loaded into a Node.js WASM host that implements all ABI imports for filesystem, KV store, fetch, vector search, browser control, and code execution.</p>
+
+<p><strong>Why WASM for IDE platforms:</strong> IDE extensions ship to users globally without knowing their OS in advance. A single artifact per platform (one VSIX, one ZIP) that runs everywhere is operationally simpler than bundling 4&ndash;6 OS-specific binaries per extension. The WASM host delegates to Node.js built-ins (<code>fs</code>, <code>child_process</code>, <code>fetch</code>, <code>WebAssembly.instantiate</code>), so there is no added complexity or performance cost relative to the native binary path.</p>
+
+<p><strong>Why native binaries for CLI platforms:</strong> CLI tools like Claude Code, Gemini CLI, and Copilot CLI resolve their OS at runtime via <code>process.platform</code> and download the appropriate binary directly. For these, distributing one pre-compiled native binary per OS is simpler and gives slightly better performance than WASM interpretation.</p>
+
+<p><strong>Distribution:</strong> The <code>plugkit.wasm</code> binary is built alongside native binaries by <code>rs-plugkit</code> CI (targeting <code>wasm32-wasip1</code> for Node.js 20 WASI compatibility). Both are published to <code>AnEntrypoint/plugkit-bin</code> Releases. WASM-preferred platforms&rsquo; bootstrap scripts fetch <code>plugkit.wasm</code> unconditionally; CLI platforms fetch the OS-specific binary. The choice is registered at build time in <code>lib/page-generator.js::PLATFORM_META</code> so the correct binary is vendored for each platform.</p>
 
 <h2>8. Comparison To Alternative Distribution Models</h2>
 
