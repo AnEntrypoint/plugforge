@@ -47,10 +47,9 @@ function readPinnedVersion() {
 function readExpectedSha() {
   try {
     const manifest = fs.readFileSync(path.join(wrapperDir, 'plugkit.sha256'), 'utf8');
-    const asset = platformAsset();
     for (const line of manifest.split(/\r?\n/)) {
       const parts = line.trim().split(/\s+/);
-      if (parts.length >= 2 && parts[parts.length - 1].replace(/^\*/, '') === asset) {
+      if (parts.length >= 2 && parts[parts.length - 1].replace(/^\*/, '') === 'plugkit.wasm') {
         return parts[0].toLowerCase();
       }
     }
@@ -58,13 +57,13 @@ function readExpectedSha() {
   return null;
 }
 
-// Returns true if gm-tools binary matches pinned version by sha. Fast: no network.
+// Returns true if gm-tools WASM matches pinned version by sha. Fast: no network.
 function isReady() {
-  const bin = toolsBin();
-  if (!fs.existsSync(bin)) return false;
+  const wasmBin = path.join(process.env.USERPROFILE || process.env.HOME || os.homedir(), '.claude', 'gm-tools', 'plugkit.wasm');
+  if (!fs.existsSync(wasmBin)) return false;
   const expected = readExpectedSha();
-  if (!expected) return true; // no manifest to compare against — trust existence
-  const actual = sha256OfFileSync(bin);
+  if (!expected) return true;
+  const actual = sha256OfFileSync(wasmBin);
   return actual && actual.toLowerCase() === expected;
 }
 
@@ -87,7 +86,7 @@ function wasmPath() {
 
 function shouldUseWasm() {
   if (process.env.GM_USE_WASM === '1') return true;
-  if (fs.existsSync(wasmPath()) && !fs.existsSync(toolsBin())) return true;
+  if (fs.existsSync(wasmPath())) return true;
   return false;
 }
 
@@ -122,14 +121,16 @@ function main() {
       process.stderr.write('[plugkit] bootstrap failed; aborting hook\n');
       process.exit(1);
     }
-  } else if (!fs.existsSync(toolsBin())) {
+    return runWasm(args);
+  }
+
+  const wasmBin = path.join(process.env.USERPROFILE || process.env.HOME || os.homedir(), '.claude', 'gm-tools', 'plugkit.wasm');
+  if (!fs.existsSync(wasmBin)) {
     if (isHook) process.exit(0);
     process.exit(1);
   }
 
-  const bin = toolsBin();
-  const r = spawnSync(bin, args, { stdio: 'inherit', windowsHide: true });
-  process.exit(r.status ?? 1);
+  runWasm(args);
 }
 
 main();

@@ -250,3 +250,39 @@ jobs:
             fi
           fi
           echo "✅ Published gm-${{ matrix.platform }}@${VERSION} to npm"
+
+  publish-gm-plugkit:
+    needs: prepare
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Publish gm-plugkit
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          set -e
+          VERSION="${{ needs.prepare.outputs.version }}"
+
+          cd gm-starter/gm-plugkit
+          jq --arg v "$VERSION" '.version = $v' package.json > /tmp/pkg.json.tmp
+          mv /tmp/pkg.json.tmp package.json
+
+          echo "//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}" > .npmrc
+
+          npm publish . --access public 2>&1 | tee /tmp/npm-out.log; EXIT=${PIPESTATUS[0]}
+          if [ "$EXIT" != "0" ]; then
+            if grep -q "cannot publish over\|previously published" /tmp/npm-out.log; then
+              echo "⚠️  Version already published, skipping"
+            else
+              exit "$EXIT"
+            fi
+          fi
+          echo "✅ Published gm-plugkit@${VERSION} to npm"

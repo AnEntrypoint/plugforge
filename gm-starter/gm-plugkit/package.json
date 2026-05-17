@@ -1,23 +1,26 @@
 {
   "name": "gm-plugkit",
   "version": "0.1.0",
-  "description": "Bootstrap and daemon-spawn tool for gm plugkit binary. Downloads the correct platform binary, verifies SHA256, and starts the spool watcher daemon.",
+  "description": "Bootstrap and daemon-spawn tool for gm plugkit binary. Downloads the correct platform binary, verifies SHA256, and starts the spool watcher daemon. Includes plugkit-wasm-wrapper for WASM-based spool watching.",
   "main": "index.js",
   "bin": {
-    "gm-plugkit": "./cli.js"
+    "gm-plugkit": "./cli.js",
+    "plugkit-wasm-wrapper": "./plugkit-wasm-wrapper.js"
   },
   "files": [
     "cli.js",
     "index.js",
     "bootstrap.js",
+    "plugkit-wasm-wrapper.js",
     "plugkit.version",
     "plugkit.sha256"
   ],
-  "keywords": ["gm", "plugkit", "bootstrap", "daemon", "spool"],
+  "keywords": ["gm", "plugkit", "bootstrap", "daemon", "spool", "wasm"],
   "author": "AnEntrypoint",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/AnEntrypoint/gm-plugkit.git"
+    "url": "https://github.com/AnEntrypoint/gm.git",
+    "directory": "gm-starter/gm-plugkit"
   }
 }

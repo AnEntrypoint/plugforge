@@ -8,32 +8,17 @@ const spool = require('./spool.js');
 
 const PLUGKIT_TOOLS_DIR = path.join(os.homedir(), '.claude', 'gm-tools');
 const PLUGKIT_VERSION_FILE = path.join(PLUGKIT_TOOLS_DIR, 'plugkit.version');
+const PLUGKIT_WASM_PATH = path.join(PLUGKIT_TOOLS_DIR, 'plugkit.wasm');
+const PLUGKIT_WASM_WRAPPER = path.join(PLUGKIT_TOOLS_DIR, 'plugkit-wasm-wrapper.js');
 const BOOTSTRAP_STATUS_FILE = path.join(os.homedir(), '.gm', 'bootstrap-status.json');
 const BOOTSTRAP_ERROR_FILE = path.join(os.homedir(), '.gm', 'bootstrap-error.json');
 const LOG_DIR = path.join(os.homedir(), '.claude', 'gm-log');
-const PLATFORM_MAP = {
-  win32: { suffix: '-win32-x64.exe', altSuffix: '-win32-arm64.exe' },
-  darwin: { suffix: '-darwin-x64', altSuffix: '-darwin-arm64' },
-  linux: { suffix: '-linux-x64', altSuffix: '-linux-arm64' },
-};
-
-function getPlatformKey() {
-  const plat = process.platform;
-  if (plat === 'win32') return plat;
-  if (plat === 'darwin') return plat;
-  if (plat === 'linux') return plat;
-  throw new Error(`Unsupported platform: ${plat}`);
-}
-
-function getExpectedBinaryName() {
-  const plat = getPlatformKey();
-  const suffix = PLATFORM_MAP[plat].suffix;
-  return `plugkit${suffix}`;
-}
 
 function getPlugkitPath() {
-  const name = getExpectedBinaryName();
-  return path.join(PLUGKIT_TOOLS_DIR, name);
+  if (fs.existsSync(PLUGKIT_WASM_WRAPPER) && fs.existsSync(PLUGKIT_WASM_PATH)) {
+    return PLUGKIT_WASM_WRAPPER;
+  }
+  throw new Error(`plugkit WASM not found at ${PLUGKIT_WASM_PATH}`);
 }
 
 function emitBootstrapEvent(severity, message, details) {
@@ -65,17 +50,12 @@ function readManifest() {
     const gm = JSON.parse(fs.readFileSync(gmJsonPath, 'utf8'));
     const version = gm.plugkitVersion;
 
-    const sha256Path = path.join(process.cwd(), 'gm-starter', 'bin', 'plugkit.sha256');
+    const sha256Path = path.join(process.cwd(), 'gm-starter', 'bin', 'plugkit.wasm.sha256');
     if (!fs.existsSync(sha256Path)) {
-      throw new Error('gm-starter/bin/plugkit.sha256 not found');
+      throw new Error('gm-starter/bin/plugkit.wasm.sha256 not found');
     }
-    const sha256Lines = fs.readFileSync(sha256Path, 'utf8').split('\n').filter(Boolean);
-    const binaryName = getExpectedBinaryName();
-    const hashLine = sha256Lines.find(line => line.includes(binaryName));
-    if (!hashLine) {
-      throw new Error(`No hash found for ${binaryName}`);
-    }
-    const expectedHash = hashLine.split(/\s+/)[0];
+    const sha256Content = fs.readFileSync(sha256Path, 'utf8').trim();
+    const expectedHash = sha256Content.split(/\s+/)[0];
 
     return { version, expectedHash };
   } catch (e) {
@@ -101,20 +81,20 @@ function computeFileHash(filePath) {
 }
 
 async function downloadPlugkitBinary(version) {
-  const binaryName = getExpectedBinaryName();
-  const url = `https://github.com/AnEntrypoint/plugkit-bin/releases/download/${version}/${binaryName}`;
+  const binaryName = 'plugkit.wasm';
+  const url = `https://github.com/AnEntrypoint/plugkit-bin/releases/download/v${version}/${binaryName}`;
 
-  emitBootstrapEvent('info', 'Starting binary download', { version, binaryName, url });
+  emitBootstrapEvent('info', 'Starting WASM download', { version, url });
 
   return new Promise((resolve, reject) => {
     https
       .get(url, { timeout: 30000 }, (res) => {
         if (res.statusCode === 404) {
-          reject(new Error(`Binary not found: ${binaryName} v${version}`));
+          reject(new Error(`WASM not found: v${version}`));
           return;
         }
         if (res.statusCode !== 200) {
-          reject(new Error(`HTTP ${res.statusCode} downloading ${binaryName}`));
+          reject(new Error(`HTTP ${res.statusCode} downloading plugkit.wasm`));
           return;
         }
 
@@ -122,7 +102,7 @@ async function downloadPlugkitBinary(version) {
         res.on('data', (chunk) => chunks.push(chunk));
         res.on('end', () => {
           const data = Buffer.concat(chunks);
-          emitBootstrapEvent('info', 'Binary download complete', { bytes: data.length });
+          emitBootstrapEvent('info', 'WASM download complete', { bytes: data.length });
           resolve(data);
         });
       })
@@ -204,12 +184,14 @@ async function writeBinaryWithRetry(filePath, data, maxRetries = 3) {
 
 async function verifyBinaryHealth(filePath) {
   try {
-    if (process.platform === 'win32') {
-      execSync(`"${filePath}" health > nul 2>&1`, { timeout: 5000, shell: true });
-    } else {
-      execSync(`"${filePath}" health > /dev/null 2>&1`, { timeout: 5000 });
+    if (!fs.existsSync(filePath)) {
+      throw new Error(`File not found: ${filePath}`);
     }
-    emitBootstrapEvent('info', 'Binary health check passed');
+    const stat = fs.statSync(filePath);
+    if (stat.size < 1024) {
+      throw new Error(`File too small: ${stat.size} bytes`);
+    }
+    emitBootstrapEvent('info', 'Binary health check passed', { size: stat.size });
     return true;
   } catch (e) {
     emitBootstrapEvent('warn', 'Binary health check failed', { error: e.message });
@@ -217,24 +199,38 @@ async function verifyBinaryHealth(filePath) {
   }
 }
 
-async function spawnPlugkitWatcher(filePath) {
+async function spawnPlugkitWatcher(wasmPath) {
   try {
-    emitBootstrapEvent('info', 'Spawning plugkit watcher daemon');
+    emitBootstrapEvent('info', 'Spawning plugkit WASM watcher daemon');
 
-    const cmd = process.platform === 'win32' ? filePath : filePath;
-    const proc = spawn(cmd, ['watch', '--once=false'], {
+    let wrapperPath;
+    try {
+      const gmPlugkit = require('gm-plugkit');
+      wrapperPath = path.join(path.dirname(gmPlugkit.getPath ? gmPlugkit.getPath() : require.resolve('gm-plugkit')), 'plugkit-wasm-wrapper.js');
+    } catch (e) {
+      emitBootstrapEvent('warn', 'gm-plugkit npm not available, using bundled wrapper', { error: e.message });
+      wrapperPath = path.join(path.dirname(wasmPath), 'plugkit-wasm-wrapper.js');
+    }
+
+    if (!fs.existsSync(wrapperPath)) {
+      throw new Error(`WASM wrapper not found at ${wrapperPath}`);
+    }
+
+    const runtime = process.platform === 'win32' ? 'bun.exe' : 'bun';
+    const proc = spawn(runtime, [wrapperPath, 'spool'], {
       detached: true,
       stdio: 'ignore',
       windowsHide: true,
+      env: { ...process.env, CLAUDE_PROJECT_DIR: process.cwd() },
     });
 
     const pid = proc.pid;
     proc.unref();
 
-    emitBootstrapEvent('info', 'Plugkit watcher spawned', { pid });
+    emitBootstrapEvent('info', 'Plugkit WASM watcher spawned', { pid });
     return pid;
   } catch (e) {
-    emitBootstrapEvent('error', 'Failed to spawn plugkit watcher', { error: e.message });
+    emitBootstrapEvent('error', 'Failed to spawn plugkit WASM watcher', { error: e.message });
     throw e;
   }
 }
