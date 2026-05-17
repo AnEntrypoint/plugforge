@@ -45,6 +45,7 @@ class AntigravityAdapter extends ExtensionAdapter {
     manifest.main = './extension.js';
     manifest.bin = { 'gm-antigravity': './bin/install.js' };
     manifest.files = ['extension.js', 'bin/', 'agents/', 'skills/', 'lib/', '.vscodeignore', 'README.md'];
+    manifest.dependencies = { 'gm-plugkit': '*' };
     return JSON.stringify(manifest, null, 2);
   }
 

@@ -101,6 +101,7 @@ class CopilotCLIAdapter extends CLIAdapter {
         'README.md',
         this.contextFile
       ],
+      dependencies: { 'gm-plugkit': '*' },
       ...extraFields
     }, null, 2);
   }

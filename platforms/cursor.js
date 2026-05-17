@@ -40,6 +40,7 @@ class CursorAdapter extends ExtensionAdapter {
     const manifest = JSON.parse(cursorManifest(pluginSpec));
     manifest.main = './extension.js';
     manifest.files = ['.cursor/', 'extension.js', 'agents/', 'skills/', 'lib/', '.github/', 'README.md'];
+    manifest.dependencies = { 'gm-plugkit': '*' };
     return JSON.stringify(manifest, null, 2);
   }
 

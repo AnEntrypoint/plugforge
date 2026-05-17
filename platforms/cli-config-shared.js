@@ -949,8 +949,9 @@ const cc = factory('cc', 'Claude Code', 'CLAUDE.md', 'CLAUDE.md', {
       author: pluginSpec.author, license: pluginSpec.license,
       ...repoFields('gm-cc'), engines: pluginSpec.engines, publishConfig: pluginSpec.publishConfig,
       bin: { 'gm-cc': './cli.js', 'gm-install': './install.js' },
-      files: ['agents/', 'bin/', 'hooks/', 'scripts/', 'skills/', 'lang/', '.github/', '.mcp.json', '.claude-plugin/', 'plugin.json', 'gm.json', 'README.md', 'LICENSE', '.gitignore', '.editorconfig', 'CONTRIBUTING.md', 'CLAUDE.md', 'AGENTS.md'],
+      files: ['agents/', 'bin/', 'hooks/', 'lib/', 'scripts/', 'skills/', 'lang/', '.github/', '.mcp.json', '.claude-plugin/', 'plugin.json', 'gm.json', 'README.md', 'LICENSE', '.gitignore', '.editorconfig', 'CONTRIBUTING.md', 'CLAUDE.md', 'AGENTS.md'],
       keywords: ['claude-code', 'agent', 'state-machine', 'mcp', 'automation', 'gm'],
+      dependencies: { 'gm-plugkit': '*' },
       peerDependencies: { '@anthropic-ai/claude-code': '*' },
       peerDependenciesMeta: { '@anthropic-ai/claude-code': { optional: true } },
       scripts: pluginSpec.scripts, ...extraFields
@@ -958,8 +959,9 @@ const cc = factory('cc', 'Claude Code', 'CLAUDE.md', 'CLAUDE.md', {
   },
   getPackageJsonFields() {
     return {
-      files: ['agents/', 'bin/', 'hooks/', 'scripts/', 'skills/', 'lang/', '.github/', '.mcp.json', '.claude-plugin/', 'plugin.json', 'cli.js', 'install.js', 'README.md', 'LICENSE', '.gitignore', '.editorconfig', 'CONTRIBUTING.md', 'CLAUDE.md', 'AGENTS.md'],
+      files: ['agents/', 'bin/', 'hooks/', 'lib/', 'scripts/', 'skills/', 'lang/', '.github/', '.mcp.json', '.claude-plugin/', 'plugin.json', 'cli.js', 'install.js', 'README.md', 'LICENSE', '.gitignore', '.editorconfig', 'CONTRIBUTING.md', 'CLAUDE.md', 'AGENTS.md'],
       keywords: ['claude-code', 'agent', 'state-machine', 'mcp', 'automation', 'gm'],
+      dependencies: { 'gm-plugkit': '*' },
       peerDependencies: { '@anthropic-ai/claude-code': '*' },
       peerDependenciesMeta: { '@anthropic-ai/claude-code': { optional: true } }
     };
@@ -1446,14 +1448,16 @@ const gc = factory('gc', 'Gemini CLI', 'gemini-extension.json', 'GEMINI.md', {
       author: pluginSpec.author, license: pluginSpec.license,
       ...repoFields('gm-gc'), engines: pluginSpec.engines, publishConfig: pluginSpec.publishConfig,
       bin: { 'gm-gc': './cli.js', 'gm-gc-install': './install.js' },
-      files: ['agents/', 'bin/', 'hooks/', 'scripts/', 'skills/', 'prompts/', 'lang/', '.github/', 'README.md', 'GEMINI.md', '.mcp.json', 'gemini-extension.json', 'cli.js', 'install.js'],
+      files: ['agents/', 'bin/', 'hooks/', 'lib/', 'scripts/', 'skills/', 'prompts/', 'lang/', '.github/', 'README.md', 'GEMINI.md', '.mcp.json', 'gemini-extension.json', 'cli.js', 'install.js'],
+      dependencies: { 'gm-plugkit': '*' },
       ...(pluginSpec.scripts && { scripts: pluginSpec.scripts }), ...extraFields
     });
   },
 getPackageJsonFields() {
      return {
        bin: { 'gm-gc': './cli.js', 'gm-gc-install': './install.js' },
-       files: ['agents/', 'bin/', 'hooks/', 'scripts/', 'skills/', 'prompts/', 'lang/', '.github/', 'README.md', 'GEMINI.md', '.mcp.json', 'gemini-extension.json', 'cli.js', 'install.js']
+       files: ['agents/', 'bin/', 'hooks/', 'lib/', 'scripts/', 'skills/', 'prompts/', 'lang/', '.github/', 'README.md', 'GEMINI.md', '.mcp.json', 'gemini-extension.json', 'cli.js', 'install.js'],
+       dependencies: { 'gm-plugkit': '*' }
      };
    },
 getAdditionalFiles(spec) {
@@ -1480,8 +1484,9 @@ const codex = factory('codex', 'Codex', 'plugin.json', 'CLAUDE.md', {
       author: pluginSpec.author, license: pluginSpec.license, main: 'plugin.json',
       bin: { 'gm-codex': './cli.js', 'gm-codex-install': './install.js', 'gm-codex-uninstall': './uninstall.js' },
       ...repoFields('gm-codex'), engines: pluginSpec.engines, publishConfig: pluginSpec.publishConfig,
-      files: ['hooks/', 'agents/', 'bin/', 'scripts/', 'skills/', 'assets/', '.github/', '.agents/', '.codex-plugin/', 'README.md', 'CLAUDE.md', 'AGENTS.md', '.mcp.json', '.app.json', 'plugin.json', 'gm.json', 'cli.js', 'install.js', 'uninstall.js'],
+      files: ['hooks/', 'agents/', 'bin/', 'lib/', 'scripts/', 'skills/', 'assets/', '.github/', '.agents/', '.codex-plugin/', 'README.md', 'CLAUDE.md', 'AGENTS.md', '.mcp.json', '.app.json', 'plugin.json', 'gm.json', 'cli.js', 'install.js', 'uninstall.js'],
       keywords: ['codex', 'claude-code', 'wfgy', 'mcp', 'automation', 'gm'],
+      dependencies: { 'gm-plugkit': '*' },
       ...(pluginSpec.scripts && { scripts: pluginSpec.scripts }), ...extraFields
     });
   },
@@ -1490,8 +1495,9 @@ const codex = factory('codex', 'Codex', 'plugin.json', 'CLAUDE.md', {
     return {
       main: 'plugin.json',
       bin: { 'gm-codex': './cli.js', 'gm-codex-install': './install.js', 'gm-codex-uninstall': './uninstall.js' },
-      files: ['hooks/', 'agents/', 'bin/', 'scripts/', 'skills/', 'assets/', '.github/', '.agents/', '.codex-plugin/', 'README.md', 'CLAUDE.md', 'AGENTS.md', '.mcp.json', '.app.json', 'plugin.json', 'gm.json', 'cli.js', 'install.js', 'uninstall.js'],
-      keywords: ['codex', 'claude-code', 'wfgy', 'mcp', 'automation', 'gm']
+      files: ['hooks/', 'agents/', 'bin/', 'lib/', 'scripts/', 'skills/', 'assets/', '.github/', '.agents/', '.codex-plugin/', 'README.md', 'CLAUDE.md', 'AGENTS.md', '.mcp.json', '.app.json', 'plugin.json', 'gm.json', 'cli.js', 'install.js', 'uninstall.js'],
+      keywords: ['codex', 'claude-code', 'wfgy', 'mcp', 'automation', 'gm'],
+      dependencies: { 'gm-plugkit': '*' }
     };
   },
   generateReadme(spec) {
@@ -1649,9 +1655,9 @@ const oc = factory('oc', 'OpenCode', 'opencode.json', 'GM.md', {
     return {
       main: 'gm.js',
       bin: { 'gm-oc': './cli.js', 'gm-oc-install': './install.js' },
-      files: ['agents/', 'bin/', 'hooks/', 'scripts/', 'skills/', 'lang/', 'gm.js', 'gm-oc.mjs', 'index.js', 'opencode.json', '.github/', 'README.md', 'cli.js', 'install.js', 'LICENSE', 'CONTRIBUTING.md', '.gitignore', '.editorconfig'],
+      files: ['agents/', 'bin/', 'hooks/', 'lib/', 'scripts/', 'skills/', 'lang/', 'gm.js', 'gm-oc.mjs', 'index.js', 'opencode.json', '.github/', 'README.md', 'cli.js', 'install.js', 'LICENSE', 'CONTRIBUTING.md', '.gitignore', '.editorconfig'],
       keywords: ['opencode', 'opencode-plugin', 'automation', 'gm'],
-      dependencies: {}
+      dependencies: { 'gm-plugkit': '*' }
     };
   },
   generatePackageJson(pluginSpec, extraFields = {}) {
@@ -1661,8 +1667,8 @@ const oc = factory('oc', 'OpenCode', 'opencode.json', 'GM.md', {
       bin: { 'gm-oc': './cli.js', 'gm-oc-install': './install.js' },
       keywords: ['opencode', 'opencode-plugin', 'automation', 'gm'],
       ...repoFields('gm-oc'), engines: pluginSpec.engines, publishConfig: pluginSpec.publishConfig,
-      dependencies: {},
-      files: ['agents/', 'bin/', 'hooks/', 'scripts/', 'skills/', 'lang/', 'gm.js', 'gm-oc.mjs', 'index.js', 'opencode.json', '.github/', 'README.md', 'cli.js', 'install.js', 'LICENSE', 'CONTRIBUTING.md', '.gitignore', '.editorconfig'],
+      dependencies: { 'gm-plugkit': '*' },
+      files: ['agents/', 'bin/', 'hooks/', 'lib/', 'scripts/', 'skills/', 'lang/', 'gm.js', 'gm-oc.mjs', 'index.js', 'opencode.json', '.github/', 'README.md', 'cli.js', 'install.js', 'LICENSE', 'CONTRIBUTING.md', '.gitignore', '.editorconfig'],
       ...(pluginSpec.scripts && { scripts: pluginSpec.scripts }), ...extraFields
     });
   },
@@ -1766,9 +1772,9 @@ const kilo = factory('kilo', 'Kilo CLI', 'kilocode.json', 'KILO.md', {
     return {
       main: 'gm.js',
       bin: { 'gm-kilo': './cli.js', 'gm-kilo-install': './install.js' },
-      files: ['agents/', 'bin/', 'hooks/', 'scripts/', 'skills/', 'lang/', 'gm.js', 'gm-kilo.mjs', 'index.js', 'kilocode.json', '.github/', 'README.md', 'cli.js', 'install.js', 'LICENSE', 'CONTRIBUTING.md', '.gitignore', '.editorconfig'],
+      files: ['agents/', 'bin/', 'hooks/', 'lib/', 'scripts/', 'skills/', 'lang/', 'gm.js', 'gm-kilo.mjs', 'index.js', 'kilocode.json', '.github/', 'README.md', 'cli.js', 'install.js', 'LICENSE', 'CONTRIBUTING.md', '.gitignore', '.editorconfig'],
       keywords: ['kilo', 'kilo-cli', 'automation', 'gm'],
-      dependencies: {}
+      dependencies: { 'gm-plugkit': '*' }
     };
   },
   generatePackageJson(pluginSpec, extraFields = {}) {
@@ -1778,8 +1784,8 @@ const kilo = factory('kilo', 'Kilo CLI', 'kilocode.json', 'KILO.md', {
       bin: { 'gm-kilo': './cli.js', 'gm-kilo-install': './install.js' },
       keywords: ['kilo', 'kilo-cli', 'mcp', 'automation', 'gm'],
       ...repoFields('gm-kilo'), engines: pluginSpec.engines, publishConfig: pluginSpec.publishConfig,
-      dependencies: {},
-      files: ['agents/', 'bin/', 'hooks/', 'scripts/', 'skills/', 'lang/', 'gm.js', 'gm-kilo.mjs', 'index.js', 'kilocode.json', '.github/', 'README.md', 'cli.js', 'install.js', 'LICENSE', 'CONTRIBUTING.md', '.gitignore', '.editorconfig'],
+      dependencies: { 'gm-plugkit': '*' },
+      files: ['agents/', 'bin/', 'hooks/', 'lib/', 'scripts/', 'skills/', 'lang/', 'gm.js', 'gm-kilo.mjs', 'index.js', 'kilocode.json', '.github/', 'README.md', 'cli.js', 'install.js', 'LICENSE', 'CONTRIBUTING.md', '.gitignore', '.editorconfig'],
       ...extraFields
     });
   },
@@ -1903,8 +1909,9 @@ const qwen = factory('qwen', 'Qwen Code', 'qwen-extension.json', 'CLAUDE.md', {
   },
   getPackageJsonFields() {
     return {
-      files: ['agents/', 'bin/', 'hooks/', 'scripts/', 'skills/', 'gm.json', 'cli.js', 'install.js', 'README.md', 'CLAUDE.md', 'AGENTS.md', '.gitignore', 'CONTRIBUTING.md'],
+      files: ['agents/', 'bin/', 'hooks/', 'scripts/', 'skills/', 'lib/', 'gm.json', 'cli.js', 'install.js', 'README.md', 'CLAUDE.md', 'AGENTS.md', '.gitignore', 'CONTRIBUTING.md'],
       keywords: ['qwen-code', 'agent', 'state-machine', 'automation', 'gm'],
+      dependencies: { 'gm-plugkit': '*' },
       peerDependencies: { '@qwen-code/qwen-code': '*' }
     };
   },
@@ -1962,8 +1969,9 @@ const hermes = factory('hermes', 'Hermes Agent', 'hermes-skill.json', 'AGENTS.md
   generatePackageJson: null,
   getPackageJsonFields() {
     return {
-      files: ['skills/', 'cli.js', 'README.md', 'AGENTS.md', 'hermes-skill.json', 'index.html'],
-      keywords: ['hermes-agent', 'hermes', 'agent', 'state-machine', 'automation', 'gm']
+      files: ['skills/', 'lib/', 'cli.js', 'README.md', 'AGENTS.md', 'hermes-skill.json', 'index.html'],
+      keywords: ['hermes-agent', 'hermes', 'agent', 'state-machine', 'automation', 'gm'],
+      dependencies: { 'gm-plugkit': '*' }
     };
   },
   formatConfigJson(config) {
@@ -2111,15 +2119,17 @@ const thebird = factory('thebird', 'thebird', 'plugin.json', 'AGENTS.md', {
       author: pluginSpec.author, license: pluginSpec.license,
       ...repoFields('gm-thebird'), engines: pluginSpec.engines, publishConfig: pluginSpec.publishConfig,
       bin: { 'gm-thebird': './cli.js' },
-      files: ['agents/', 'bin/', 'hooks/', 'skills/', 'plugin.json', 'gm.json', 'README.md', 'cli.js', 'AGENTS.md'],
+      files: ['agents/', 'bin/', 'hooks/', 'skills/', 'lib/', 'plugin.json', 'gm.json', 'README.md', 'cli.js', 'AGENTS.md'],
       keywords: ['thebird', 'freddie', 'plugsdk', 'wasm', 'agent', 'state-machine', 'gm'],
+      dependencies: { 'gm-plugkit': '*' },
       scripts: pluginSpec.scripts, ...extraFields
     });
   },
   getPackageJsonFields() {
     return {
-      files: ['agents/', 'bin/', 'hooks/', 'skills/', 'plugin.json', 'cli.js', 'README.md', 'AGENTS.md', 'gm.json'],
-      keywords: ['thebird', 'freddie', 'plugsdk', 'wasm', 'agent', 'state-machine', 'gm']
+      files: ['agents/', 'bin/', 'hooks/', 'skills/', 'lib/', 'plugin.json', 'cli.js', 'README.md', 'AGENTS.md', 'gm.json'],
+      keywords: ['thebird', 'freddie', 'plugsdk', 'wasm', 'agent', 'state-machine', 'gm'],
+      dependencies: { 'gm-plugkit': '*' }
     };
   },
   getAdditionalFiles(spec) {

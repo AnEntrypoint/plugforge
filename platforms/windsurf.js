@@ -44,6 +44,7 @@ class WindsurfAdapter extends ExtensionAdapter {
     const manifest = JSON.parse(windsurfManifest(pluginSpec));
     manifest.main = './extension.js';
     manifest.files = ['.windsurf/', 'extension.js', 'agents/', 'skills/', 'lib/', '.github/', 'README.md'];
+    manifest.dependencies = { 'gm-plugkit': '*' };
     return JSON.stringify(manifest, null, 2);
   }
 
