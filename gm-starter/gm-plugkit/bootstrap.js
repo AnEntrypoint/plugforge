@@ -4,16 +4,13 @@
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
-const https = require('https');
 const crypto = require('crypto');
-const { URL } = require('url');
 const { spawn, spawnSync } = require('child_process');
 
-const RELEASE_REPO = 'AnEntrypoint/plugkit-bin';
-const ATTEMPT_TIMEOUT_MS = 5 * 60 * 1000;
-const STALL_TIMEOUT_MS = 15 * 1000;
-const MAX_ATTEMPTS = 5;
-const BACKOFF_MS = [2000, 5000, 15000, 30000];
+const NPM_PACKAGE = '@anentrypoint/plugkit-wasm';
+const ATTEMPT_TIMEOUT_MS = 10 * 60 * 1000;
+const MAX_ATTEMPTS = 3;
+const BACKOFF_MS = [5000, 15000];
 const LOCK_STALE_MS = 30 * 60 * 1000;
 
 const wrapperDir = __dirname;
@@ -168,72 +165,58 @@ function sha256OfFile(filePath) {
   });
 }
 
-function fetchToFile(url, destPath) {
-  return new Promise((resolve, reject) => {
-    let existing = 0;
-    try { existing = fs.statSync(destPath).size; } catch (_) {}
-    const headers = { 'User-Agent': 'gm-plugkit-bootstrap', 'Accept': '*/*' };
-    if (existing > 0) headers['Range'] = `bytes=${existing}-`;
+async function extractNpmPackageWasm(destPath) {
+  const tempDir = path.join(path.dirname(destPath), '.npm-extract-' + Date.now());
+  try {
+    ensureDir(tempDir);
+    const startMs = Date.now();
+    log(`extracting npm package ${NPM_PACKAGE}@latest to ${tempDir}`);
+    obsEvent('bootstrap', 'npm.extract.start', { package: NPM_PACKAGE, version: 'latest' });
 
-    const u = new URL(url);
-    const req = https.request({
-      method: 'GET',
-      hostname: u.hostname,
-      path: u.pathname + u.search,
-      headers,
-      timeout: ATTEMPT_TIMEOUT_MS,
-    }, (res) => {
-      if (res.statusCode === 301 || res.statusCode === 302 || res.statusCode === 307 || res.statusCode === 308) {
-        res.resume();
-        return resolve(fetchToFile(res.headers.location, destPath));
+    const result = spawnSync(
+      process.platform === 'win32' ? 'bunx.cmd' : 'bunx',
+      ['--bun', NPM_PACKAGE + '@latest', '--save-exact', '--prefix', tempDir],
+      {
+        stdio: ['ignore', 'pipe', 'pipe'],
+        timeout: ATTEMPT_TIMEOUT_MS,
+        encoding: 'utf8',
+        windowsHide: true,
       }
-      if (res.statusCode === 416) {
-        res.resume();
-        try { fs.unlinkSync(destPath); } catch (_) {}
-        return reject(new Error('range-not-satisfiable'));
-      }
-      if (!(res.statusCode === 200 || res.statusCode === 206)) {
-        res.resume();
-        return reject(new Error(`HTTP ${res.statusCode} for ${url}`));
-      }
-      const append = res.statusCode === 206 && existing > 0;
-      ensureDir(path.dirname(destPath));
-      const out = fs.createWriteStream(destPath, { flags: append ? 'a' : 'w' });
-      let bytes = append ? existing : 0;
-      let lastByte = Date.now();
-      const stallTimer = setInterval(() => {
-        if (Date.now() - lastByte > STALL_TIMEOUT_MS) {
-          clearInterval(stallTimer);
-          req.destroy(new Error(`stalled: no bytes for ${STALL_TIMEOUT_MS}ms`));
-        }
-      }, 2000);
-      res.on('data', c => { bytes += c.length; lastByte = Date.now(); });
-      res.pipe(out);
-      out.on('finish', () => {
-        clearInterval(stallTimer);
-        out.close(() => resolve(bytes));
-      });
-      out.on('error', err => { clearInterval(stallTimer); reject(err); });
-      res.on('error', err => { clearInterval(stallTimer); reject(err); });
-    });
-    req.on('timeout', () => { req.destroy(new Error(`timeout after ${ATTEMPT_TIMEOUT_MS}ms`)); });
-    req.on('error', reject);
-    req.end();
-  });
+    );
+
+    if (result.error) throw result.error;
+    if (result.status !== 0) {
+      throw new Error(`bunx extraction failed: ${result.stderr || result.stdout || 'unknown error'}`);
+    }
+
+    const nodeModulesPath = path.join(tempDir, 'node_modules', NPM_PACKAGE, 'plugkit.wasm');
+    if (!fs.existsSync(nodeModulesPath)) {
+      throw new Error(`plugkit.wasm not found in extracted npm package at ${nodeModulesPath}`);
+    }
+
+    fs.copyFileSync(nodeModulesPath, destPath);
+    log(`extracted ${nodeModulesPath} → ${destPath}`);
+    obsEvent('bootstrap', 'npm.extract.end', { dur_ms: Date.now() - startMs, ok: true });
+  } finally {
+    try { fs.rmSync(tempDir, { recursive: true, force: true, maxRetries: 1, retryDelay: 50 }); } catch (_) {}
+  }
 }
 
-async function downloadWithRetry(url, destPath) {
+async function extractNpmPackageWithRetry(destPath) {
   let lastErr;
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
     try {
-      log(`fetch attempt ${attempt}/${MAX_ATTEMPTS}`);
-      await fetchToFile(url, destPath);
+      log(`npm extract attempt ${attempt}/${MAX_ATTEMPTS}: ${NPM_PACKAGE}@latest`);
+      await extractNpmPackageWasm(destPath);
       return;
     } catch (err) {
       lastErr = err;
       log(`attempt ${attempt} failed: ${err.message}`);
+      obsEvent('bootstrap', 'npm.extract.attempt_failed', { package: NPM_PACKAGE, attempt, max: MAX_ATTEMPTS, err: String(err.message || err) });
       if (attempt < MAX_ATTEMPTS) {
-        await new Promise(r => setTimeout(r, BACKOFF_MS[attempt - 1] || 120000));
+        const wait = BACKOFF_MS[attempt - 1] || 120000;
+        log(`backing off ${wait}ms`);
+        await new Promise(r => setTimeout(r, wait));
       }
     }
   }
@@ -591,8 +574,33 @@ async function bootstrapRtk(plugkitVerDir, plugkitVersion, silent, root) {
     if (!silent) log(`rtk cache heal (sha match): ${rtkPath}`);
     return rtkPath;
   }
-  const url = `https://github.com/${RELEASE_REPO}/releases/download/v${plugkitVersion}/${rtkName}`;
-  await downloadWithRetry(url, tmp);
+  const RTKS_RELEASE_REPO = 'AnEntrypoint/plugkit-bin';
+  const url = `https://github.com/${RTKS_RELEASE_REPO}/releases/download/v${plugkitVersion}/${rtkName}`;
+  const startMs = Date.now();
+  let lastErr;
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    try {
+      log(`rtk download attempt ${attempt}/${MAX_ATTEMPTS}: ${url}`);
+      const result = spawnSync(
+        'curl',
+        ['-fSL', '--max-time', String(Math.floor(ATTEMPT_TIMEOUT_MS / 1000)), '-o', tmp, url],
+        { stdio: 'pipe', timeout: ATTEMPT_TIMEOUT_MS + 5000, windowsHide: true }
+      );
+      if (result.error) throw result.error;
+      if (result.status !== 0) throw new Error(`curl failed with status ${result.status}`);
+      break;
+    } catch (err) {
+      lastErr = err;
+      log(`rtk attempt ${attempt} failed: ${err.message}`);
+      obsEvent('bootstrap', 'rtk.download.attempt_failed', { attempt, max: MAX_ATTEMPTS, err: String(err.message || err) });
+      if (attempt < MAX_ATTEMPTS) {
+        const wait = BACKOFF_MS[attempt - 1] || 120000;
+        log(`backing off ${wait}ms`);
+        await new Promise(r => setTimeout(r, wait));
+      }
+    }
+  }
+  if (lastErr) throw lastErr;
   if (expected) {
     const got = await sha256OfFile(tmp);
     if (got !== expected) {
@@ -610,7 +618,7 @@ async function bootstrapRtk(plugkitVerDir, plugkitVersion, silent, root) {
   if (os.platform() !== 'win32') { try { fs.chmodSync(rtkPath, 0o755); } catch (_) {} }
   fs.writeFileSync(rtkOk, new Date().toISOString());
   log(`installed ${rtkPath}`);
-  obsEvent('bootstrap', 'install.done', { path: rtkPath, plugkit_version: plugkitVersion, rtk_version: readRtkVersion() || plugkitVersion, kind: 'rtk' });
+  obsEvent('bootstrap', 'install.done', { path: rtkPath, plugkit_version: plugkitVersion, rtk_version: readRtkVersion() || plugkitVersion, kind: 'rtk', dur_ms: Date.now() - startMs });
   return rtkPath;
 }
 
@@ -703,16 +711,15 @@ async function bootstrap(opts) {
         }
       } catch (_) {}
     }
-    const url = `https://github.com/${RELEASE_REPO}/releases/download/v${version}/${binName}`;
     try {
-      await downloadWithRetry(url, partialPath);
-    } catch (fetchErr) {
+      await extractNpmPackageWithRetry(partialPath);
+    } catch (extractErr) {
       writeBootstrapError({
         expected_version: version, cached_version: null,
-        error_phase: 'download',
-        error_message: fetchErr && fetchErr.message ? fetchErr.message : String(fetchErr),
+        error_phase: 'npm-extract',
+        error_message: extractErr && extractErr.message ? extractErr.message : String(extractErr),
       });
-      throw fetchErr;
+      throw extractErr;
     }
 
     if (expectedSha) {

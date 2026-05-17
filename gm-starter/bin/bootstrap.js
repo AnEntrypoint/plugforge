@@ -4,20 +4,13 @@
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
-const https = require('https');
 const crypto = require('crypto');
-const { URL } = require('url');
+const { spawnSync } = require('child_process');
 
-const RELEASE_REPO = 'AnEntrypoint/plugkit-bin';
-const ATTEMPT_TIMEOUT_MS = 5 * 60 * 1000;
-const STALL_TIMEOUT_MS = 15 * 1000;
-const MAX_ATTEMPTS = 5;
-const BACKOFF_MS = [2000, 5000, 15000, 30000];
-// Worst case: a slow link downloading 140MB at 1MB/s = ~140s. Allow 30 minutes
-// before another bootstrap process treats this lock as abandoned. Below this,
-// concurrent bootstrap calls would wipe an in-progress download mid-stream
-// (see the v0.1.294 incident where a race between two wrappers blew away the
-// .partial during a 10-minute fetch).
+const NPM_PACKAGE = '@anentrypoint/plugkit-wasm';
+const ATTEMPT_TIMEOUT_MS = 10 * 60 * 1000;
+const MAX_ATTEMPTS = 3;
+const BACKOFF_MS = [5000, 15000];
 const LOCK_STALE_MS = 30 * 60 * 1000;
 
 function log(msg) {
@@ -73,18 +66,6 @@ function obsEvent(subsystem, event, fields) {
   } catch (_) {}
 }
 
-function platformKey() {
-  const p = os.platform();
-  const a = os.arch();
-  if (p === 'win32') return a === 'arm64' ? 'win32-arm64' : 'win32-x64';
-  if (p === 'darwin') return a === 'arm64' ? 'darwin-arm64' : 'darwin-x64';
-  return (a === 'arm64' || a === 'aarch64') ? 'linux-arm64' : 'linux-x64';
-}
-
-function binaryName() {
-  const key = platformKey();
-  return key.startsWith('win32') ? `plugkit-${key}.exe` : `plugkit-${key}`;
-}
 
 function rtkBinaryName() {
   const key = platformKey();
@@ -117,98 +98,22 @@ function gmToolsDir() {
 // through node. Self-update inside the Rust binary keeps gm-tools fresh from
 // here on. Skipped silently on any error — the next session-start hook will
 // retry via ensure_tools_current.
-function killHoldersOfPath(targetPath) {
-  if (process.platform !== 'win32') return 0;
-  try {
-    const { spawnSync } = require('child_process');
-    const norm = path.resolve(targetPath).replace(/\//g, '\\');
-    const r = spawnSync('wmic', ['process', 'where', `ExecutablePath='${norm.replace(/\\/g, '\\\\')}'`, 'get', 'ProcessId', '/format:value'], { encoding: 'utf8', windowsHide: true, timeout: 5000 });
-    if (r.status !== 0 || !r.stdout) return 0;
-    const pids = [];
-    for (const line of r.stdout.split(/\r?\n/)) {
-      const m = line.match(/ProcessId=(\d+)/);
-      if (m) {
-        const pid = parseInt(m[1], 10);
-        if (Number.isFinite(pid) && pid !== process.pid) pids.push(pid);
-      }
-    }
-    for (const pid of pids) {
-      try { spawnSync('taskkill', ['/F', '/PID', String(pid)], { windowsHide: true, timeout: 3000 }); } catch (_) {}
-    }
-    return pids.length;
-  } catch (_) { return 0; }
-}
 
-function cleanOrphanNewFiles(dst, exeName) {
-  try {
-    for (const name of fs.readdirSync(dst)) {
-      if (name === exeName + '.new') continue;
-      if (/^plugkit(\.\d+\.\d+\.\d+)?\.new$/i.test(name)) {
-        try { fs.unlinkSync(path.join(dst, name)); } catch (_) {}
-      }
-    }
-  } catch (_) {}
-}
-
-function renameWithRetry(src, dst, attempts) {
-  for (let i = 0; i < attempts; i++) {
-    try { fs.renameSync(src, dst); return true; }
-    catch (err) {
-      if (err.code !== 'EEXIST' && err.code !== 'EPERM' && err.code !== 'EBUSY' && err.code !== 'EACCES') throw err;
-      if (i === Math.floor(attempts / 2)) killHoldersOfPath(dst);
-      try { const { spawnSync } = require('child_process'); spawnSync(process.execPath, ['-e', 'setTimeout(()=>{}, 200)'], { timeout: 400, killSignal: 'SIGKILL', stdio: 'ignore', windowsHide: true }); } catch (_) {}
-    }
-  }
-  return false;
-}
-
-function copyToGmTools(finalPath, wrapperDir, version) {
+function copyWasmToGmTools(wasmPath, wrapperDir, version) {
   const dst = gmToolsDir();
   fs.mkdirSync(dst, { recursive: true });
-  const exeName = process.platform === 'win32' ? 'plugkit.exe' : 'plugkit';
-  const target = path.join(dst, exeName);
-  const targetTmp = target + '.new';
-  cleanOrphanNewFiles(dst, exeName);
+  const target = path.join(dst, 'plugkit.wasm');
   if (fs.existsSync(target)) {
-    let needsRefresh = true;
     try {
       const cur = sha256OfFileSync(target);
-      const src = sha256OfFileSync(finalPath);
-      if (cur === src) needsRefresh = false;
-    } catch (_) {}
-    if (!needsRefresh) {
-      try { fs.writeFileSync(path.join(dst, 'plugkit.version'), version); } catch (_) {}
-      return;
-    }
-    try { killHoldersOfPath(target); } catch (_) {}
-  }
-  fs.copyFileSync(finalPath, targetTmp);
-  if (!renameWithRetry(targetTmp, target, 8)) {
-    try { killHoldersOfPath(target); } catch (_) {}
-    try { fs.unlinkSync(target); } catch (_) {}
-    try { fs.renameSync(targetTmp, target); }
-    catch (_) {
-      try { fs.unlinkSync(targetTmp); } catch (_) {}
-      obsEvent('bootstrap', 'gmtools.rename.failed', { target });
-      writeBootstrapError({
-        expected_version: version,
-        cached_version: null,
-        error_phase: 'gmtools-rename',
-        error_message: `cannot replace ${target} after kill+unlink retry; orphan removed`,
-      });
-      throw new Error(`gm-tools update blocked: cannot replace ${target} (held open by running plugkit and kill-retry exhausted)`);
-    }
-  }
-  try {
-    for (const name of fs.readdirSync(dst)) {
-      if (/^plugkit(\.\d+\.\d+\.\d+)?\.new$/i.test(name)) {
-        try { fs.unlinkSync(path.join(dst, name)); } catch (_) {}
+      const src = sha256OfFileSync(wasmPath);
+      if (cur === src) {
+        try { fs.writeFileSync(path.join(dst, 'plugkit.version'), version); } catch (_) {}
+        return;
       }
-    }
-  } catch (_) {}
-  if (process.platform !== 'win32') {
-    try { fs.chmodSync(target, 0o755); } catch (_) {}
+    } catch (_) {}
   }
+  fs.copyFileSync(wasmPath, target);
   fs.writeFileSync(path.join(dst, 'plugkit.version'), version);
   try {
     const srcSha = path.join(wrapperDir, 'plugkit.sha256');
@@ -319,88 +224,54 @@ function sha256OfFile(filePath) {
   });
 }
 
-function fetchToFile(url, destPath, expectedTotal) {
-  return new Promise((resolve, reject) => {
-    let existing = 0;
-    try { existing = fs.statSync(destPath).size; } catch (_) {}
-    const headers = { 'User-Agent': 'plugkit-bootstrap', 'Accept': '*/*' };
-    if (existing > 0) headers['Range'] = `bytes=${existing}-`;
+async function extractNpmPackageWasm(destPath) {
+  const tempDir = path.join(path.dirname(destPath), '.npm-extract-' + Date.now());
+  try {
+    ensureDir(tempDir);
+    const startMs = Date.now();
+    log(`extracting npm package ${NPM_PACKAGE}@latest to ${tempDir}`);
+    obsEvent('bootstrap', 'npm.extract.start', { package: NPM_PACKAGE, version: 'latest' });
 
-    const u = new URL(url);
-    const req = https.request({
-      method: 'GET',
-      hostname: u.hostname,
-      path: u.pathname + u.search,
-      headers,
-      timeout: ATTEMPT_TIMEOUT_MS,
-    }, (res) => {
-      if (res.statusCode === 301 || res.statusCode === 302 || res.statusCode === 307 || res.statusCode === 308) {
-        res.resume();
-        return resolve(fetchToFile(res.headers.location, destPath, expectedTotal));
+    const result = spawnSync(
+      process.platform === 'win32' ? 'bunx.cmd' : 'bunx',
+      ['--bun', NPM_PACKAGE + '@latest', '--save-exact', '--prefix', tempDir],
+      {
+        stdio: ['ignore', 'pipe', 'pipe'],
+        timeout: ATTEMPT_TIMEOUT_MS,
+        encoding: 'utf8',
+        windowsHide: true,
       }
-      if (res.statusCode === 416) {
-        res.resume();
-        try { fs.unlinkSync(destPath); } catch (_) {}
-        return reject(new Error('range-not-satisfiable: cleared partial, retry'));
-      }
-      if (!(res.statusCode === 200 || res.statusCode === 206)) {
-        res.resume();
-        return reject(new Error(`HTTP ${res.statusCode} for ${url}`));
-      }
-      const append = res.statusCode === 206 && existing > 0;
-      // Ensure parent dir exists — a concurrent prune may have removed it
-      // between lock-acquire and now. Recreating is cheap and avoids a
-      // confusing ENOENT later.
-      try { ensureDir(path.dirname(destPath)); } catch (_) {}
-      const out = fs.createWriteStream(destPath, { flags: append ? 'a' : 'w' });
-      let bytes = append ? existing : 0;
-      let lastStderr = Date.now();
-      let lastByte = Date.now();
-      const fetchStart = Date.now();
-      const safeUrl = (() => { try { const p = new URL(url); return p.hostname + p.pathname; } catch(_) { return url.split('?')[0]; } })();
-      obsEvent('bootstrap', 'fetch.start', { url: safeUrl, resume_from: existing, status: res.statusCode });
-      const stallTimer = setInterval(() => {
-        if (Date.now() - lastByte > STALL_TIMEOUT_MS) {
-          clearInterval(stallTimer);
-          req.destroy(new Error(`stalled: no bytes for ${STALL_TIMEOUT_MS}ms`));
-        }
-      }, 2000);
-      res.on('data', c => {
-        bytes += c.length;
-        lastByte = Date.now();
-        if (Date.now() - lastStderr > 5000) {
-          const pct = expectedTotal ? ` ${Math.floor(bytes / expectedTotal * 100)}%` : '';
-          try { process.stderr.write(`[plugkit-bootstrap] downloading: ${(bytes / 1048576).toFixed(1)} MiB${pct}\n`); } catch (_) {}
-          lastStderr = Date.now();
-        }
-      });
-      res.pipe(out);
-      out.on('finish', () => {
-        clearInterval(stallTimer);
-        obsEvent('bootstrap', 'fetch.end', { url: safeUrl, bytes, dur_ms: Date.now() - fetchStart, ok: true });
-        out.close(() => resolve(bytes));
-      });
-      out.on('error', err => { clearInterval(stallTimer); obsEvent('bootstrap', 'fetch.end', { url: safeUrl, bytes, dur_ms: Date.now() - fetchStart, ok: false, err: String(err.message || err) }); reject(err); });
-      res.on('error', err => { clearInterval(stallTimer); reject(err); });
-      res.on('end', () => clearInterval(stallTimer));
-    });
-    req.on('timeout', () => { req.destroy(new Error(`timeout after ${ATTEMPT_TIMEOUT_MS}ms`)); });
-    req.on('error', reject);
-    req.end();
-  });
+    );
+
+    if (result.error) throw result.error;
+    if (result.status !== 0) {
+      throw new Error(`bunx extraction failed: ${result.stderr || result.stdout || 'unknown error'}`);
+    }
+
+    const nodeModulesPath = path.join(tempDir, 'node_modules', NPM_PACKAGE, 'plugkit.wasm');
+    if (!fs.existsSync(nodeModulesPath)) {
+      throw new Error(`plugkit.wasm not found in extracted npm package at ${nodeModulesPath}`);
+    }
+
+    fs.copyFileSync(nodeModulesPath, destPath);
+    log(`extracted ${nodeModulesPath} → ${destPath}`);
+    obsEvent('bootstrap', 'npm.extract.end', { dur_ms: Date.now() - startMs, ok: true });
+  } finally {
+    try { fs.rmSync(tempDir, { recursive: true, force: true, maxRetries: 1, retryDelay: 50 }); } catch (_) {}
+  }
 }
 
-async function downloadWithRetry(url, destPath) {
+async function extractNpmPackageWithRetry(destPath) {
   let lastErr;
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
     try {
-      log(`fetch attempt ${attempt}/${MAX_ATTEMPTS}: ${url}`);
-      await fetchToFile(url, destPath);
+      log(`npm extract attempt ${attempt}/${MAX_ATTEMPTS}: ${NPM_PACKAGE}@latest`);
+      await extractNpmPackageWasm(destPath);
       return;
     } catch (err) {
       lastErr = err;
       log(`attempt ${attempt} failed: ${err.message}`);
-      obsEvent('bootstrap', 'fetch.attempt_failed', { url, attempt, max: MAX_ATTEMPTS, err: String(err.message || err) });
+      obsEvent('bootstrap', 'npm.extract.attempt_failed', { package: NPM_PACKAGE, attempt, max: MAX_ATTEMPTS, err: String(err.message || err) });
       if (attempt < MAX_ATTEMPTS) {
         const wait = BACKOFF_MS[attempt - 1] || 120000;
         log(`backing off ${wait}ms`);
@@ -447,8 +318,8 @@ async function bootstrap(opts) {
   const wrapperDir = opts.wrapperDir || __dirname;
   const version = opts.version || readVersionFile(wrapperDir);
   const shaManifest = readShaManifest(wrapperDir);
-  const binName = binaryName();
-  const expectedSha = shaManifest ? shaManifest[binName] : null;
+  const wasmName = 'plugkit.wasm';
+  const wasmExpectedSha = shaManifest ? shaManifest[wasmName] : null;
 
   let root = cacheRoot();
   try { ensureDir(root); }
@@ -457,154 +328,116 @@ async function bootstrap(opts) {
   const verDir = path.join(root, `v${version}`);
   ensureDir(verDir);
 
-  const finalPath = path.join(verDir, binName);
-  const okSentinel = path.join(verDir, '.ok');
-  const partialPath = `${finalPath}.partial`;
-
-  const wasmName = 'plugkit.wasm';
-  const wasmExpectedSha = shaManifest ? shaManifest[wasmName] : null;
   const wasmFinalPath = path.join(verDir, wasmName);
+  const wasmOkSentinel = path.join(verDir, '.wasm-ok');
   const wasmPartialPath = `${wasmFinalPath}.partial`;
 
-  if (fs.existsSync(finalPath) && fs.existsSync(okSentinel)) {
-    if (expectedSha) {
-      const actualSha = sha256OfFileSync(finalPath);
-      if (actualSha === expectedSha) {
-        obsEvent('bootstrap', 'decision.hit', { reason: 'sha-match', version, path: finalPath });
-        copyToGmTools(finalPath, wrapperDir, version);
+  if (fs.existsSync(wasmFinalPath) && fs.existsSync(wasmOkSentinel)) {
+    if (wasmExpectedSha) {
+      const actualSha = sha256OfFileSync(wasmFinalPath);
+      if (actualSha === wasmExpectedSha) {
+        obsEvent('bootstrap', 'decision.hit', { reason: 'sha-match', version, path: wasmFinalPath });
+        copyWasmToGmTools(wasmFinalPath, wrapperDir, version);
         clearBootstrapError();
-        return finalPath;
+        return wasmFinalPath;
       }
-      log(`decision: fetch reason: cache-hit-sha-mismatch (dir=v${version} expected ${expectedSha.slice(0,12)}… got ${(actualSha||'').slice(0,12)}…)`);
+      log(`decision: fetch reason: cache-hit-sha-mismatch (dir=v${version} expected ${wasmExpectedSha.slice(0,12)}… got ${(actualSha||'').slice(0,12)}…)`);
       writeBootstrapError({
         expected_version: version,
         cached_version: null,
         error_phase: 'cache-hit-sha-mismatch',
-        error_message: `cached binary at ${finalPath} sha=${actualSha} but manifest expects ${expectedSha}`,
+        error_message: `cached wasm at ${wasmFinalPath} sha=${actualSha} but manifest expects ${wasmExpectedSha}`,
       });
-      try { fs.unlinkSync(finalPath); } catch (_) {}
-      try { fs.unlinkSync(okSentinel); } catch (_) {}
+      try { fs.unlinkSync(wasmFinalPath); } catch (_) {}
+      try { fs.unlinkSync(wasmOkSentinel); } catch (_) {}
     } else {
-      obsEvent('bootstrap', 'decision.hit', { reason: 'sentinel+no-sha-manifest', path: finalPath });
-      copyToGmTools(finalPath, wrapperDir, version);
+      obsEvent('bootstrap', 'decision.hit', { reason: 'sentinel+no-sha-manifest', path: wasmFinalPath });
+      copyWasmToGmTools(wasmFinalPath, wrapperDir, version);
       clearBootstrapError();
-      return finalPath;
+      return wasmFinalPath;
     }
   }
 
-  if (healIfShaMatches(finalPath, expectedSha, okSentinel, partialPath, 'plugkit')) {
-    obsEvent('bootstrap', 'decision.heal', { reason: 'sha-match', path: finalPath });
+  if (healIfShaMatches(wasmFinalPath, wasmExpectedSha, wasmOkSentinel, wasmPartialPath, 'wasm')) {
+    obsEvent('bootstrap', 'decision.heal', { reason: 'sha-match', path: wasmFinalPath });
     spawnDetachedRtkFetch(wrapperDir);
-    copyToGmTools(finalPath, wrapperDir, version);
+    copyWasmToGmTools(wasmFinalPath, wrapperDir, version);
     clearBootstrapError();
-    return finalPath;
+    return wasmFinalPath;
   }
 
   const lockPath = path.join(verDir, '.lock');
   acquireLock(lockPath);
   try {
-    if (fs.existsSync(finalPath) && fs.existsSync(okSentinel)) {
-      obsEvent('bootstrap', 'decision.hit', { reason: 'lock-race-resolved', path: finalPath });
-      copyToGmTools(finalPath, wrapperDir, version);
+    if (fs.existsSync(wasmFinalPath) && fs.existsSync(wasmOkSentinel)) {
+      obsEvent('bootstrap', 'decision.hit', { reason: 'lock-race-resolved', path: wasmFinalPath });
+      copyWasmToGmTools(wasmFinalPath, wrapperDir, version);
       clearBootstrapError();
-      return finalPath;
+      return wasmFinalPath;
     }
-    if (healIfShaMatches(finalPath, expectedSha, okSentinel, partialPath, 'plugkit')) {
-      obsEvent('bootstrap', 'decision.heal', { reason: 'sha-match-under-lock', path: finalPath });
+    if (healIfShaMatches(wasmFinalPath, wasmExpectedSha, wasmOkSentinel, wasmPartialPath, 'wasm')) {
+      obsEvent('bootstrap', 'decision.heal', { reason: 'sha-match-under-lock', path: wasmFinalPath });
       spawnDetachedRtkFetch(wrapperDir);
-      copyToGmTools(finalPath, wrapperDir, version);
+      copyWasmToGmTools(wasmFinalPath, wrapperDir, version);
       clearBootstrapError();
-      return finalPath;
+      return wasmFinalPath;
     }
 
-    if (fs.existsSync(partialPath)) {
+    if (fs.existsSync(wasmPartialPath)) {
       try {
-        const st = fs.statSync(partialPath);
+        const st = fs.statSync(wasmPartialPath);
         if (Date.now() - st.mtimeMs > LOCK_STALE_MS) {
-          fs.unlinkSync(partialPath);
-          log(`cleared stale partial: ${partialPath}`);
+          fs.unlinkSync(wasmPartialPath);
+          log(`cleared stale partial: ${wasmPartialPath}`);
         }
       } catch (_) {}
     }
-    const url = `https://github.com/${RELEASE_REPO}/releases/download/v${version}/${binName}`;
     try {
-      await downloadWithRetry(url, partialPath);
-    } catch (fetchErr) {
+      await extractNpmPackageWithRetry(wasmPartialPath);
+    } catch (extractErr) {
       writeBootstrapError({
         expected_version: version,
         cached_version: null,
-        error_phase: 'download',
-        error_message: fetchErr && fetchErr.message ? fetchErr.message : String(fetchErr),
+        error_phase: 'npm-extract',
+        error_message: extractErr && extractErr.message ? extractErr.message : String(extractErr),
       });
-      throw fetchErr;
+      throw extractErr;
     }
 
-    if (expectedSha) {
-      const got = await sha256OfFile(partialPath);
-      if (got !== expectedSha) {
-        try { fs.unlinkSync(partialPath); } catch (_) {}
+    if (wasmExpectedSha) {
+      const got = await sha256OfFile(wasmPartialPath);
+      if (got !== wasmExpectedSha) {
+        try { fs.unlinkSync(wasmPartialPath); } catch (_) {}
         writeBootstrapError({
           expected_version: version,
           cached_version: null,
           error_phase: 'sha256-mismatch',
-          error_message: `sha256 mismatch for ${binName}: expected ${expectedSha}, got ${got}`,
+          error_message: `sha256 mismatch for ${wasmName}: expected ${wasmExpectedSha}, got ${got}`,
         });
-        throw new Error(`sha256 mismatch for ${binName}: expected ${expectedSha}, got ${got}`);
+        throw new Error(`sha256 mismatch for ${wasmName}: expected ${wasmExpectedSha}, got ${got}`);
       }
       log('sha256 verified');
     } else {
       log('no sha256 manifest — skipping verify');
     }
 
-    try { fs.renameSync(partialPath, finalPath); }
+    try { fs.renameSync(wasmPartialPath, wasmFinalPath); }
     catch (err) {
       if (err.code === 'EEXIST' || err.code === 'EPERM') {
-        try { fs.unlinkSync(finalPath); } catch (_) {}
-        fs.renameSync(partialPath, finalPath);
+        try { fs.unlinkSync(wasmFinalPath); } catch (_) {}
+        fs.renameSync(wasmPartialPath, wasmFinalPath);
       } else throw err;
     }
 
-    if (os.platform() !== 'win32') {
-      try { fs.chmodSync(finalPath, 0o755); } catch (_) {}
-    }
-
-    fs.writeFileSync(okSentinel, new Date().toISOString());
-    log(`decision: fetch reason: install-complete (${finalPath})`);
-    obsEvent('bootstrap', 'install.done', { path: finalPath, version, kind: 'plugkit' });
-    proactiveKillForNewInstall(version, finalPath);
+    fs.writeFileSync(wasmOkSentinel, new Date().toISOString());
+    log(`decision: fetch reason: install-complete (${wasmFinalPath})`);
+    obsEvent('bootstrap', 'install.done', { path: wasmFinalPath, version, kind: 'wasm' });
     pruneOldVersions(root, version, readRtkVersion(wrapperDir));
     spawnDetachedRtkFetch(wrapperDir);
-    copyToGmTools(finalPath, wrapperDir, version);
-
-    try {
-      if (healIfShaMatches(wasmFinalPath, wasmExpectedSha, path.join(verDir, '.wasm-ok'), wasmPartialPath, 'wasm')) {
-        obsEvent('bootstrap', 'wasm.heal', { path: wasmFinalPath });
-      } else {
-        const wasmUrl = `https://github.com/${RELEASE_REPO}/releases/download/v${version}/${wasmName}`;
-        try {
-          await downloadWithRetry(wasmUrl, wasmPartialPath);
-          if (wasmExpectedSha) {
-            const wasmGot = await sha256OfFile(wasmPartialPath);
-            if (wasmGot !== wasmExpectedSha) {
-              try { fs.unlinkSync(wasmPartialPath); } catch (_) {}
-              log(`wasm sha256 mismatch: expected ${wasmExpectedSha}, got ${wasmGot}`);
-            } else {
-              try { fs.renameSync(wasmPartialPath, wasmFinalPath); } catch (e) {
-                if (e.code === 'EEXIST') { try { fs.unlinkSync(wasmFinalPath); } catch (_) {} fs.renameSync(wasmPartialPath, wasmFinalPath); }
-              }
-              fs.writeFileSync(path.join(verDir, '.wasm-ok'), new Date().toISOString());
-              obsEvent('bootstrap', 'wasm.install', { path: wasmFinalPath });
-            }
-          }
-        } catch (err) {
-          log(`wasm download failed (non-fatal): ${err.message}`);
-        }
-      }
-      try { fs.copyFileSync(wasmFinalPath, path.join(gmToolsDir(), wasmName)); } catch (_) {}
-    } catch (_) {}
+    copyWasmToGmTools(wasmFinalPath, wrapperDir, version);
 
     clearBootstrapError();
-    return finalPath;
+    return wasmFinalPath;
   } finally {
     releaseLock(lockPath);
   }
@@ -649,8 +482,33 @@ async function bootstrapRtk(plugkitVerDir, plugkitVersion, wrapperDir, silent, r
     if (!silent) log(`rtk cache heal (sha match): ${rtkPath}`);
     return rtkPath;
   }
-  const url = `https://github.com/${RELEASE_REPO}/releases/download/v${plugkitVersion}/${rtkName}`;
-  await downloadWithRetry(url, tmp);
+  const RTKS_RELEASE_REPO = 'AnEntrypoint/plugkit-bin';
+  const url = `https://github.com/${RTKS_RELEASE_REPO}/releases/download/v${plugkitVersion}/${rtkName}`;
+  const startMs = Date.now();
+  let lastErr;
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    try {
+      log(`rtk download attempt ${attempt}/${MAX_ATTEMPTS}: ${url}`);
+      const result = spawnSync(
+        'curl',
+        ['-fSL', '--max-time', String(Math.floor(ATTEMPT_TIMEOUT_MS / 1000)), '-o', tmp, url],
+        { stdio: 'pipe', timeout: ATTEMPT_TIMEOUT_MS + 5000, windowsHide: true }
+      );
+      if (result.error) throw result.error;
+      if (result.status !== 0) throw new Error(`curl failed with status ${result.status}`);
+      break;
+    } catch (err) {
+      lastErr = err;
+      log(`rtk attempt ${attempt} failed: ${err.message}`);
+      obsEvent('bootstrap', 'rtk.download.attempt_failed', { attempt, max: MAX_ATTEMPTS, err: String(err.message || err) });
+      if (attempt < MAX_ATTEMPTS) {
+        const wait = BACKOFF_MS[attempt - 1] || 120000;
+        log(`backing off ${wait}ms`);
+        await new Promise(r => setTimeout(r, wait));
+      }
+    }
+  }
+  if (lastErr) throw lastErr;
   if (expected) {
     const got = await sha256OfFile(tmp);
     if (got !== expected) {
@@ -668,7 +526,7 @@ async function bootstrapRtk(plugkitVerDir, plugkitVersion, wrapperDir, silent, r
   if (os.platform() !== 'win32') { try { fs.chmodSync(rtkPath, 0o755); } catch (_) {} }
   fs.writeFileSync(rtkOk, new Date().toISOString());
   log(`installed ${rtkPath}`);
-  obsEvent('bootstrap', 'install.done', { path: rtkPath, plugkit_version: plugkitVersion, rtk_version: readRtkVersion(wrapperDir) || plugkitVersion, kind: 'rtk' });
+  obsEvent('bootstrap', 'install.done', { path: rtkPath, plugkit_version: plugkitVersion, rtk_version: readRtkVersion(wrapperDir) || plugkitVersion, kind: 'rtk', dur_ms: Date.now() - startMs });
   return rtkPath;
 }
 
@@ -688,7 +546,7 @@ function resolveCachedRtk(opts) {
   return null;
 }
 
-function resolveCachedBinary(opts) {
+function getWasmPath(opts) {
   opts = opts || {};
   const wrapperDir = opts.wrapperDir || __dirname;
   const version = opts.version || readVersionFile(wrapperDir);
@@ -697,9 +555,9 @@ function resolveCachedBinary(opts) {
     catch (_) { const r = fallbackCacheRoot(); ensureDir(r); return r; }
   })();
   const verDir = path.join(root, `v${version}`);
-  const finalPath = path.join(verDir, binaryName());
-  const okSentinel = path.join(verDir, '.ok');
-  if (fs.existsSync(finalPath) && fs.existsSync(okSentinel)) return finalPath;
+  const wasmPath = path.join(verDir, 'plugkit.wasm');
+  const okSentinel = path.join(verDir, '.wasm-ok');
+  if (fs.existsSync(wasmPath) && fs.existsSync(okSentinel)) return wasmPath;
   return null;
 }
 
@@ -762,72 +620,6 @@ function killRunningDaemons(reason) {
   return killedPids;
 }
 
-function listRunningPlugkitImagePaths() {
-  const out = [];
-  try {
-    const { spawnSync } = require('child_process');
-    if (os.platform() === 'win32') {
-      let parsed = null;
-      try {
-        const p = spawnSync('powershell', ['-NoProfile', '-NonInteractive', '-Command', "Get-Process plugkit* -ErrorAction SilentlyContinue | Select-Object Id,Path | ConvertTo-Json -Compress"], { windowsHide: true, encoding: 'utf8', timeout: 5000, killSignal: 'SIGKILL', stdio: ['ignore', 'pipe', 'pipe'] });
-        const text = ((p && p.stdout) || '').trim();
-        if (text) {
-          const j = JSON.parse(text);
-          parsed = Array.isArray(j) ? j : [j];
-        }
-      } catch (_) {}
-      if (parsed) {
-        for (const item of parsed) {
-          if (!item) continue;
-          const pid = parseInt(item.Id, 10);
-          if (!Number.isFinite(pid)) continue;
-          out.push({ pid, path: (item.Path || '').trim() });
-        }
-      } else {
-        const r = spawnSync('tasklist', ['/FI', 'IMAGENAME eq plugkit*', '/FO', 'CSV', '/NH'], { windowsHide: true, encoding: 'utf8', timeout: 5000, killSignal: 'SIGKILL', stdio: ['ignore', 'pipe', 'pipe'] });
-        const text = (r && r.stdout) || '';
-        const seen = new Set();
-        for (const line of text.split(/\r?\n/)) {
-          const m = line.match(/^"([^"]+)","(\d+)"/);
-          if (!m) continue;
-          const pid = parseInt(m[2], 10);
-          if (!Number.isFinite(pid) || seen.has(pid)) continue;
-          seen.add(pid);
-          out.push({ pid, path: '' });
-        }
-      }
-    } else if (os.platform() === 'linux') {
-      let entries = [];
-      try { entries = fs.readdirSync('/proc'); } catch (_) {}
-      for (const e of entries) {
-        if (!/^\d+$/.test(e)) continue;
-        const pid = parseInt(e, 10);
-        let comm = '';
-        try { comm = fs.readFileSync(`/proc/${pid}/comm`, 'utf8').trim(); } catch (_) { continue; }
-        if (!/^plugkit/i.test(comm)) continue;
-        let imagePath = '';
-        try { imagePath = fs.readlinkSync(`/proc/${pid}/exe`); } catch (_) {}
-        out.push({ pid, path: imagePath });
-      }
-    } else {
-      const r = spawnSync('ps', ['-axo', 'pid=,comm='], { encoding: 'utf8', timeout: 5000, killSignal: 'SIGKILL', stdio: ['ignore', 'pipe', 'pipe'] });
-      const text = (r && r.stdout) || '';
-      for (const line of text.split(/\r?\n/)) {
-        const m = line.match(/^\s*(\d+)\s+(.+?)\s*$/);
-        if (!m) continue;
-        if (!/plugkit/i.test(m[2])) continue;
-        const pid = parseInt(m[1], 10);
-        let imagePath = '';
-        try {
-          const p = spawnSync('ps', ['-p', String(pid), '-o', 'command='], { encoding: 'utf8', timeout: 3000, killSignal: 'SIGKILL', stdio: ['ignore', 'pipe', 'pipe'] });
-          imagePath = ((p && p.stdout) || '').trim().split(/\s+/)[0] || '';
-        } catch (_) {}
-        out.push({ pid, path: imagePath });
-      }
-    }
-  } catch (_) {}
-  return out;
-}
 
 function killSpoolWatcherInCwd(reason) {
   try {
@@ -844,39 +636,21 @@ function killSpoolWatcherInCwd(reason) {
   return null;
 }
 
-function proactiveKillForNewInstall(installedVersion, finalPath) {
+function proactiveKillForNewInstall(installedVersion) {
   try {
     const reason = `install:v${installedVersion}`;
-    const target = finalPath ? path.resolve(finalPath).toLowerCase() : null;
-    const cacheRootNorm = (() => {
-      try { return path.resolve(cacheRoot()).toLowerCase(); } catch (_) { return null; }
-    })();
-    const procs = listRunningPlugkitImagePaths();
-    for (const { pid, path: imagePath } of procs) {
-      if (!Number.isFinite(pid) || pid === process.pid) continue;
-      if (!imagePath) continue;
-      const norm = path.resolve(imagePath).toLowerCase();
-      if (target && norm === target) continue;
-      if (!cacheRootNorm || !norm.startsWith(cacheRootNorm + path.sep.toLowerCase())) continue;
-      if (killPid(pid)) {
-        try { process.stderr.write(`[bootstrap] killed stale daemon pid=${pid} path=${imagePath} (current install: v${installedVersion})\n`); } catch (_) {}
-        obsEvent('bootstrap', 'daemon.killed', { pid, oldPath: imagePath, installedVersion, mechanism: 'process-path' });
-      }
-    }
     killRunningDaemons(reason);
     killSpoolWatcherInCwd(reason);
     writeDaemonVersion(installedVersion);
   } catch (_) {}
 }
 
-// Compare wrapper-pinned version against last-recorded daemon version. If
-// they differ, kill the daemon so it respawns under the new binary.
 function killStaleDaemonIfVersionChanged(wrapperDir) {
   let currentVersion;
   try { currentVersion = readVersionFile(wrapperDir); } catch (_) { return; }
-  const cached = resolveCachedBinary({ wrapperDir, version: currentVersion });
+  const cached = getWasmPath({ wrapperDir, version: currentVersion });
   if (cached) {
-    proactiveKillForNewInstall(currentVersion, cached);
+    proactiveKillForNewInstall(currentVersion);
     return;
   }
   const recorded = readDaemonVersion();
@@ -885,7 +659,7 @@ function killStaleDaemonIfVersionChanged(wrapperDir) {
   writeDaemonVersion(currentVersion);
 }
 
-module.exports = { bootstrap, resolveCachedBinary, resolveCachedRtk, platformKey, binaryName, rtkBinaryName, cacheRoot, obsEvent, killRunningDaemons, killStaleDaemonIfVersionChanged, killSpoolWatcherInCwd, proactiveKillForNewInstall };
+module.exports = { bootstrap, getWasmPath, resolveCachedRtk, rtkBinaryName, cacheRoot, obsEvent, killRunningDaemons, killStaleDaemonIfVersionChanged, killSpoolWatcherInCwd, proactiveKillForNewInstall };
 
 if (require.main === module) {
   const argv = process.argv.slice(2);
