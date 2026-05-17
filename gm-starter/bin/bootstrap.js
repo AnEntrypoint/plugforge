@@ -233,8 +233,8 @@ async function extractNpmPackageWasm(destPath) {
     obsEvent('bootstrap', 'npm.extract.start', { package: NPM_PACKAGE, version: 'latest' });
 
     const result = spawnSync(
-      process.platform === 'win32' ? 'bunx.cmd' : 'bunx',
-      ['--bun', NPM_PACKAGE + '@latest', '--save-exact', '--prefix', tempDir],
+      process.platform === 'win32' ? 'npx.cmd' : 'npx',
+      [NPM_PACKAGE + '@latest', '--prefix', tempDir],
       {
         stdio: ['ignore', 'pipe', 'pipe'],
         timeout: ATTEMPT_TIMEOUT_MS,
