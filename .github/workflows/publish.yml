@@ -26,53 +26,33 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Auto-bump version if needed
+      - name: Auto-bump version
         run: |
-          # Get the highest published version across all CLI packages
-          MAX_NPM="0.0.0"
-          for PKG in gm-cc gm-gc gm-oc gm-kilo gm-codex gm-qwen gm-copilot-cli gm-hermes gm-antigravity gm-thebird; do
-            V=$(npm view "$PKG" version 2>/dev/null || echo "0.0.0")
-            MAX_NPM=$(printf '%s\n' "$V" "$MAX_NPM" | sort -V | tail -1)
-          done
-          NPM_VERSION="$MAX_NPM"
           CURRENT_VERSION=$(jq -r '.version' gm-starter/gm.json)
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT_VERSION"
+          NEW_PATCH=$((PATCH + 1))
+          NEW_VERSION="$MAJOR.$MINOR.$NEW_PATCH"
 
-          echo "npm max across all packages: $NPM_VERSION"
-          echo "current: $CURRENT_VERSION"
+          echo "Bumping version from $CURRENT_VERSION to $NEW_VERSION"
+          jq --arg v "$NEW_VERSION" '.version = $v' gm-starter/gm.json > /tmp/gm.json.tmp
+          mv /tmp/gm.json.tmp gm-starter/gm.json
 
-          # Parse versions
-          IFS='.' read -r NPM_MAJOR NPM_MINOR NPM_PATCH <<< "$NPM_VERSION"
-          IFS='.' read -r CURR_MAJOR CURR_MINOR CURR_PATCH <<< "$CURRENT_VERSION"
-
-          # If npm version >= current, bump patch
-          if [ "$NPM_MAJOR" -gt "$CURR_MAJOR" ] || \
-             ([ "$NPM_MAJOR" -eq "$CURR_MAJOR" ] && [ "$NPM_MINOR" -gt "$CURR_MINOR" ]) || \
-             ([ "$NPM_MAJOR" -eq "$CURR_MAJOR" ] && [ "$NPM_MINOR" -eq "$CURR_MINOR" ] && [ "$NPM_PATCH" -ge "$CURR_PATCH" ]); then
-            NEW_PATCH=$((NPM_PATCH + 1))
-            NEW_VERSION="$NPM_MAJOR.$NPM_MINOR.$NEW_PATCH"
-            echo "Bumping version from $CURRENT_VERSION to $NEW_VERSION"
-            jq --arg v "$NEW_VERSION" '.version = $v' gm-starter/gm.json > /tmp/gm.json.tmp
-            mv /tmp/gm.json.tmp gm-starter/gm.json
-
-            git config --global user.email "noreply@github.com"
-            git config --global user.name "gm-bot"
-            git add gm-starter/gm.json
-            git commit -m "chore: auto-bump version to $NEW_VERSION [skip ci]"
-            for i in 1 2 3 4 5; do
-              if git push origin main; then
-                echo "Version bumped and pushed (attempt $i)"
-                break
-              fi
-              echo "Push attempt $i failed; rebasing"
-              git pull --rebase origin main || true
-              if [ "$i" -eq 5 ]; then
-                echo "All push attempts exhausted" >&2
-                exit 1
-              fi
-            done
-          else
-            echo "No version bump needed"
-          fi
+          git config --global user.email "noreply@github.com"
+          git config --global user.name "gm-bot"
+          git add gm-starter/gm.json
+          git commit -m "chore: auto-bump version to $NEW_VERSION [skip ci]"
+          for i in 1 2 3 4 5; do
+            if git push origin main; then
+              echo "Version bumped and pushed (attempt $i)"
+              break
+            fi
+            echo "Push attempt $i failed; rebasing"
+            git pull --rebase origin main || true
+            if [ "$i" -eq 5 ]; then
+              echo "All push attempts exhausted" >&2
+              exit 1
+            fi
+          done
 
       - name: Get version
         id: version
