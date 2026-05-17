@@ -49,7 +49,7 @@ Re-import from disk — in-memory state is stale and inadmissible. Run identical
 
 ## Mutables gate
 
-Before pre-emit run, read `.gm/mutables.yml`. Any entry with `status: unknown` → regress to `gm-execute`. The pre-tool-use hook hard-blocks Write/Edit/NotebookEdit while unresolved entries exist; trying to emit anyway returns deny. Zero unresolved is the precondition for every legitimacy question below.
+Before pre-emit run, read `.gm/mutables.yml`. Any entry with `status: unknown` → regress to `gm-execute`. Never use Write/Edit/NotebookEdit while unresolved entries exist — this gate is self-enforced. Zero unresolved is the precondition for every legitimacy question below.
 
 ## Gate (all true at once)
 

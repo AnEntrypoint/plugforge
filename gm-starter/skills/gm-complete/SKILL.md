@@ -26,7 +26,7 @@ Failure triage: broken output to EMIT, wrong logic to EXECUTE, new unknown to PL
 - `git_clean` — `git status --porcelain` returns empty
 - `git_pushed` — `git log origin/main..HEAD --oneline` returns empty
 - `ci_passed` — every GitHub Actions run reaches `conclusion: success`
-- `mutables_resolved` — `.gm/mutables.yml` deleted OR every entry `status: witnessed`. Stop hook hard-blocks turn-stop while any entry is `status: unknown`.
+- `mutables_resolved` — `.gm/mutables.yml` deleted OR every entry `status: witnessed`. Never stop the turn while any entry is `status: unknown` — this gate is self-enforced.
 - `prd_empty` — `.gm/prd.yml` deleted AFTER residual scan: enumerate every in-spirit reachable residual surfaced this session; any hit re-enters `planning`, appends PRD items, executes. Empty PRD is necessary, not sufficient — done = empty PRD AND zero reachable in-spirit residuals. Out-of-spirit-or-unreachable residuals are named in the response and skipped; everything else is this turn's work.
 - `stress_suite_clear` — change walked through M1–D1 (governance), none flunked
 - `hidden_decision_posture` — open → down_weighted → closed only when CI is green AND stress suite is clear
@@ -81,7 +81,7 @@ Both must return empty. Local commit without push is not complete.
 
 ## CI is automated
 
-The Stop hook watches Actions for the pushed HEAD. Do not call `gh run list` manually. All-green → Stop approves with CI summary in next-turn context. Failure → Stop blocks with run names + IDs; investigate via `gh run view <id> --log-failed`, fix, push, hook re-watches. Deadline 180s (override `GM_CI_WATCH_SECS`); slow jobs get a "still in progress" approve.
+After `git push`, poll `gh run list --branch main --limit 5 --json status,name,databaseId` until all runs reach a terminal state. Green → continue; failure → investigate via `gh run view <id> --log-failed`, fix, push again. Deadline 180s (override `GM_CI_WATCH_SECS`). Poll every 10s via a nodejs spool file with a `setInterval` loop writing results to stdout.
 
 ## Hygiene sweep
 

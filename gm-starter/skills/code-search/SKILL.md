@@ -5,7 +5,7 @@ description: Mandatory codebase search workflow. Use whenever you need to find a
 
 # Codebase search
 
-`exec:codesearch` is the only codebase search tool. Grep, Glob, Find, Explore, raw `grep`/`rg`/`find` inside `exec:bash` are all hook-blocked. No fallback.
+`exec:codesearch` is the only codebase search tool. Never use Grep, Glob, Find, Explore, raw `grep`/`rg`/`find` inside `exec:bash`. No fallback.
 
 A `@<discipline>` first-token after the verb scopes the search to that discipline's index; absent the sigil, results fan across default plus enabled disciplines, prefixed by source.
 

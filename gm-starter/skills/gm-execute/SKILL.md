@@ -30,7 +30,7 @@ Resolves to KNOWN only when all four pass:
 
 Unresolved after 2 passes regresses to `planning`. Never narrate past an unresolved mutable.
 
-Every witness that resolves a mutable writes back to `.gm/mutables.yml` the same step: set `status: witnessed` and fill `witness_evidence` with concrete proof (file:line, codesearch hit, exec output snippet). No write-back = the mutable stays unknown and the EMIT-gate stays closed. The hook reads this file; the agent's memory of "I resolved it" does not unblock anything.
+Every witness that resolves a mutable writes back to `.gm/mutables.yml` the same step: set `status: witnessed` and fill `witness_evidence` with concrete proof (file:line, codesearch hit, exec output snippet). No write-back = the mutable stays unknown and the EMIT-gate stays closed. The file is the record; the agent's memory of "I resolved it" does not count.
 
 Route candidates from PLAN are `weak_prior` only. Plausibility is the right to test, not the right to believe. A claim with no witness in the current session is a hypothesis — say so when stating it, and say what would settle it. The next reader (you, next turn) needs to know which lines were earned and which were carried forward.
 
@@ -44,13 +44,13 @@ Code AND utility verbs both run through the file-spool. Write a file to `.gm/exe
 
 Pack runs: `Promise.allSettled`, each idea own try/catch, under 12s per call. Runner: write `in/runner/<N>.txt` with body `start` | `stop` | `status`.
 
-Every exec daemonizes. The hook tails the task logfile up to 30s wall-clock and returns whatever is there — short tasks complete inside the window and look synchronous; long tasks return a task_id with partial output. Continue with `exec:tail` (drain, bounded), `exec:watch` (resume blocking until match or timeout), or `exec:close` (terminate). Never re-spawn a long task to check on it — that orphans the first one. `exec:wait` is a pure timer; `exec:sleep` blocks on a specific task's output; `exec:watch` is the match-or-timeout primitive. Every execution-platform RPC returns the live list of running tasks for this session — close stragglers via `exec:close\n<id>` so the list stays scannable. Session-end (clear/logout/prompt_input_exit) kills the session's tasks; compaction/handoff preserves them.
+Every exec daemonizes. The spool watcher tails the task logfile up to 30s wall-clock and returns whatever is there — short tasks complete inside the window and look synchronous; long tasks return a task_id with partial output. Continue with `exec:tail` (drain, bounded), `exec:watch` (resume blocking until match or timeout), or `exec:close` (terminate). Never re-spawn a long task to check on it — that orphans the first one. `exec:wait` is a pure timer; `exec:sleep` blocks on a specific task's output; `exec:watch` is the match-or-timeout primitive. Every execution-platform RPC returns the live list of running tasks for this session — close stragglers via `exec:close\n<id>` so the list stays scannable. Session-end (clear/logout/prompt_input_exit) kills the session's tasks; compaction/handoff preserves them.
 
-Every utility verb dispatches via `in/<verb>/<N>.txt`; the body of the file is the verb's argument. There is no inline form and no Bash-prefix form — both are denied by the hook.
+Every utility verb dispatches via `in/<verb>/<N>.txt`; the body of the file is the verb's argument. There is no inline form and no Bash-prefix form — use only the spool path.
 
 ## Codebase search
 
-Codesearch only. Grep, Glob, Find, Explore, raw grep/rg/find inside Bash are all hook-blocked. Write query to `.gm/exec-spool/in/codesearch/<N>.txt`. Read result from `.gm/exec-spool/out/<N>.out`.
+Codesearch only. Never use Grep, Glob, Find, Explore, raw grep/rg/find inside Bash. Write query to `.gm/exec-spool/in/codesearch/<N>.txt`. Read result from `.gm/exec-spool/out/<N>.out`.
 
 Start two words, change/add one per pass, minimum four attempts before concluding absent. Known absolute path → `Read`. Known directory → nodejs spool file + `fs.readdirSync`.
 
@@ -80,4 +80,4 @@ Up to 3 `gm:gm` subagents for independent items in one message. Browser escalati
 
 ## CI is automated
 
-`git push` triggers the Stop hook to watch Actions for the pushed HEAD on the same repo (downstream cascades are not auto-watched). Green → Stop approves with summary; failure → run names + IDs surfaced, investigate via `gh run view <id> --log-failed`. Deadline 180s (override `GM_CI_WATCH_SECS`).
+After `git push`, poll `gh run list --branch main --limit 5 --json status,name,databaseId` until all runs reach a terminal state. Green → continue; failure → investigate via `gh run view <id> --log-failed`, fix, push again. Deadline 180s (override `GM_CI_WATCH_SECS`). Poll every 10s via a nodejs spool file with a `setInterval` loop writing results to stdout.
