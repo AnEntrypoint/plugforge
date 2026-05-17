@@ -165,17 +165,17 @@ function sha256OfFile(filePath) {
   });
 }
 
-async function extractNpmPackageWasm(destPath) {
+async function extractNpmPackageWasm(destPath, version) {
   const tempDir = path.join(path.dirname(destPath), '.npm-extract-' + Date.now());
   try {
     ensureDir(tempDir);
     const startMs = Date.now();
-    log(`extracting npm package ${NPM_PACKAGE}@latest to ${tempDir}`);
-    obsEvent('bootstrap', 'npm.extract.start', { package: NPM_PACKAGE, version: 'latest' });
+    log(`extracting npm package ${NPM_PACKAGE}@${version} to ${tempDir}`);
+    obsEvent('bootstrap', 'npm.extract.start', { package: NPM_PACKAGE, version });
 
     const result = spawnSync(
       process.platform === 'win32' ? 'npx.cmd' : 'npx',
-      [NPM_PACKAGE + '@latest', '--prefix', tempDir],
+      [NPM_PACKAGE + '@' + version, '--prefix', tempDir],
       {
         stdio: ['ignore', 'pipe', 'pipe'],
         timeout: ATTEMPT_TIMEOUT_MS,
@@ -202,12 +202,12 @@ async function extractNpmPackageWasm(destPath) {
   }
 }
 
-async function extractNpmPackageWithRetry(destPath) {
+async function extractNpmPackageWithRetry(destPath, version) {
   let lastErr;
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
     try {
-      log(`npm extract attempt ${attempt}/${MAX_ATTEMPTS}: ${NPM_PACKAGE}@latest`);
-      await extractNpmPackageWasm(destPath);
+      log(`npm extract attempt ${attempt}/${MAX_ATTEMPTS}: ${NPM_PACKAGE}@${version}`);
+      await extractNpmPackageWasm(destPath, version);
       return;
     } catch (err) {
       lastErr = err;
@@ -712,7 +712,7 @@ async function bootstrap(opts) {
       } catch (_) {}
     }
     try {
-      await extractNpmPackageWithRetry(partialPath);
+      await extractNpmPackageWithRetry(partialPath, version);
     } catch (extractErr) {
       writeBootstrapError({
         expected_version: version, cached_version: null,
