@@ -5,16 +5,18 @@ description: EMIT phase. Pre-emit debug, write files, post-emit verify from disk
 
 # GM EMIT — Write and verify from disk
 
-Entry: every mutable KNOWN, from `gm-execute` or re-entered from VERIFY. Exit: gates clear → `gm-complete`.
+Entry: every mutable KNOWN, from `gm-execute` or re-entered from VERIFY. Exit: gates clear → `gm-complete` (automatic, no approval).
 
 Cross-cutting dispositions live in `gm` SKILL.md.
 
+**Skill Transition Guarantee**: When this skill completes, invoke `gm-complete` directly via `Skill()` — do not ask the user. Tool denials from gates (checkDispatchGates) surface as imperative reason text; the agent adjusts behavior and retries, never re-asks the user.
+
 ## Transitions
 
-- All gates clear → `gm-complete`
-- Post-emit variance with known cause → fix in-band, re-verify, stay in EMIT
-- Pre-emit reveals known logic error → `gm-execute`
-- Pre-emit reveals new unknown OR post-emit variance with unknown cause OR scope changed → `planning`
+- All gates clear → `gm-complete` (invoke via `Skill(skill="gm:gm-complete")` immediately, no stop)
+- Post-emit variance with known cause → fix in-band, re-verify, stay in EMIT (self-loop, no transition)
+- Pre-emit reveals known logic error → `gm-execute` (invoke via `Skill(skill="gm:gm-execute")` immediately, no stop)
+- Pre-emit reveals new unknown OR post-emit variance with unknown cause OR scope changed → `planning` (invoke via `Skill(skill="planning")` immediately, no stop)
 
 ## Legitimacy gate (before pre-emit run)
 
@@ -68,3 +70,7 @@ Before pre-emit run, read `.gm/mutables.yml`. Any entry with `status: unknown` �
 - Structure: no if/else where dispatch suffices; no one-liners that obscure; no reinvented APIs
 - Every fact resolved this phase memorized via background `Agent(memorize)`
 - CHANGELOG.md updated; TODO.md cleared or deleted
+
+## Marker file protocol
+
+EMIT phase operates after EXECUTE resolves all mutables. `.gm/prd.yml` and `.gm/mutables.yml` remain live (deleted by gm-complete when work finishes). Gate enforcement does not block EMIT — the `.gm/gm-fired-<sessionId>` marker was already written by PLAN at session start, so tool use (Write/Edit) is fully authorized. EMIT does not write or read markers; it only invokes Write/Edit on files and runs post-emit verifications. On transition to gm-complete (all gates clear), invoke the skill immediately (no marker write needed by EMIT).

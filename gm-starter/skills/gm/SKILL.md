@@ -58,3 +58,15 @@ Platform adapters (vscode, cursor, zed, jetbrains) that support `end-to-end: tru
 4. Repeat until `nextSkill` is null
 
 This collapses 5 manual skill invocations into 1 user invocation + 4 transparent auto-dispatches, achieving perceived single-flow parity with gm-cc's subagent orchestration.
+
+## Skill Transition Protocol
+
+Skill-to-skill transitions NEVER stop for approval or ask the user. Each skill completes its phase and invokes the next skill via `Skill()` tool call directly. Platform adapters auto-detect the transition from stdout JSON and fire the next skill without user interaction. Tool-use approvals are pre-authorized by the initial user request — re-asking defeats the cascade and breaks autonomy. Skills must assume subsequent tools are approved once the PRD is written by PLAN.
+
+## Gate enforcement (spool-dispatch layer)
+
+The file-spool (`lib/spool-dispatch.js::checkDispatchGates()`) blocks Write/Edit/git operations when:
+1. `.gm/prd.yml` exists AND `.gm/needs-gm` exists AND `.gm/gm-fired-<sessionId>` does NOT exist → reason: "gm orchestration in progress; skills must complete work before tools execute"
+2. `.gm/mutables.yml` has entries with `status: unknown` → reason: "unresolved mutables block tool execution; resolve all mutables before proceeding"
+
+Gate 1 auto-clears: PLAN writes THREE markers (`.gm/prd.yml`, `.gm/needs-gm`, `.gm/gm-fired-<sessionId>`) at session start BEFORE transitioning to EXECUTE. The marker proves planning has run and authorized tool use. Gate 2 auto-clears: EXECUTE resolves mutables by updating `.gm/mutables.yml` entries to `status: witnessed`, or the file is deleted when empty by gm-complete. Tool denials surface the reason text to the agent, which adjusts behavior (e.g., resolve remaining mutables before retrying). Tool denials never mutate command arguments — they surface policy as imperative instruction.

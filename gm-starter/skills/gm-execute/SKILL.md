@@ -5,17 +5,19 @@ description: EXECUTE phase AND the foundational execution contract for every ski
 
 # GM EXECUTE — Resolve every unknown by witness
 
-Entry: `.prd` with named unknowns. Exit: every mutable KNOWN → invoke `gm-emit`.
+Entry: `.prd` with named unknowns. Exit: every mutable KNOWN → invoke `gm-emit` (automatic, no approval).
 
 A `@<discipline>` sigil propagates from PLAN through every recall, codesearch, and memorize call; reads without one fan across default plus enabled disciplines, writes without one go to default only.
 
 This skill is the execution contract for ALL phases — pre-emit witnesses, post-emit verifies, e2e checks all run on this discipline. Cross-cutting dispositions live in `gm` SKILL.md.
 
+**Skill Transition Guarantee**: Tool use is pre-authorized by the initial user request. When this skill completes, invoke `gm-emit` directly via `Skill()` — do not ask the user. Tool denials from gates (checkDispatchGates) surface as imperative reason text; the agent adjusts behavior and retries, never re-asks the user.
+
 ## Transitions
 
-- All mutables KNOWN → `gm-emit`
+- All mutables KNOWN → `gm-emit` (invoke via `Skill(skill="gm:emit")` immediately, no stop)
 - Still UNKNOWN → re-run from a different angle (max 2 passes)
-- New unknown OR unresolvable after 2 passes → `planning`
+- New unknown OR unresolvable after 2 passes → `planning` (invoke via `Skill(skill="planning")` immediately, no stop)
 
 ## Mutable discipline
 
@@ -81,3 +83,7 @@ Up to 3 `gm:gm` subagents for independent items in one message. Browser escalati
 ## CI is automated
 
 After `git push`, poll `gh run list --branch main --limit 5 --json status,name,databaseId` until all runs reach a terminal state. Green → continue; failure → investigate via `gh run view <id> --log-failed`, fix, push again. Deadline 180s (override `GM_CI_WATCH_SECS`). Poll every 10s via a nodejs spool file with a `setInterval` loop writing results to stdout.
+
+## Marker file protocol
+
+EXECUTE phase works against `.gm/prd.yml` and `.gm/mutables.yml` written by PLAN. Both files live for the duration of work and are deleted by gm-complete when work finishes. Gate enforcement (spool-dispatch layer) checks: if `.gm/prd.yml` + `.gm/needs-gm` exist BUT `.gm/gm-fired-<sessionId>` marker is missing, tool use blocks. PLAN writes all three markers at session start before transitioning to EXECUTE, so the gate is already clear when EXECUTE runs. EXECUTE does not write or read markers — it only reads and updates mutables. On transition to gm-emit, invoke the skill immediately (no marker write needed by EXECUTE).

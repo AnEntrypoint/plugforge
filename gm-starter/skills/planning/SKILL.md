@@ -31,7 +31,7 @@ const { spawn, spawnSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
-const bin = path.join(os.homedir(), '.claude', 'gm-tools', process.platform === 'win32' ? 'plugkit.exe' : 'plugkit');
+const bin = path.join(os.homedir(), '.claude', 'gm-tools', 'plugkit.wasm');
 const root = process.cwd();
 const spoolIn = path.join(root, '.gm', 'exec-spool', 'in');
 const spoolOut = path.join(root, '.gm', 'exec-spool', 'out');
@@ -42,13 +42,13 @@ if (fs.existsSync(pidFile)) {
   try { fs.unlinkSync(pidFile); } catch (_) {}
 }
 if (process.platform === 'win32') {
-  try { spawnSync('taskkill', ['/F', '/IM', 'plugkit.exe'], { windowsHide: true, timeout: 3000, stdio: 'ignore' }); } catch (_) {}
+  try { spawnSync('taskkill', ['/F', '/IM', 'node.exe'], { windowsHide: true, timeout: 3000, stdio: 'ignore' }); } catch (_) {}
 } else {
   try { spawnSync('pkill', ['-f', 'plugkit'], { timeout: 3000, stdio: 'ignore' }); } catch (_) {}
 }
 fs.mkdirSync(spoolIn, { recursive: true });
 fs.mkdirSync(spoolOut, { recursive: true });
-const proc = spawn(bin, ['runner', '--watch', spoolIn, '--out', spoolOut], {
+const proc = spawn('node', [bin, 'runner', '--watch', spoolIn, '--out', spoolOut], {
   detached: true, stdio: 'ignore', windowsHide: true, cwd: root,
 });
 proc.unref();
@@ -152,3 +152,24 @@ Pack runs use `Promise.allSettled`, each idea its own try/catch, under 12s per c
 No comments. 200-line per-file cap. Fail loud. No duplication. Scan before edit. AGENTS.md edits route through the memorize sub-agent only. CHANGELOG.md gets one entry per commit.
 
 Minimal-code process, stop at the first that resolves: native → library → structure (map / pipeline) → write.
+
+## Marker File Protocol
+
+PLAN phase writes THREE marker files before transitioning to EXECUTE:
+1. `.gm/prd.yml` — the work items (already written per PRD format above)
+2. `.gm/needs-gm` — empty marker file signaling PRD is ready for orchestration
+3. `.gm/gm-fired-<sessionId>` — signals that gm orchestration (planning) has run and cleared the gate
+
+When `.gm/prd.yml` and `.gm/needs-gm` both exist, downstream tools check `.gm/gm-fired-<sessionId>` marker. If missing, tool execution blocks with reason: "gm orchestration in progress; skills must complete work before tools execute." This gate prevents tool use from tools that run BEFORE the orchestration phase is complete. Writing the marker clears this gate.
+
+Write all three markers as final step of PLAN:
+```
+const fs = require('fs');
+const path = require('path');
+const sessionId = process.env.SESSION_ID || 'default';
+fs.mkdirSync(path.join(process.cwd(), '.gm'), { recursive: true });
+fs.writeFileSync(path.join(process.cwd(), '.gm', 'needs-gm'), '');
+fs.writeFileSync(path.join(process.cwd(), '.gm', `gm-fired-${sessionId}`), '');
+```
+
+Transition to `gm-execute` (or `gm-gm` subagent) immediately after writing all files. No stop-for-approval; the transition is automatic.

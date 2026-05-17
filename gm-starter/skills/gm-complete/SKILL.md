@@ -104,3 +104,18 @@ After `git push`, poll `gh run list --branch main --limit 5 --json status,name,d
 ## Completion
 
 All true at once: witnessed e2e | browser_validated when client work touched | failure paths exercised | test.js passes | `.prd` deleted | git clean and pushed | CI green | hygiene sweep clean | TODO.md gone | CHANGELOG.md updated.
+
+## Marker file protocol
+
+On transition to `update-docs`, delete all gm orchestration markers for the next cycle:
+```
+const fs = require('fs');
+const path = require('path');
+const sessionId = process.env.SESSION_ID || 'default';
+const gm = path.join(process.cwd(), '.gm');
+['.gm/prd.yml', '.gm/mutables.yml', '.gm/needs-gm', `.gm/gm-fired-${sessionId}`].forEach(m => {
+  try { fs.unlinkSync(path.join(gm, m.split('/')[1])); } catch (_) {}
+});
+```
+
+The `.gm/gm-fired-<sessionId>` marker was written by PLAN at session start and proves gm orchestration has completed. Cleanup before next cycle resets gates so the next PLAN run can write fresh markers.

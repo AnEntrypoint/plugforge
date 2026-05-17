@@ -72,4 +72,29 @@ async function pollForCompletion(jsonFile, timeoutMs, taskId) {
   };
 }
 
-module.exports = { dispatchSpool };
+function checkDispatchGates(sessionId, operation) {
+  const gm = path.join(process.cwd(), '.gm');
+  const prdPath = path.join(gm, 'prd.yml');
+  const mutsPath = path.join(gm, 'mutables.yml');
+  const needsGmPath = path.join(gm, 'needs-gm');
+  const gmFiredPath = path.join(gm, `gm-fired-${sessionId}`);
+
+  if (!['write', 'edit', 'git'].includes(operation)) return { allowed: true };
+
+  if (fs.existsSync(prdPath) && fs.existsSync(needsGmPath) && !fs.existsSync(gmFiredPath)) {
+    return { allowed: false, reason: 'gm orchestration in progress; skills must complete work before tools execute' };
+  }
+
+  if (fs.existsSync(mutsPath)) {
+    try {
+      const content = fs.readFileSync(mutsPath, 'utf8');
+      if (content.includes('status: unknown')) {
+        return { allowed: false, reason: 'unresolved mutables block tool execution; resolve all mutables before proceeding' };
+      }
+    } catch (_) {}
+  }
+
+  return { allowed: true };
+}
+
+module.exports = { dispatchSpool, checkDispatchGates };
