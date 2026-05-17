@@ -3,64 +3,19 @@ name: update-docs
 description: UPDATE-DOCS phase. Refresh README.md, AGENTS.md, and docs/index.html to reflect changes made this session. Commits and pushes doc updates. Terminal phase — declares COMPLETE.
 ---
 
-# GM UPDATE-DOCS
+# update-docs — UPDATE-DOCS phase
 
-Entry: feature verified, committed, pushed. Exit: docs match disk, committed, pushed → COMPLETE. Unknown architecture change → `planning`.
+Dispatch via plugkit spool. Write `.gm/exec-spool/in/<verb>/<N>.txt` with the request body. Read response from `.gm/exec-spool/out/<N>.json`. Follow `nextSkill` field via `Skill()` immediately — no stop, no approval, no narration.
 
-Every claim in docs is verifiable against disk. Phase names match frontmatter, platform names match `platforms/`, file paths exist, constraint counts are accurate. An unverifiable section is removed, not speculated.
+Verbs for this phase:
+- `phase-status` — read current FSM state
+- `transition` — advance phase
+- `mutable-resolve` — mark mutable witnessed (auto-fires memorize)
+- `memorize-fire` — explicit memorize dispatch
+- Plus existing: `recall`, `codesearch`, `memorize`, `health`, all language stems
 
-## Sequence
+The plugkit orchestrator owns state. The skill is one line: dispatch and follow.
 
-What changed — run directly via Bash:
+## Transition
 
-```
-git log -5 --oneline
-git diff HEAD~1 --stat
-```
-
-Read current docs via Read tool, or via a nodejs spool file (`in/nodejs/<N>.js`):
-
-```
-const fs = require('fs');
-['README.md', 'AGENTS.md', 'docs/index.html', 'gm-starter/agents/gm.md'].forEach(f => {
-  try { console.log(`=== ${f} ===\n` + fs.readFileSync(f, 'utf8')); }
-  catch(e) { console.log(`MISSING: ${f}`); }
-});
-```
-
-Write changed sections only:
-
-- **README.md** — platform count, skill tree diagram, quick-start commands
-- **AGENTS.md** — via `Agent(subagent_type='gm:memorize', model='haiku', run_in_background=true, prompt='## CONTEXT TO MEMORIZE\n<learnings>')`. Never inline-edit.
-- **docs/index.html** — `PHASES` array, platform lists, state machine diagram
-- **gm-starter/agents/gm.md** — skill chain line if new skills added
-
-Verify from disk (Read tool, or a nodejs spool file):
-
-```
-const content = require('fs').readFileSync('/abs/path/file.md', 'utf8');
-console.log(content.includes('expectedString'), content.length);
-```
-
-Commit and push directly via Bash:
-
-```
-git add README.md docs/index.html gm-starter/agents/gm.md
-git commit -m "docs: update documentation to reflect session changes"
-git push -u origin HEAD
-```
-
-## Exit: browser cleanup
-
-After docs push succeeds, close any browser sessions spawned during this or prior skill phases. Write a nodejs spool file calling rs-exec:
-
-```javascript
-const sessionId = process.env.CLAUDE_SESSION_ID;
-if (!sessionId) return;
-const rs = require('rs-exec');
-try {
-  rs.client().close_sessions_for(sessionId).catch(() => {});
-} catch (e) {}
-```
-
-Best-effort: session context or rs-exec unavailable → skip gracefully. No error thrown.
+Read `out/<N>.json::nextSkill`. Invoke `Skill(skill="gm:<nextSkill>")` immediately. End of skill.
