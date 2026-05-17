@@ -16,7 +16,7 @@ class PlatformAdapter {
   generate(pluginSpec, sourceDir, outputDir) {
     ensureDir(outputDir);
     const structure = this.createFileStructure(pluginSpec, sourceDir);
-    const genericFiles = this.getGenericFilesToUse();
+    const genericFiles = this.getGenericFilesToUse(this.name);
     const withGeneric = { ...genericFiles, ...structure };
     this.writeFiles(outputDir, withGeneric);
     this.copyBinaryFiles(sourceDir, outputDir);
@@ -39,8 +39,8 @@ class PlatformAdapter {
     });
   }
 
-  getGenericFilesToUse() {
-    return TemplateBuilder.getCliGenericFiles();
+  getGenericFilesToUse(platformName = null) {
+    return TemplateBuilder.getCliGenericFiles(platformName);
   }
 
   createFileStructure(pluginSpec, sourceDir) {

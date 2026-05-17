@@ -22,7 +22,7 @@ Skills encode environment-specific constraints that override general knowledge.
 
 # Architecture & Philosophy
 
-gm generates 10 platform implementations from a single convention-driven source.
+gm generates 15 platform implementations from a single convention-driven source.
 
 ## Documentation Policy
 
@@ -160,23 +160,15 @@ rs-exec injects an rtk shell-function preamble into every bash script so common 
 
 ## Spool-dispatch architecture replaces hooks
 
-Orchestration state is tracked via marker files in `.gm/` instead of hook events. `lib/spool-dispatch.js` reads these markers and gates tool use, writes, and git operations:
-- `.gm/prd.yml` — existence triggers needs-gm gate; gm skill clears gate by writing `.gm/gm-fired-<sessionId>`
-- `.gm/mutables.yml` — unresolved entries block Write/Edit/git until all reach `witnessed` status
-- `.gm/needs-gm` — written by bootstrap if `.gm/` folder exists; read by spool dispatcher to gate tool use
-- `.gm/gm-fired-<sessionId>` — written by gm skill invocation; cleared at turn start
+Orchestration state is tracked via marker files in `.gm/` instead of hook events. `SpoolDispatcher` reads these markers via `checkDispatchGates(sessionId, operation)` and gates tool use, writes, and git operations:
 
-Dispatcher integration point: CLI layer (plugkit, rs-exec, downstream platforms) calls `SpoolDispatcher.checkDispatchGates(sessionId, operation)` before tool execution. On gate denial, reason text surfaces to the model. No spool file I/O required beyond the initial marker reads. Marker-driven dispatch replaces hook event pump entirely — no session event callbacks needed. Bootstrap (gm-starter/lib/skill-bootstrap.js) handles daemon initialization and marker setup that were previously session_start hook responsibilities.
+**Marker files**: `.gm/prd.yml` (existence triggers needs-gm gate), `.gm/mutables.yml` (unresolved entries block Write/Edit/git), `.gm/needs-gm` (written by bootstrap, read by dispatcher), `.gm/gm-fired-<sessionId>` (written by gm skill/agent, cleared at turn start), `.gm/residual-check-fired` (ensures one-shot residual-scan per stop window).
 
-**gm:gm tool-use sequencing**: When Skill(gm:gm) OR Agent(subagent_type="gm:gm") fires, it writes `.gm/gm-fired-<sessionId>` marker file to clear the needs-gm gate. SpoolDispatcher.checkDispatchGates() reads this marker before permitting subsequent tool use. On new turn start, the agent's first action deletes the marker so the gate resets for the next turn. This enables all tool calls in the same turn after gm:gm executes; without the marker, subsequent calls would be blocked by the needs-gm gate. Subagent form is preferred for sustained multi-turn work (isolates orchestration loop in own context window); skill form remains valid for short turns.
+**Gate enforcement**: CLI layer (plugkit, rs-exec, downstream platforms) calls `checkDispatchGates()` before tool execution. On denial, reason text surfaces to the model. Bootstrap (gm-starter/lib/skill-bootstrap.js) handles daemon initialization and marker setup. Marker-driven dispatch replaces hook event pump entirely — no session event callbacks needed.
 
-**Session-end kills background tasks**: CLI layer calls rs-exec `killSessionTasks` RPC on real-exit reasons (clear/logout/prompt_input_exit) before browser cleanup. Surfaces `[session-end] killed N background tasks` to stderr.
+**gm:gm tool-use sequencing**: Skill(gm:gm) OR Agent(subagent_type="gm:gm") writes `.gm/gm-fired-<sessionId>` to clear the needs-gm gate. Agent clears the marker at turn start to reset the gate. Subagent form preferred for sustained multi-turn work (isolates orchestration loop); skill form valid for short turns.
 
-**Browser sessions persist across turn-stops within a Claude session**: Open browser sessions are not a stop concern, identical to how open background tasks are not. Cleanup happens exclusively on real-exit reasons (`clear` | `logout` | `prompt_input_exit`), where `close_sessions_for` + `kill_session_browser` + `killSessionTasks` fire together. Compaction/handoff reasons leave browsers alive alongside tasks — the agent resumes from where it left off, including any open `exec:browser` page state. This mirrors the killSessionTasks contract.
-
-**Residual-scan gate**: When `.gm/prd.yml` is empty/missing AND no open browser sessions AND no running background tasks, the system fires one residual-scan challenge before allowing workspace stop. Marker file `.gm/residual-check-fired` ensures one-shot per stopping window. Agent prompt clears the marker at the start of every new user turn. The reason text directs the agent to enumerate in-spirit reachable residuals (pre-existing build breaks surfaced this turn, neighboring lint/test/lockfile failures, obvious refactor wins, observability gaps, doc drift, follow-on work the user clearly implied) and either re-enter `Skill(gm:planning)` + append PRD + execute, OR explicitly state "residual scan: none reachable in-spirit". Second stop in the same window allows. Pairs with implicit pre-emption in `gm-starter/skills/gm/SKILL.md` and `gm-starter/skills/gm-complete/SKILL.md::prd_empty` mutable: empty PRD is necessary, not sufficient — done = empty PRD AND zero reachable in-spirit residuals.
-
-**Spool dispatch gates via .gm/ markers**: `SpoolDispatcher` reads marker files to enforce orchestration policy. Bootstrap writes `.gm/needs-gm` when `.gm/` folder exists. PRD management: if `.gm/prd.yml` exists, needs-gm is active (blocks tool use until gm skill runs); if absent, needs-gm is deleted (autonomous mode). `canDispatchToolUse(sessionId)` checks `.gm/needs-gm` and `.gm/gm-fired-<sessionId>` marker — tool use is allowed only if gm gate is absent OR gm-fired marker exists. `canExecuteWrite(sessionId)` and `canExecuteGit(sessionId)` call `checkUnresolvedMutables()` on `.gm/mutables.yml` and deny operations if any entry has `status: unknown` — this blocks execution until every mutable reaches `witnessed` with `witness_evidence` filled. Marker cleanup: agent clears `.gm/gm-fired-<sessionId>` at turn start and deletes `.gm/needs-gm` after gm skill completes. Together, these gates enforce the skill chain: PRD must exist (needs-gm active) → gm skill runs (gm-fired marker written) → all mutables resolved (mutables gate checks YAML) → remaining work proceeds (gate cleared).
+**Session lifecycle**: Session-end kills background tasks via `killSessionTasks` RPC on real-exit reasons (clear/logout/prompt_input_exit). Browser sessions and background tasks persist across turn-stops — cleanup happens exclusively on real-exit reasons. Residual-scan fires when PRD is empty/missing AND no open browser sessions AND no running tasks; agent either expands PRD with in-spirit residuals or explicitly states none.
 
 ## Spool observability surface
 

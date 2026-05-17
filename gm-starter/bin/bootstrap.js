@@ -461,6 +461,11 @@ async function bootstrap(opts) {
   const okSentinel = path.join(verDir, '.ok');
   const partialPath = `${finalPath}.partial`;
 
+  const wasmName = 'plugkit.wasm';
+  const wasmExpectedSha = shaManifest ? shaManifest[wasmName] : null;
+  const wasmFinalPath = path.join(verDir, wasmName);
+  const wasmPartialPath = `${wasmFinalPath}.partial`;
+
   if (fs.existsSync(finalPath) && fs.existsSync(okSentinel)) {
     if (expectedSha) {
       const actualSha = sha256OfFileSync(finalPath);
@@ -570,6 +575,34 @@ async function bootstrap(opts) {
     pruneOldVersions(root, version, readRtkVersion(wrapperDir));
     spawnDetachedRtkFetch(wrapperDir);
     copyToGmTools(finalPath, wrapperDir, version);
+
+    try {
+      if (healIfShaMatches(wasmFinalPath, wasmExpectedSha, path.join(verDir, '.wasm-ok'), wasmPartialPath, 'wasm')) {
+        obsEvent('bootstrap', 'wasm.heal', { path: wasmFinalPath });
+      } else {
+        const wasmUrl = `https://github.com/${RELEASE_REPO}/releases/download/v${version}/${wasmName}`;
+        try {
+          await downloadWithRetry(wasmUrl, wasmPartialPath);
+          if (wasmExpectedSha) {
+            const wasmGot = await sha256OfFile(wasmPartialPath);
+            if (wasmGot !== wasmExpectedSha) {
+              try { fs.unlinkSync(wasmPartialPath); } catch (_) {}
+              log(`wasm sha256 mismatch: expected ${wasmExpectedSha}, got ${wasmGot}`);
+            } else {
+              try { fs.renameSync(wasmPartialPath, wasmFinalPath); } catch (e) {
+                if (e.code === 'EEXIST') { try { fs.unlinkSync(wasmFinalPath); } catch (_) {} fs.renameSync(wasmPartialPath, wasmFinalPath); }
+              }
+              fs.writeFileSync(path.join(verDir, '.wasm-ok'), new Date().toISOString());
+              obsEvent('bootstrap', 'wasm.install', { path: wasmFinalPath });
+            }
+          }
+        } catch (err) {
+          log(`wasm download failed (non-fatal): ${err.message}`);
+        }
+      }
+      try { fs.copyFileSync(wasmFinalPath, path.join(gmToolsDir(), wasmName)); } catch (_) {}
+    } catch (_) {}
+
     clearBootstrapError();
     return finalPath;
   } finally {

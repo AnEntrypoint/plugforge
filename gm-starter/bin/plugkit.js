@@ -81,13 +81,40 @@ function ensureReady(silent) {
   return r.status === 0 && isReady();
 }
 
+function wasmPath() {
+  return path.join(wrapperDir, 'plugkit.wasm');
+}
+
+function shouldUseWasm() {
+  if (process.env.GM_USE_WASM === '1') return true;
+  if (fs.existsSync(wasmPath()) && !fs.existsSync(toolsBin())) return true;
+  return false;
+}
+
+async function runWasm(args) {
+  try {
+    const WasmHost = require('../lib/wasm-host');
+    const host = new WasmHost(wasmPath());
+    const verb = args[0] || 'health';
+    const body = args.slice(1).join(' ') || '{}';
+    const result = await host.dispatch(verb, body);
+    console.log(JSON.stringify(result, null, 2));
+    process.exit(result.ok ? 0 : 1);
+  } catch (err) {
+    console.error('[plugkit wasm]', err.message);
+    process.exit(1);
+  }
+}
+
 function main() {
   const args = process.argv.slice(2);
   const isHook = args[0] === 'hook';
   const hookSubcmd = isHook ? (args[1] || '') : '';
 
-  // Synchronous readiness check on these hooks. Hot path: isReady() is sha-match
-  // against pinned manifest, returns true in <50ms with no network.
+  if (shouldUseWasm()) {
+    return runWasm(args);
+  }
+
   const blocksUntilReady = hookSubcmd === 'session-start' || hookSubcmd === 'prompt-submit';
 
   if (blocksUntilReady) {
@@ -96,8 +123,6 @@ function main() {
       process.exit(1);
     }
   } else if (!fs.existsSync(toolsBin())) {
-    // For non-blocking hooks (pre-tool-use, post-tool-use, stop, etc.): if the
-    // binary doesn't exist yet, exit cleanly — session-start will populate it.
     if (isHook) process.exit(0);
     process.exit(1);
   }
